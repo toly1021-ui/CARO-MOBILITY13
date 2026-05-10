@@ -5666,9 +5666,9 @@ window.devUploadAllCars=function(){
     '}';
   document.head.appendChild(style);
 })();
-/* ─── 차량 이미지 검정 배경 → 밝은 색 변환 ─── */
+/* ─── 차량 이미지 검정 배경 → 밝은 색 변환 (Flood Fill) ─── */
 (function(){
-  /* 검정/투명 픽셀을 #e8eaee (라이트 실버)로 변환 */
+  /* 모서리에서 시작하는 Flood Fill — 배경만 변환, 차량 내부 보존 */
   function processCarImage(dataUrl){
     return new Promise(function(resolve){
       if(!dataUrl || dataUrl.indexOf('data:image') !== 0){
@@ -5684,17 +5684,44 @@ window.devUploadAllCars=function(){
           ctx.drawImage(img, 0, 0);
           var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           var data = imgData.data;
+          var W = canvas.width, H = canvas.height;
+          var threshold = 35;
+          var visited = new Uint8Array(W * H);
+          var queue = [];
           var changed = 0;
-          for(var i = 0; i < data.length; i += 4){
-            var r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
-            if((r < 30 && g < 30 && b < 30) || a < 50){
-              data[i] = 232; data[i+1] = 234; data[i+2] = 238; data[i+3] = 255;
-              changed++;
-            }
+
+          function isDark(dataIdx){
+            return data[dataIdx] < threshold &&
+                   data[dataIdx+1] < threshold &&
+                   data[dataIdx+2] < threshold;
           }
+          function tryAdd(x, y){
+            if(x < 0 || y < 0 || x >= W || y >= H) return;
+            var pi = y * W + x;
+            if(visited[pi]) return;
+            if(!isDark(pi * 4)) return;
+            visited[pi] = 1;
+            queue.push(x, y);
+          }
+
+          /* 4면의 모든 모서리 픽셀에서 시작 */
+          for(var x = 0; x < W; x++){ tryAdd(x, 0); tryAdd(x, H-1); }
+          for(var y = 0; y < H; y++){ tryAdd(0, y); tryAdd(W-1, y); }
+
+          /* BFS Flood Fill — 배경만 따라가기 */
+          while(queue.length > 0){
+            var qx = queue.shift(), qy = queue.shift();
+            var di = (qy * W + qx) * 4;
+            data[di] = 232; data[di+1] = 234; data[di+2] = 238; data[di+3] = 255;
+            changed++;
+            tryAdd(qx+1, qy); tryAdd(qx-1, qy);
+            tryAdd(qx, qy+1); tryAdd(qx, qy-1);
+          }
+
           ctx.putImageData(imgData, 0, 0);
-          var result = canvas.toDataURL('image/jpeg', 0.85);
-          console.log('🎨 이미지 처리: ' + changed + ' 픽셀 변환');
+          var result = canvas.toDataURL('image/jpeg', 0.88);
+          var pct = Math.round(changed / (W*H) * 100);
+          console.log('🎨 배경 변환: ' + changed + '픽셀 (' + pct + '%)');
           resolve(result);
         } catch(e){
           console.error('이미지 처리 실패:', e);
@@ -5714,7 +5741,7 @@ window.devUploadAllCars=function(){
         return processCarImage(compressed);
       });
     };
-    console.log('✅ 차량 이미지 자동 처리 활성화');
+    console.log('✅ 차량 이미지 자동 처리 활성화 (Flood Fill)');
   }
 
   window.devReprocessAllCars = function(){
