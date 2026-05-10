@@ -5525,3 +5525,123 @@ window.devUploadAllCars=function(){
   fsLastWriteTime=0; syncAllCarsToFirestore();
   showToast('🚀 차량 전체 업로드 시작');
 };
+/* ─── 결제 수단 선택 박스 UI 통일 ─── */
+(function(){
+  var style=document.createElement('style');
+  style.id='caro-pay-select-fix';
+  style.textContent = ''+
+    '#payment-screen .pay-select-row,'+
+    '#payment-screen [onclick*="openPaySheet"]{'+
+      'border:1px solid var(--border,#d0d4dc) !important;'+
+      'border-radius:14px !important;'+
+      'padding:14px 16px !important;'+
+      'background:transparent !important;'+
+      'box-shadow:none !important;'+
+    '}'+
+    '#payment-screen.bl-mode .pay-select-row,'+
+    '#payment-screen.bl-mode [onclick*="openPaySheet"]{'+
+      'border:1px solid rgba(200,169,110,.35) !important;'+
+      'background:rgba(200,169,110,.05) !important;'+
+      'color:rgba(200,169,110,.9) !important;'+
+    '}'+
+    '#payment-screen .pay-select-arrow,'+
+    '#payment-screen .pay-arrow,'+
+    '#payment-screen .pay-select-row svg,'+
+    '#payment-screen .pay-select-row .arrow,'+
+    '#payment-screen .pay-select-row::after,'+
+    '#payment-screen [onclick*="openPaySheet"] svg{'+
+      'display:none !important;'+
+    '}';
+  document.head.appendChild(style);
+
+  function fixPaySelectArrow(){
+    var ps=document.getElementById('payment-screen');
+    if(!ps) return;
+    var boxes=ps.querySelectorAll('.pay-select-row, [onclick*="openPaySheet"]');
+    boxes.forEach(function(box){
+      Array.from(box.childNodes).forEach(function(node){
+        if(node.nodeType===3){
+          var t=node.textContent.trim();
+          if(t==='⌄'||t==='v'||t==='V'||t==='∨'||t==='▼'||t==='˅'||t==='⌵'){
+            node.textContent='';
+          }
+        } else if(node.nodeType===1){
+          var t=(node.textContent||'').trim();
+          if(t==='⌄'||t==='v'||t==='V'||t==='∨'||t==='▼'||t==='˅'||t==='⌵'){
+            node.style.display='none';
+          }
+        }
+      });
+    });
+  }
+
+  var origGoTo=window.goTo;
+  if(typeof origGoTo==='function'){
+    window.goTo=function(s,i){
+      origGoTo(s,i);
+      if(s==='payment-screen'){
+        setTimeout(fixPaySelectArrow,100);
+        setTimeout(fixPaySelectArrow,500);
+      }
+    };
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(fixPaySelectArrow,1500);
+  });
+})();
+
+/* ─── 결제 화면 뒤로가기 버튼 추가 ─── */
+(function(){
+  function addPaymentBackBtn(){
+    var ps = document.getElementById('payment-screen');
+    if(!ps) return;
+
+    var existing = ps.querySelector('.payment-back-btn');
+    if(existing) existing.remove();
+
+    var submitBtn = ps.querySelector('.submit-btn, .pay-btn, [onclick*="handlePayment"]');
+    if(!submitBtn) return;
+
+    var isBL = !!(window.selectedCar && window.selectedCar.isBlackLabel);
+
+    var backBtn = document.createElement('button');
+    backBtn.type = 'button';
+    backBtn.className = 'payment-back-btn';
+    backBtn.textContent = '뒤로가기';
+    backBtn.onclick = function(){
+      if(typeof window.goTo === 'function'){
+        window.goTo('reservation-screen');
+      }
+    };
+
+    var common = 'width:100%;padding:14px;margin-top:10px;border-radius:14px;font-size:.92rem;font-weight:600;cursor:pointer;transition:all .2s;display:block;box-sizing:border-box;';
+
+    if(isBL){
+      backBtn.style.cssText = common +
+        'background:transparent !important;'+
+        'border:1px solid rgba(200,169,110,.4) !important;'+
+        'color:rgba(200,169,110,.85) !important;'+
+        'font-family:\'Oswald\',sans-serif !important;'+
+        'letter-spacing:.12em !important;';
+    } else {
+      backBtn.style.cssText = common +
+        'background:transparent !important;'+
+        'border:1px solid var(--border,#d0d4dc) !important;'+
+        'color:var(--text-2,#555) !important;'+
+        'font-family:var(--font,\'Inter\',sans-serif) !important;';
+    }
+
+    submitBtn.parentNode.insertBefore(backBtn, submitBtn.nextSibling);
+  }
+
+  if(typeof window.goTo === 'function'){
+    var prevGoTo = window.goTo;
+    window.goTo = function(s, i){
+      prevGoTo(s, i);
+      if(s === 'payment-screen'){
+        setTimeout(addPaymentBackBtn, 150);
+        setTimeout(addPaymentBackBtn, 500);
+      }
+    };
+  }
+})();
