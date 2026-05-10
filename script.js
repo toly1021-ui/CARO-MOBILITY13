@@ -5922,3 +5922,132 @@ window.devUploadAllCars=function(){
     setTimeout(autoStart, 100);
   }
 })();
+/* ─── 차량 이미지 처리 (통합 최종 버전 — 단일 압축) ─── */
+(function(){
+  /* 한 번에 처리: 리사이즈 + Flood Fill + JPEG 인코딩 */
+  function processAndCompressCar(dataUrl, maxW, maxH, quality){
+    maxW = maxW || 800;
+    maxH = maxH || 600;
+    quality = quality || 0.88;
+
+    return new Promise(function(resolve){
+      if(!dataUrl || dataUrl.indexOf('data:image') !== 0){
+        resolve(dataUrl); return;
+      }
+      var img = new Image();
+      img.onload = function(){
+        try {
+          var w = img.width, h = img.height;
+          var ratio = Math.min(maxW / w, maxH / h, 1);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+
+          var canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+
+          var imgData = ctx.getImageData(0, 0, w, h);
+          var data = imgData.data;
+          var threshold = 35;
+          var visited = new Uint8Array(w * h);
+          var queue = [];
+          var changed = 0;
+
+          function isDark(idx){
+            return data[idx] < threshold &&
+                   data[idx+1] < threshold &&
+                   data[idx+2] < threshold;
+          }
+          function tryAdd(x, y){
+            if(x < 0 || y < 0 || x >= w || y >= h) return;
+            var pi = y * w + x;
+            if(visited[pi]) return;
+            if(!isDark(pi * 4)) return;
+            visited[pi] = 1;
+            queue.push(x, y);
+          }
+
+          for(var x = 0; x < w; x++){ tryAdd(x, 0); tryAdd(x, h-1); }
+          for(var y = 0; y < h; y++){ tryAdd(0, y); tryAdd(w-1, y); }
+
+          while(queue.length > 0){
+            var qx = queue.shift(), qy = queue.shift();
+            var di = (qy * w + qx) * 4;
+            data[di] = 232; data[di+1] = 234; data[di+2] = 238; data[di+3] = 255;
+            changed++;
+            tryAdd(qx+1, qy); tryAdd(qx-1, qy);
+            tryAdd(qx, qy+1); tryAdd(qx, qy-1);
+          }
+
+          ctx.putImageData(imgData, 0, 0);
+          var result = canvas.toDataURL('image/jpeg', quality);
+          var pct = Math.round(changed / (w*h) * 100);
+          console.log('🎨 처리 완료: ' + w + 'x' + h + ', 배경 ' + pct + '% 변환');
+          resolve(result);
+        } catch(e) {
+          console.error('이미지 처리 실패:', e);
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = function(){ resolve(dataUrl); };
+      img.src = dataUrl;
+    });
+  }
+
+  /* 기존 함수들을 통합 함수로 덮어쓰기 (나중 정의가 이김) */
+  window.compressImageBase64 = processAndCompressCar;
+  window.processCarImage = processAndCompressCar;
+  console.log('✅ 차량 이미지 처리 활성화 (통합 — 단일 압축)');
+
+  /* devReprocessAllCars 재정의 — 통합 함수 사용 */
+  window.devReprocessAllCars = function(){
+    if(!window.isDevUser || !window.isDevUser()){
+      window.showToast && window.showToast('⚠️ 개발자 계정만');
+      return;
+    }
+    var cars = (window.CARS_DATA || []).slice();
+    var blCars = (window.BL_CARS || []).slice();
+    var total = cars.length + blCars.length;
+    if(total === 0){ window.showToast && window.showToast('차량 없음'); return; }
+
+    window.showToast && window.showToast('🎨 ' + total + '대 재처리 시작...');
+    var done = 0;
+
+    function processOne(car, isBL, callback){
+      if(!car.img || car.img.indexOf('data:image') !== 0){ callback(); return; }
+      processAndCompressCar(car.img, 800, 600, 0.88).then(function(newImg){
+        car.img = newImg;
+        if(typeof window.syncCarToFirestore === 'function'){
+          window.fsLastWriteTime = 0;
+          window.syncCarToFirestore(car, isBL).then(function(){
+            done++;
+            console.log('✅ ' + done + '/' + total + ' ' + car.name);
+            callback();
+          });
+        } else { done++; callback(); }
+      });
+    }
+
+    function processList(list, isBL, onDone){
+      var i = 0;
+      function next(){
+        if(i >= list.length){ onDone(); return; }
+        processOne(list[i++], isBL, next);
+      }
+      next();
+    }
+
+    processList(cars, false, function(){
+      processList(blCars, true, function(){
+        window.showToast && window.showToast('✅ 전체 ' + done + '대 재처리 완료!');
+        if(typeof window.renderCars === 'function') window.renderCars();
+        if(typeof window.renderBLCars === 'function') window.renderBLCars();
+        try{ localStorage.setItem('caro_cars_data_v1', JSON.stringify(window.CARS_DATA)); }catch(e){}
+        try{ localStorage.setItem('caro_bl_cars_v1', JSON.stringify(window.BL_CARS)); }catch(e){}
+      });
+    });
+  };
+})();
