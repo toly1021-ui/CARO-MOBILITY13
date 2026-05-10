@@ -5645,3 +5645,24 @@ window.devUploadAllCars=function(){
     };
   }
 })();
+/* ─── 차량 이미지 배경색 통일 (예약/결제 화면) ─── */
+(function(){
+  var style=document.createElement('style');
+  style.id='caro-car-img-bg-unify';
+  style.textContent = ''+
+    '.res-car-img,'+
+    '.my-res-img,'+
+    '.pay-car-img,'+
+    '#reserve-car-card img,'+
+    '#pay-car-card img,'+
+    '#res-detail-body img:first-child{'+
+      'background:#e8eaee !important;'+
+      'background-color:#e8eaee !important;'+
+      'object-fit:contain !important;'+
+    '}'+
+    '#reserve-car-card,'+
+    '.res-car-section{'+
+      'background:transparent !important;'+
+    '}';
+  document.head.appendChild(style);
+})();
