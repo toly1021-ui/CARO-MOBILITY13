@@ -5792,3 +5792,100 @@ window.devUploadAllCars=function(){
     });
   };
 })();
+/* ─── 다중 사용자 실시간 예약 동기화 ─── */
+(function(){
+  var fsGlobalResUnsub = null;
+  window.globalActiveReservations = [];
+
+  function startGlobalReservationsListener(){
+    if(typeof window.fbReady !== 'function' || !window.fbReady()) return;
+    var fn = window.FB_FN, db = window.FB_DB;
+    if(typeof fn.onSnapshot !== 'function') return;
+    if(fsGlobalResUnsub){ try{fsGlobalResUnsub();}catch(e){} fsGlobalResUnsub = null; }
+
+    try {
+      fsGlobalResUnsub = fn.onSnapshot(fn.collection(db, 'reservations'), function(snap){
+        var allRes = [];
+        snap.forEach(function(doc){
+          var d = doc.data();
+          if(!d.cancelled && !d.returned && d.start && d.end){
+            allRes.push({
+              bookNo: d.bookNo || doc.id,
+              userId: d.userId,
+              car: d.car,
+              start: new Date(d.start),
+              end: new Date(d.end),
+              returned: false,
+              returnedAt: null,
+              hrs: d.hrs || 0,
+              total: d.total || 0,
+              ins: d.ins
+            });
+          }
+        });
+        window.globalActiveReservations = allRes;
+        console.log('🌐 전역 활성 예약:', allRes.length, '건');
+        if(typeof window.renderCars === 'function') window.renderCars();
+        if(typeof window.updateMapMarkers === 'function') window.updateMapMarkers();
+      });
+    } catch(e) {
+      console.error('전역 예약 리스너 실패:', e);
+    }
+  }
+  window.startGlobalReservationsListener = startGlobalReservationsListener;
+
+  function wrapWithGlobalRes(originalFn){
+    return function(){
+      var globalRes = window.globalActiveReservations || [];
+      if(globalRes.length === 0){
+        return originalFn.apply(this, arguments);
+      }
+      var myBookNos = {};
+      (window.myReservations || []).forEach(function(r){
+        if(r.bookNo) myBookNos[r.bookNo] = true;
+      });
+      var otherRes = globalRes.filter(function(r){
+        return r.bookNo && !myBookNos[r.bookNo] && r.userId !== (window.userInfo && window.userInfo.uid);
+      });
+
+      var origMy = window.myReservations || [];
+      window.myReservations = origMy.concat(otherRes);
+
+      try {
+        return originalFn.apply(this, arguments);
+      } finally {
+        window.myReservations = origMy;
+      }
+    };
+  }
+
+  function tryWrap(){
+    if(typeof window.renderCars === 'function' && !window.renderCars._wrapped){
+      window.renderCars = wrapWithGlobalRes(window.renderCars);
+      window.renderCars._wrapped = true;
+    }
+    if(typeof window.updateMapMarkers === 'function' && !window.updateMapMarkers._wrapped){
+      window.updateMapMarkers = wrapWithGlobalRes(window.updateMapMarkers);
+      window.updateMapMarkers._wrapped = true;
+    }
+  }
+
+  function autoStart(){
+    var tries = 0;
+    var check = setInterval(function(){
+      tries++;
+      tryWrap();
+      if(typeof window.fbReady === 'function' && window.fbReady()){
+        clearInterval(check);
+        startGlobalReservationsListener();
+      }
+      if(tries > 30) clearInterval(check);
+    }, 500);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', autoStart);
+  } else {
+    setTimeout(autoStart, 100);
+  }
+})();
