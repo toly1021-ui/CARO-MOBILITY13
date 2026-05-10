@@ -5792,13 +5792,19 @@ window.devUploadAllCars=function(){
     });
   };
 })();
-/* ─── 다중 사용자 실시간 예약 동기화 ─── */
+/* ─── 다중 사용자 실시간 예약 동기화 (인증 연동) ─── */
 (function(){
   var fsGlobalResUnsub = null;
   window.globalActiveReservations = [];
 
   function startGlobalReservationsListener(){
     if(typeof window.fbReady !== 'function' || !window.fbReady()) return;
+    /* ⭐ 인증 확인 — 로그인된 사용자만 */
+    if(!window.FB_AUTH || !window.FB_AUTH.currentUser){
+      console.log('⏸ 전역 예약 리스너 — 로그인 대기 중');
+      return;
+    }
+
     var fn = window.FB_FN, db = window.FB_DB;
     if(typeof fn.onSnapshot !== 'function') return;
     if(fsGlobalResUnsub){ try{fsGlobalResUnsub();}catch(e){} fsGlobalResUnsub = null; }
@@ -5827,12 +5833,22 @@ window.devUploadAllCars=function(){
         console.log('🌐 전역 활성 예약:', allRes.length, '건');
         if(typeof window.renderCars === 'function') window.renderCars();
         if(typeof window.updateMapMarkers === 'function') window.updateMapMarkers();
+      }, function(err){
+        console.warn('전역 예약 리스너 오류 (무시 가능):', err.code || err.message);
       });
     } catch(e) {
       console.error('전역 예약 리스너 실패:', e);
     }
   }
+
+  function stopGlobalReservationsListener(){
+    if(fsGlobalResUnsub){ try{fsGlobalResUnsub();}catch(e){} fsGlobalResUnsub = null; }
+    window.globalActiveReservations = [];
+    console.log('🔓 전역 예약 리스너 종료');
+  }
+
   window.startGlobalReservationsListener = startGlobalReservationsListener;
+  window.stopGlobalReservationsListener = stopGlobalReservationsListener;
 
   function wrapWithGlobalRes(originalFn){
     return function(){
@@ -5870,14 +5886,31 @@ window.devUploadAllCars=function(){
     }
   }
 
+  /* ⭐ 인증 상태 연동 — 로그인 시 시작, 로그아웃 시 종료 */
+  function setupAuthListener(){
+    if(!window.FB_FN || typeof window.FB_FN.onAuthStateChanged !== 'function' || !window.FB_AUTH){
+      return false;
+    }
+    window.FB_FN.onAuthStateChanged(window.FB_AUTH, function(user){
+      if(user){
+        setTimeout(function(){
+          console.log('🌐 전역 예약 리스너 시작');
+          startGlobalReservationsListener();
+        }, 1500);
+      } else {
+        stopGlobalReservationsListener();
+      }
+    });
+    return true;
+  }
+
   function autoStart(){
     var tries = 0;
     var check = setInterval(function(){
       tries++;
       tryWrap();
-      if(typeof window.fbReady === 'function' && window.fbReady()){
+      if(setupAuthListener()){
         clearInterval(check);
-        startGlobalReservationsListener();
       }
       if(tries > 30) clearInterval(check);
     }, 500);
