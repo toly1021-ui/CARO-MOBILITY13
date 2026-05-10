@@ -5666,3 +5666,102 @@ window.devUploadAllCars=function(){
     '}';
   document.head.appendChild(style);
 })();
+/* ─── 차량 이미지 검정 배경 → 밝은 색 변환 ─── */
+(function(){
+  /* 검정/투명 픽셀을 #e8eaee (라이트 실버)로 변환 */
+  function processCarImage(dataUrl){
+    return new Promise(function(resolve){
+      if(!dataUrl || dataUrl.indexOf('data:image') !== 0){
+        resolve(dataUrl); return;
+      }
+      var img = new Image();
+      img.onload = function(){
+        try {
+          var canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          var data = imgData.data;
+          var changed = 0;
+          for(var i = 0; i < data.length; i += 4){
+            var r = data[i], g = data[i+1], b = data[i+2], a = data[i+3];
+            if((r < 30 && g < 30 && b < 30) || a < 50){
+              data[i] = 232; data[i+1] = 234; data[i+2] = 238; data[i+3] = 255;
+              changed++;
+            }
+          }
+          ctx.putImageData(imgData, 0, 0);
+          var result = canvas.toDataURL('image/jpeg', 0.85);
+          console.log('🎨 이미지 처리: ' + changed + ' 픽셀 변환');
+          resolve(result);
+        } catch(e){
+          console.error('이미지 처리 실패:', e);
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = function(){ resolve(dataUrl); };
+      img.src = dataUrl;
+    });
+  }
+  window.processCarImage = processCarImage;
+
+  if(typeof window.compressImageBase64 === 'function'){
+    var origCompress = window.compressImageBase64;
+    window.compressImageBase64 = function(dataUrl, maxW, maxH, quality){
+      return origCompress(dataUrl, maxW, maxH, quality).then(function(compressed){
+        return processCarImage(compressed);
+      });
+    };
+    console.log('✅ 차량 이미지 자동 처리 활성화');
+  }
+
+  window.devReprocessAllCars = function(){
+    if(!window.isDevUser || !window.isDevUser()){
+      window.showToast && window.showToast('⚠️ 개발자 계정만');
+      return;
+    }
+    var cars = (window.CARS_DATA || []).slice();
+    var blCars = (window.BL_CARS || []).slice();
+    var total = cars.length + blCars.length;
+    if(total === 0){ window.showToast && window.showToast('차량 없음'); return; }
+
+    window.showToast && window.showToast('🎨 ' + total + '대 재처리 시작...');
+    var done = 0;
+
+    function processOne(car, isBL, callback){
+      if(!car.img || car.img.indexOf('data:image') !== 0){ callback(); return; }
+      processCarImage(car.img).then(function(newImg){
+        car.img = newImg;
+        if(typeof window.syncCarToFirestore === 'function'){
+          window.fsLastWriteTime = 0;
+          window.syncCarToFirestore(car, isBL).then(function(){
+            done++;
+            console.log('✅ ' + done + '/' + total + ' ' + car.name);
+            callback();
+          });
+        } else { done++; callback(); }
+      });
+    }
+
+    function processList(list, isBL, onDone){
+      var i = 0;
+      function next(){
+        if(i >= list.length){ onDone(); return; }
+        processOne(list[i++], isBL, next);
+      }
+      next();
+    }
+
+    processList(cars, false, function(){
+      processList(blCars, true, function(){
+        window.showToast && window.showToast('✅ 전체 ' + done + '대 재처리 완료!');
+        if(typeof window.renderCars === 'function') window.renderCars();
+        if(typeof window.renderBLCars === 'function') window.renderBLCars();
+        try{ localStorage.setItem('caro_cars_data_v1', JSON.stringify(window.CARS_DATA)); }catch(e){}
+        try{ localStorage.setItem('caro_bl_cars_v1', JSON.stringify(window.BL_CARS)); }catch(e){}
+      });
+    });
+  };
+})();
