@@ -1299,6 +1299,8 @@ function handleLogin(){
 
   /* 개발자 로그인 */
   if(id==='CAROMOBILITY'&&pw==='011842hkJ**'){
+    userInfo.id = 'CAROMOBILITY';
+    userInfo.name = 'CAROMOBILITY';
     showDevLoginTransition(); return;
   }
 
