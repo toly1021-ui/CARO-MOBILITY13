@@ -6238,3 +6238,303 @@ window.devUploadAllCars=function(){
   window.processCarImage = processAndCompressCar;
   console.log('✅ 차량 이미지 처리 v4 활성화 (원본 해상도 처리)');
 })();
+/* ─── 차량 내용 변경 기능 (편집 팝업) ─── */
+(function(){
+
+  /* === CSS === */
+  var style = document.createElement('style');
+  style.id = 'caro-car-edit-styles';
+  style.textContent =
+    '#caro-car-edit-modal{display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;font-family:var(--font,"Pretendard",sans-serif);}' +
+    '#caro-car-edit-modal.open{display:flex;}' +
+    '#caro-car-edit-modal .cce-content{background:#0a1424;border:1px solid rgba(91,200,255,.3);border-radius:16px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:22px;color:rgba(180,220,255,.85);box-shadow:0 8px 32px rgba(0,0,0,.5);}' +
+    '#caro-car-edit-modal h3{color:rgba(91,200,255,.9);font-size:1.05rem;margin:0 0 4px 0;letter-spacing:.05em;}' +
+    '#caro-car-edit-modal .cce-subtitle{color:rgba(91,200,255,.5);font-size:.74rem;margin-bottom:18px;}' +
+    '#caro-car-edit-modal .cce-field{margin-bottom:11px;}' +
+    '#caro-car-edit-modal .cce-field label{display:block;font-size:.72rem;color:rgba(91,200,255,.6);margin-bottom:4px;font-weight:600;}' +
+    '#caro-car-edit-modal .cce-field input,#caro-car-edit-modal .cce-field select,#caro-car-edit-modal .cce-field textarea{width:100%;padding:9px 11px;background:rgba(91,200,255,.05);border:1px solid rgba(91,200,255,.25);border-radius:8px;color:rgba(180,220,255,.95);font-family:inherit;font-size:.85rem;box-sizing:border-box;transition:border-color .2s;}' +
+    '#caro-car-edit-modal .cce-field input:focus,#caro-car-edit-modal .cce-field select:focus,#caro-car-edit-modal .cce-field textarea:focus{outline:none;border-color:rgba(91,200,255,.6);}' +
+    '#caro-car-edit-modal .cce-field textarea{resize:vertical;min-height:60px;}' +
+    '#caro-car-edit-modal .cce-row{display:flex;gap:8px;}' +
+    '#caro-car-edit-modal .cce-row .cce-field{flex:1;}' +
+    '#caro-car-edit-modal .cce-photo-preview{width:100%;max-height:140px;object-fit:contain;background:#1a2030;border-radius:8px;margin-bottom:8px;display:block;}' +
+    '#caro-car-edit-modal .cce-photo-btn{width:100%;padding:9px;background:rgba(91,200,255,.08);border:1px dashed rgba(91,200,255,.35);border-radius:8px;color:rgba(91,200,255,.85);font-family:inherit;font-size:.8rem;cursor:pointer;}' +
+    '#caro-car-edit-modal .cce-photo-btn:hover{background:rgba(91,200,255,.14);}' +
+    '#caro-car-edit-modal .cce-actions{display:flex;gap:8px;margin-top:18px;}' +
+    '#caro-car-edit-modal .cce-actions button{flex:1;padding:11px;border-radius:8px;font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .2s;}' +
+    '#caro-car-edit-modal .cce-btn-cancel{background:rgba(120,120,120,.12);color:rgba(180,220,255,.6);border:1px solid rgba(120,120,120,.3);}' +
+    '#caro-car-edit-modal .cce-btn-cancel:hover{background:rgba(120,120,120,.2);}' +
+    '#caro-car-edit-modal .cce-btn-save{background:rgba(91,200,255,.15);color:#5bc8ff;border:1px solid rgba(91,200,255,.4);}' +
+    '#caro-car-edit-modal .cce-btn-save:hover{background:rgba(91,200,255,.25);}' +
+    '.caro-edit-btn{width:100%;padding:11px;background:rgba(91,200,255,.08) !important;border:1px solid rgba(91,200,255,.3) !important;border-radius:10px;color:#5bc8ff !important;font-family:var(--font,inherit);font-size:.85rem;font-weight:700;cursor:pointer;margin-bottom:8px;transition:all .2s;}' +
+    '.caro-edit-btn:hover{background:rgba(91,200,255,.14) !important;}';
+  document.head.appendChild(style);
+
+  /* === Modal HTML === */
+  function injectModal(){
+    if(document.getElementById('caro-car-edit-modal')) return;
+    var modal = document.createElement('div');
+    modal.id = 'caro-car-edit-modal';
+    modal.addEventListener('click', function(e){
+      if(e.target === modal) closeEdit();
+    });
+    modal.innerHTML =
+      '<div class="cce-content">' +
+        '<h3>✏️ 차량 내용 변경</h3>' +
+        '<div class="cce-subtitle" id="cce-target-name">차량 선택됨</div>' +
+        '<div class="cce-row">' +
+          '<div class="cce-field"><label>차량번호</label><input id="cce-carnum" type="text" placeholder="예: 12가 3456"></div>' +
+          '<div class="cce-field"><label>거점</label><select id="cce-region"><option value="구월동">구월동</option><option value="송도">송도</option></select></div>' +
+        '</div>' +
+        '<div class="cce-field"><label>차량명</label><input id="cce-name" type="text" placeholder="예: 쏘나타 디 엣지"></div>' +
+        '<div class="cce-row">' +
+          '<div class="cce-field"><label>연료</label><select id="cce-fuel"><option value="가솔린">가솔린</option><option value="디젤">디젤</option><option value="전기">전기</option><option value="하이브리드">하이브리드</option><option value="LPG">LPG</option></select></div>' +
+          '<div class="cce-field"><label>시간당 요금 (원)</label><input id="cce-price" type="number" placeholder="예: 9120"></div>' +
+        '</div>' +
+        '<div class="cce-field"><label>옵션</label><textarea id="cce-opts" placeholder="옵션 (줄바꿈 가능)"></textarea></div>' +
+        '<div class="cce-field"><label>사진</label><img id="cce-photo-preview" class="cce-photo-preview"><input type="file" id="cce-photo-input" accept="image/*" style="display:none" onchange="ccPreviewPhoto(this)"><button class="cce-photo-btn" onclick="document.getElementById(\'cce-photo-input\').click()">📷 사진 변경</button></div>' +
+        '<div class="cce-actions">' +
+          '<button class="cce-btn-cancel" onclick="ccCloseEditModal()">취소</button>' +
+          '<button class="cce-btn-save" onclick="ccSaveCarEdit()">💾 저장</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(modal);
+  }
+
+  /* === 선택된 차량 찾기 === */
+  function findSelected(){
+    var checked = [];
+    if(typeof delCheckedNormal !== 'undefined'){
+      delCheckedNormal.forEach(function(id){ checked.push({id:id, isBL:false}); });
+    }
+    if(typeof delCheckedBL !== 'undefined'){
+      delCheckedBL.forEach(function(id){ checked.push({id:id, isBL:true}); });
+    }
+    return checked;
+  }
+
+  /* === 모달 열기 === */
+  function openEdit(){
+    var sel = findSelected();
+    if(sel.length === 0){
+      if(typeof showToast === 'function') showToast('수정할 차량을 1개 선택해 주세요.');
+      return;
+    }
+    if(sel.length > 1){
+      if(typeof showToast === 'function') showToast('한 번에 1대만 수정 가능합니다.');
+      return;
+    }
+
+    var s = sel[0];
+    var car;
+    if(s.isBL){
+      car = (window.BL_CARS || []).find(function(c){ return String(c.id) === String(s.id); });
+    } else {
+      car = (window.CARS_DATA || []).find(function(c){ return c.id === s.id; });
+    }
+    if(!car){
+      if(typeof showToast === 'function') showToast('차량을 찾을 수 없습니다.');
+      return;
+    }
+
+    window._ccEditingCar = car;
+    window._ccEditingIsBL = s.isBL;
+    window._ccNewPhoto = null;
+
+    document.getElementById('cce-target-name').textContent =
+      car.name + (car.carNumber ? ' [' + car.carNumber + ']' : '') +
+      (car.region ? ' · ' + car.region : '') + (s.isBL ? ' (BL)' : '');
+    document.getElementById('cce-carnum').value = car.carNumber || '';
+    document.getElementById('cce-name').value = car.name || '';
+    document.getElementById('cce-fuel').value = car.fuel || '가솔린';
+    document.getElementById('cce-price').value = car.pricePerHour || '';
+    document.getElementById('cce-opts').value = car.options || '';
+    document.getElementById('cce-region').value = car.region || '구월동';
+    document.getElementById('cce-photo-preview').src = car.img || '';
+    document.getElementById('cce-photo-input').value = '';
+
+    document.getElementById('caro-car-edit-modal').classList.add('open');
+  }
+
+  /* === 모달 닫기 === */
+  function closeEdit(){
+    var m = document.getElementById('caro-car-edit-modal');
+    if(m) m.classList.remove('open');
+    window._ccEditingCar = null;
+    window._ccNewPhoto = null;
+  }
+
+  /* === 사진 미리보기 === */
+  function previewPhoto(input){
+    var file = input.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      window._ccNewPhoto = ev.target.result;
+      document.getElementById('cce-photo-preview').src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* === 저장 === */
+  function saveEdit(){
+    var car = window._ccEditingCar;
+    if(!car){
+      if(typeof showToast === 'function') showToast('편집 중인 차량이 없습니다.');
+      return;
+    }
+
+    var changes = [];
+
+    var newCarnum = document.getElementById('cce-carnum').value.trim();
+    if(newCarnum !== (car.carNumber || '')){
+      car.carNumber = newCarnum;
+      changes.push('차량번호');
+    }
+
+    var newName = document.getElementById('cce-name').value.trim();
+    if(newName && newName !== car.name){
+      car.name = newName;
+      car.nameen = newName;
+      car.nameja = newName;
+      car.namezh = newName;
+      changes.push('차량명');
+    }
+
+    var newFuel = document.getElementById('cce-fuel').value;
+    if(newFuel && newFuel !== car.fuel){
+      car.fuel = newFuel;
+      changes.push('연료');
+    }
+
+    var newPrice = parseInt(document.getElementById('cce-price').value);
+    if(!isNaN(newPrice) && newPrice > 0 && newPrice !== car.pricePerHour){
+      car.pricePerHour = newPrice;
+      changes.push('요금');
+    }
+
+    var newOpts = document.getElementById('cce-opts').value.trim();
+    if(newOpts !== (car.options || '')){
+      car.options = newOpts;
+      changes.push('옵션');
+    }
+
+    var newRegion = document.getElementById('cce-region').value;
+    if(newRegion && newRegion !== car.region){
+      if(typeof getRandomIncheonLocation === 'function'){
+        var loc = getRandomIncheonLocation(newRegion);
+        car.lat = loc.lat;
+        car.lng = loc.lng;
+      }
+      car.region = newRegion;
+      changes.push('거점');
+    }
+
+    if(window._ccNewPhoto){
+      car.img = window._ccNewPhoto;
+      changes.push('사진');
+    }
+
+    if(changes.length === 0){
+      if(typeof showToast === 'function') showToast('변경 사항이 없습니다.');
+      return;
+    }
+
+    /* 강제 Firestore 동기화 (debounce 무시) */
+    window.fsLastWriteTime = 0;
+    if(typeof saveCarsData === 'function') saveCarsData();
+
+    /* DEV CONSOLE 갱신 */
+    if(typeof devRenderCarOverview === 'function') devRenderCarOverview();
+    if(typeof devRenderBlOverview === 'function') devRenderBlOverview();
+    if(typeof devRenderCarDeleteList === 'function') devRenderCarDeleteList();
+    if(typeof devRenderCarSelect === 'function') devRenderCarSelect();
+    if(typeof devRenderBlCarSelect === 'function') devRenderBlCarSelect();
+    if(typeof devRenderPriceList === 'function') devRenderPriceList();
+    if(typeof devRenderStats === 'function') devRenderStats();
+    if(typeof renderCars === 'function') renderCars();
+    if(typeof renderBLCars === 'function') renderBLCars();
+    if(typeof updateMapMarkers === 'function') updateMapMarkers();
+
+    if(typeof showToast === 'function') showToast('✅ ' + car.name + ' 업데이트: ' + changes.join(' · '));
+    closeEdit();
+  }
+
+  /* === UI 적용 (헤더 변경 + 버튼 추가) === */
+  function applyUI(){
+    /* 헤더 텍스트 변경 */
+    var allEls = document.querySelectorAll('div,span,h1,h2,h3,h4,h5,p,label');
+    for(var i=0; i<allEls.length; i++){
+      var el = allEls[i];
+      if(el.children.length === 0){
+        var text = (el.textContent || '').trim();
+        if((text === '🗑 차량 삭제' || text === '차량 삭제') && !el.dataset.ccProcessed){
+          el.textContent = '✏️ 차량 내용 변경 / 🗑 차량 삭제';
+          el.dataset.ccProcessed = '1';
+        }
+      }
+    }
+
+    /* 차량 내용 변경 버튼 추가 */
+    var btns = document.querySelectorAll('button');
+    for(var j=0; j<btns.length; j++){
+      var btn = btns[j];
+      var btnText = (btn.textContent || '').trim();
+      if((btnText.indexOf('선택 항목 삭제') >= 0 || btnText.indexOf('즉시 반영') >= 0) &&
+         !btn.dataset.ccEditBtnAdded){
+        btn.dataset.ccEditBtnAdded = '1';
+
+        var editBtn = document.createElement('button');
+        editBtn.className = 'caro-edit-btn';
+        editBtn.textContent = '✏️ 선택 차량 내용 변경';
+        editBtn.onclick = function(e){
+          e.preventDefault();
+          e.stopPropagation();
+          openEdit();
+        };
+
+        btn.parentNode.insertBefore(editBtn, btn);
+      }
+    }
+  }
+
+  /* === Expose === */
+  window.ccOpenEditModal = openEdit;
+  window.ccCloseEditModal = closeEdit;
+  window.ccPreviewPhoto = previewPhoto;
+  window.ccSaveCarEdit = saveEdit;
+
+  /* === Hook into renders === */
+  var origRender = window.devRenderCarDeleteList;
+  if(typeof origRender === 'function'){
+    window.devRenderCarDeleteList = function(){
+      origRender.apply(this, arguments);
+      setTimeout(applyUI, 30);
+    };
+  }
+
+  var origDevRender = window.renderDevScreen;
+  if(typeof origDevRender === 'function'){
+    window.renderDevScreen = function(){
+      origDevRender.apply(this, arguments);
+      setTimeout(function(){
+        injectModal();
+        applyUI();
+      }, 100);
+    };
+  }
+  
+  /* === 초기화 === */
+  function init(){
+    injectModal();
+    setTimeout(applyUI, 500);
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    setTimeout(init, 100);
+  }
+
+  console.log('✅ 차량 내용 변경 기능 활성화');
+})();
