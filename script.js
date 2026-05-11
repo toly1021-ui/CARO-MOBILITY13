@@ -6620,3 +6620,159 @@ window.devUploadAllCars=function(){
 
   console.log('🎨 버튼 정렬 IIFE 활성화');
 })();
+/* ===== 차량 내용 변경 - km당 요금 필드 IIFE v4 ===== */
+(function addKmFeeFieldV4(){
+  'use strict';
+
+  var KM_FIELD = 'kmRate';
+
+  function findInputByLabel(labelText, root){
+    root = root || document;
+    var labels = root.querySelectorAll('label');
+    for(var i=0; i<labels.length; i++){
+      if(labels[i].textContent.indexOf(labelText) !== -1){
+        var p = labels[i].parentElement;
+        if(p){
+          var input = p.querySelector('input');
+          if(input) return input;
+        }
+      }
+    }
+    return null;
+  }
+
+  function findPopup(){
+    var all = document.querySelectorAll('h1,h2,h3,h4');
+    for(var i=0; i<all.length; i++){
+      if(all[i].textContent.indexOf('차량 내용 변경') !== -1){
+        var node = all[i];
+        while(node && node !== document.body){
+          if(node.querySelectorAll('input').length >= 3) return node;
+          node = node.parentElement;
+        }
+      }
+    }
+    return null;
+  }
+
+  function findCarWithMeta(carNo){
+    var carNoStr = String(carNo);
+    var normal = window.CARS_DATA || [];
+    var bl = window.BL_CARS_DATA || window.BLACK_CARS_DATA || [];
+    for(var i=0; i<normal.length; i++){
+      if(String(normal[i].id) === carNoStr || String(normal[i].carNumber) === carNoStr){
+        return {car: normal[i], collection: 'cars'};
+      }
+    }
+    for(var j=0; j<bl.length; j++){
+      if(String(bl[j].id) === carNoStr || String(bl[j].carNumber) === carNoStr){
+        return {car: bl[j], collection: 'bl_cars'};
+      }
+    }
+    return null;
+  }
+
+  function addField(){
+    var popup = findPopup();
+    if(!popup) return false;
+    if(popup.querySelector('[data-km-field]')) return true;
+
+    var hourlyInput = findInputByLabel('시간당 요금', popup);
+    if(!hourlyInput) return false;
+
+    var hourlyWrapper = hourlyInput.parentElement;
+    var kmWrapper = hourlyWrapper.cloneNode(true);
+    kmWrapper.setAttribute('data-km-field', 'true');
+
+    var kmLabel = kmWrapper.querySelector('label');
+    if(kmLabel) kmLabel.textContent = 'km당 요금 (원)';
+
+    var kmInput = kmWrapper.querySelector('input');
+    if(kmInput){
+      kmInput.id = 'editVehicleKmFee';
+      kmInput.value = '';
+      kmInput.placeholder = '예: 500';
+      kmInput.removeAttribute('list');
+    }
+
+    hourlyWrapper.parentNode.insertBefore(kmWrapper, hourlyWrapper.nextSibling);
+
+    var carNoInput = findInputByLabel('차량번호', popup);
+    if(carNoInput && carNoInput.value){
+      var meta = findCarWithMeta(carNoInput.value);
+      if(meta && meta.car[KM_FIELD] != null){
+        kmInput.value = meta.car[KM_FIELD];
+      }
+    }
+
+    var btns = popup.querySelectorAll('button');
+    var saveBtn = null;
+    for(var j=0; j<btns.length; j++){
+      if(btns[j].textContent.indexOf('저장') !== -1){
+        saveBtn = btns[j];
+        break;
+      }
+    }
+
+    if(saveBtn && !saveBtn.hasAttribute('data-km-hook')){
+      saveBtn.setAttribute('data-km-hook', 'true');
+      saveBtn.addEventListener('click', function(){
+        setTimeout(function(){
+          var kmVal = parseInt(kmInput.value, 10);
+          if(isNaN(kmVal)) kmVal = 0;
+
+          var carNo = carNoInput ? carNoInput.value : null;
+          if(!carNo) return;
+
+          try {
+            var fn = window.FB_FN;
+            var db = window.FB_DB;
+            if(!fn || !db){
+              console.error('❌ Firebase SDK 접근 불가');
+              return;
+            }
+
+            var meta = findCarWithMeta(carNo);
+            var collection = meta ? meta.collection : 'cars';
+
+            var docId;
+            if(meta && meta.car){
+              docId = meta.car.docId || meta.car.id || meta.car.carNumber || carNo;
+            } else {
+              docId = carNo;
+            }
+            docId = String(docId);
+
+            console.log('📤 저장 시도:', collection + '/' + docId, '=', kmVal);
+
+            var updateData = {};
+            updateData[KM_FIELD] = kmVal;
+
+            fn.setDoc(fn.doc(db, collection, docId), updateData, {merge: true})
+              .then(function(){
+                console.log('✅ km당 요금 저장:', kmVal, '원 →', collection + '/' + docId);
+              })
+              .catch(function(err){
+                console.error('❌ km당 요금 저장 실패:', err.code, err.message);
+              });
+          } catch(err){
+            console.error('❌ km요금 처리 오류:', err);
+          }
+        }, 800);
+      });
+    }
+
+    console.log('✅ km당 요금 필드 추가 완료');
+    return true;
+  }
+
+  var observer = new MutationObserver(function(){
+    addField();
+  });
+  if(document.body){
+    observer.observe(document.body, {childList: true, subtree: true});
+  }
+
+  setTimeout(addField, 500);
+  console.log('🎨 km당 요금 IIFE v4 활성화 (필드명: ' + KM_FIELD + ', docId: id 우선)');
+})();
