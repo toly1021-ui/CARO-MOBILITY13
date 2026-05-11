@@ -6926,22 +6926,14 @@ window.devUploadAllCars=function(){
 
   console.log('✅ 이벤트 내용 업데이트 완료');
 })();
-/* ===== 이벤트 팝업 UI v3 (좌우 여백 통일) ===== */
-(function modifyEventPopupV3(){
+/* ===== 이벤트 팝업 UI v4 (매번 재적용 - 강화 버전) ===== */
+(function modifyEventPopupV4(){
   'use strict';
 
-  function findEventPopup(){
+  function applyStyles(){
     var modal = document.getElementById('event-detail-modal');
-    if(modal && modal.classList.contains('open')) return modal;
-    return null;
-  }
+    if(!modal || !modal.classList.contains('open')) return;
 
-  function modifyPopup(){
-    var popup = findEventPopup();
-    if(!popup) return false;
-    if(popup.dataset.eventModifiedV3 === 'true') return true;
-
-    // 본문 영역 좌우 패딩 추가 (대칭 여백)
     var body = document.getElementById('ev-detail-body');
     if(body){
       body.style.paddingLeft = '20px';
@@ -6949,35 +6941,47 @@ window.devUploadAllCars=function(){
       body.style.boxSizing = 'border-box';
     }
 
-    // 리스트 들여쓰기 조정
-    var lists = popup.querySelectorAll('#ev-detail-body ul, #ev-detail-body ol');
+    var lists = modal.querySelectorAll('#ev-detail-body ul, #ev-detail-body ol');
     for(var k=0; k<lists.length; k++){
       lists[k].style.paddingLeft = '18px';
       lists[k].style.marginLeft = '0';
       lists[k].style.marginRight = '0';
+      lists[k].style.textAlign = 'left';
+      lists[k].style.listStylePosition = 'outside';
     }
 
-    // 단락 마진 정리
-    var paragraphs = popup.querySelectorAll('#ev-detail-body p');
+    var paragraphs = modal.querySelectorAll('#ev-detail-body p');
     for(var p=0; p<paragraphs.length; p++){
       paragraphs[p].style.marginLeft = '0';
       paragraphs[p].style.marginRight = '0';
     }
 
-    popup.dataset.eventModifiedV3 = 'true';
-    console.log('✅ 이벤트 팝업 여백 v3 적용 완료');
+    console.log('✅ 이벤트 팝업 여백 v4 적용됨');
+  }
+
+  function hookOpenEventDetail(){
+    if(typeof window.openEventDetail !== 'function') return false;
+    if(window.openEventDetail._v4Hooked) return true;
+
+    var orig = window.openEventDetail;
+    window.openEventDetail = function(idx){
+      orig.call(this, idx);
+      setTimeout(applyStyles, 50);
+      setTimeout(applyStyles, 200);
+      setTimeout(applyStyles, 500);
+    };
+    window.openEventDetail._v4Hooked = true;
+    console.log('🎨 openEventDetail 가로채기 v4 활성화');
     return true;
   }
 
-  var observer = new MutationObserver(function(){
-    setTimeout(modifyPopup, 100);
-  });
-  if(document.body){
-    observer.observe(document.body, {childList: true, subtree: true});
+  if(!hookOpenEventDetail()){
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      if(hookOpenEventDetail() || tries > 20) clearInterval(iv);
+    }, 200);
   }
-
-  setTimeout(modifyPopup, 500);
-  console.log('🎨 이벤트 팝업 여백 v3 활성화');
 })();
 
 /* ===== 홈 이벤트 배너 우측 단순화 ===== */
