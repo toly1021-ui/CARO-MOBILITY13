@@ -6776,3 +6776,92 @@ window.devUploadAllCars=function(){
   setTimeout(addField, 500);
   console.log('🎨 km당 요금 IIFE v4 활성화 (필드명: ' + KM_FIELD + ', docId: id 우선)');
 })();
+
+/* ===== 이벤트 팝업 UI 수정 IIFE (중앙 정렬 + X 제거) ===== */
+(function modifyEventPopupUI(){
+  'use strict';
+
+  function findEventPopup(){
+    var all = document.querySelectorAll('*');
+    for(var i=0; i<all.length; i++){
+      var el = all[i];
+      if(el.children.length === 0 && el.textContent.trim() === '이벤트 내용'){
+        var node = el;
+        while(node && node !== document.body){
+          var btns = node.querySelectorAll('button');
+          for(var j=0; j<btns.length; j++){
+            if(btns[j].textContent.trim() === '확인'){
+              return node;
+            }
+          }
+          node = node.parentElement;
+        }
+      }
+    }
+    return null;
+  }
+
+  function modifyPopup(){
+    var popup = findEventPopup();
+    if(!popup) return false;
+    if(popup.dataset.eventModified === 'true') return true;
+
+    // 1. X 버튼 숨기기
+    var allEls = popup.querySelectorAll('button, span, div, a, i');
+    for(var i=0; i<allEls.length; i++){
+      var el = allEls[i];
+      if(el.children.length !== 0) continue;
+      var text = el.textContent.trim();
+      if(text === '×' || text === 'X' || text === 'x' || text === '✕' || text === '✖'){
+        el.style.display = 'none';
+      }
+    }
+
+    // 2. 팝업 전체 중앙 정렬
+    popup.style.textAlign = 'center';
+
+    // 3. 단락/리스트 중앙 정렬
+    var textEls = popup.querySelectorAll('p, li, span');
+    for(var j=0; j<textEls.length; j++){
+      textEls[j].style.textAlign = 'center';
+    }
+
+    // 4. 불릿 리스트 정리
+    var lists = popup.querySelectorAll('ul, ol');
+    for(var k=0; k<lists.length; k++){
+      lists[k].style.listStylePosition = 'inside';
+      lists[k].style.paddingLeft = '0';
+      lists[k].style.textAlign = 'center';
+    }
+
+    // 5. 확인 버튼 중앙 정렬
+    var allBtns = popup.querySelectorAll('button');
+    for(var m=0; m<allBtns.length; m++){
+      if(allBtns[m].textContent.trim() === '확인'){
+        var btnParent = allBtns[m].parentElement;
+        if(btnParent){
+          btnParent.style.display = 'flex';
+          btnParent.style.justifyContent = 'center';
+          btnParent.style.alignItems = 'center';
+          btnParent.style.textAlign = 'center';
+        }
+        allBtns[m].style.margin = '0 auto';
+        break;
+      }
+    }
+
+    popup.dataset.eventModified = 'true';
+    console.log('✅ 이벤트 팝업 UI 수정 완료');
+    return true;
+  }
+
+  var observer = new MutationObserver(function(){
+    setTimeout(modifyPopup, 50);
+  });
+  if(document.body){
+    observer.observe(document.body, {childList: true, subtree: true});
+  }
+
+  setTimeout(modifyPopup, 500);
+  console.log('🎨 이벤트 팝업 UI 수정 IIFE 활성화');
+})();
