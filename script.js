@@ -6926,3 +6926,56 @@ window.devUploadAllCars=function(){
 
   console.log('✅ 이벤트 내용 업데이트 완료');
 })();
+/* ===== 이벤트 팝업 UI v3 (좌우 여백 통일) ===== */
+(function modifyEventPopupV3(){
+  'use strict';
+
+  function findEventPopup(){
+    var modal = document.getElementById('event-detail-modal');
+    if(modal && modal.classList.contains('open')) return modal;
+    return null;
+  }
+
+  function modifyPopup(){
+    var popup = findEventPopup();
+    if(!popup) return false;
+    if(popup.dataset.eventModifiedV3 === 'true') return true;
+
+    // 본문 영역 좌우 패딩 추가 (대칭 여백)
+    var body = document.getElementById('ev-detail-body');
+    if(body){
+      body.style.paddingLeft = '20px';
+      body.style.paddingRight = '20px';
+      body.style.boxSizing = 'border-box';
+    }
+
+    // 리스트 들여쓰기 조정
+    var lists = popup.querySelectorAll('#ev-detail-body ul, #ev-detail-body ol');
+    for(var k=0; k<lists.length; k++){
+      lists[k].style.paddingLeft = '18px';
+      lists[k].style.marginLeft = '0';
+      lists[k].style.marginRight = '0';
+    }
+
+    // 단락 마진 정리
+    var paragraphs = popup.querySelectorAll('#ev-detail-body p');
+    for(var p=0; p<paragraphs.length; p++){
+      paragraphs[p].style.marginLeft = '0';
+      paragraphs[p].style.marginRight = '0';
+    }
+
+    popup.dataset.eventModifiedV3 = 'true';
+    console.log('✅ 이벤트 팝업 여백 v3 적용 완료');
+    return true;
+  }
+
+  var observer = new MutationObserver(function(){
+    setTimeout(modifyPopup, 100);
+  });
+  if(document.body){
+    observer.observe(document.body, {childList: true, subtree: true});
+  }
+
+  setTimeout(modifyPopup, 500);
+  console.log('🎨 이벤트 팝업 여백 v3 활성화');
+})();
