@@ -6780,7 +6780,7 @@ window.devUploadAllCars=function(){
 /* ===== 이벤트 팝업 UI v2 (타이틀 중앙, 본문 좌측, 확인 버튼 가로 확장) ===== */
 (function modifyEventPopupV2(){
   'use strict';
-  
+
   function findEventPopup(){
     var modal = document.getElementById('event-detail-modal');
     if(modal && modal.classList.contains('open')) return modal;
@@ -6877,4 +6877,52 @@ window.devUploadAllCars=function(){
 
   setTimeout(modifyPopup, 500);
   console.log('🎨 이벤트 팝업 UI v2 활성화');
+})();
+/* ===== 이벤트 내용 업데이트 ===== */
+(function updateEventDetails(){
+  if(typeof EVENT_DETAILS === 'undefined' || !EVENT_DETAILS.length){
+    console.warn('⚠️ EVENT_DETAILS 없음');
+    return;
+  }
+
+  // 1. 신규 가입 첫 대여 30% 할인
+  if(EVENT_DETAILS[0]){
+    EVENT_DETAILS[0].body = EVENT_DETAILS[0].body.replace(
+      '2026년 3월 1일 ~ 2026년 12월 31일',
+      '상시'
+    );
+    EVENT_DETAILS[0].period = '상시';
+  }
+
+  // 2. CARO 블랙 라벨 출시 기념
+  if(EVENT_DETAILS[1]){
+    EVENT_DETAILS[1].body = EVENT_DETAILS[1].body
+      .replace(/<li>제네시스 GV80[^<]*<\/li>/, '')
+      .replace('2026년 3월 1일 ~ 2026년 6월 30일', '');
+    EVENT_DETAILS[1].period = '';
+  }
+
+  // 3. 주말 특별 할인 최대 30%
+  if(EVENT_DETAILS[3]){
+    EVENT_DETAILS[3].body =
+      '<h4 style="text-align:center">이벤트 내용</h4>' +
+      '<p>매주 <strong>토·일요일</strong>에 대여 시 차량별로 최대 <strong>30% 자동 할인</strong>이 적용됩니다.</p>' +
+      '<h4 style="text-align:center">적용 대상</h4>' +
+      '<ul>' +
+        '<li>더 뉴 모닝: 10% 할인</li>' +
+        '<li>더 뉴 아반떼: 10% 할인</li>' +
+        '<li>쏘나타 디 엣지: 20% 할인</li>' +
+        '<li>더 뉴 셀토스: 20% 할인</li>' +
+        '<li>디 올 뉴 코나: 30% 할인</li>' +
+      '</ul>' +
+      '<h4 style="text-align:center">유의 사항</h4>' +
+      '<ul>' +
+        '<li>쿠폰과 중복 불가</li>' +
+        '<li>토요일 00:00 ~ 일요일 23:59 대여 시작 건만 적용</li>' +
+      '</ul>' +
+      '<h4 style="text-align:center">이벤트 기간</h4>' +
+      '<p style="text-align:center">매주 토~일 (상시)</p>';
+  }
+
+  console.log('✅ 이벤트 내용 업데이트 완료');
 })();
