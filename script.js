@@ -6926,63 +6926,6 @@ window.devUploadAllCars=function(){
 
   console.log('✅ 이벤트 내용 업데이트 완료');
 })();
-/* ===== 이벤트 팝업 UI v4 (매번 재적용 - 강화 버전) ===== */
-(function modifyEventPopupV4(){
-  'use strict';
-
-  function applyStyles(){
-    var modal = document.getElementById('event-detail-modal');
-    if(!modal || !modal.classList.contains('open')) return;
-
-    var body = document.getElementById('ev-detail-body');
-    if(body){
-      body.style.paddingLeft = '20px';
-      body.style.paddingRight = '20px';
-      body.style.boxSizing = 'border-box';
-    }
-
-    var lists = modal.querySelectorAll('#ev-detail-body ul, #ev-detail-body ol');
-    for(var k=0; k<lists.length; k++){
-      lists[k].style.paddingLeft = '18px';
-      lists[k].style.marginLeft = '0';
-      lists[k].style.marginRight = '0';
-      lists[k].style.textAlign = 'left';
-      lists[k].style.listStylePosition = 'outside';
-    }
-
-    var paragraphs = modal.querySelectorAll('#ev-detail-body p');
-    for(var p=0; p<paragraphs.length; p++){
-      paragraphs[p].style.marginLeft = '0';
-      paragraphs[p].style.marginRight = '0';
-    }
-
-    console.log('✅ 이벤트 팝업 여백 v4 적용됨');
-  }
-
-  function hookOpenEventDetail(){
-    if(typeof window.openEventDetail !== 'function') return false;
-    if(window.openEventDetail._v4Hooked) return true;
-
-    var orig = window.openEventDetail;
-    window.openEventDetail = function(idx){
-      orig.call(this, idx);
-      setTimeout(applyStyles, 50);
-      setTimeout(applyStyles, 200);
-      setTimeout(applyStyles, 500);
-    };
-    window.openEventDetail._v4Hooked = true;
-    console.log('🎨 openEventDetail 가로채기 v4 활성화');
-    return true;
-  }
-
-  if(!hookOpenEventDetail()){
-    var tries = 0;
-    var iv = setInterval(function(){
-      tries++;
-      if(hookOpenEventDetail() || tries > 20) clearInterval(iv);
-    }, 200);
-  }
-})();
 
 /* ===== 홈 이벤트 배너 우측 단순화 ===== */
 (function simplifyEventBanners(){
