@@ -1893,3 +1893,31 @@ video::-webkit-media-controls-panel{display:none !important;}
 #ev-detail-body li {
   text-align: left !important;
 }
+
+/* ===== 결제 화면 텍스트 중앙 정렬 (일반 + BL) ===== */
+#payment-screen .pay-total-row,
+#payment-screen #pay-total-row {
+  text-align: center !important;
+}
+
+#payment-screen .step-heading {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+#payment-screen .pay-select-row,
+#payment-screen [onclick*="openPaySheet"] {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+#payment-screen #pay-selected-label {
+  text-align: center !important;
+  flex: 1 !important;
+  width: 100% !important;
+}
+
+#payment-screen .pay-item {
+  justify-content: center !important;
+  text-align: center !important;
+}
