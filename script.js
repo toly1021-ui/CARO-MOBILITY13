@@ -6561,3 +6561,62 @@ window.devUploadAllCars=function(){
 
   console.log('✅ 차량 내용 변경 기능 활성화');
 })();
+/* ===== 차량 관리 버튼 좌우 정렬 IIFE ===== */
+(function alignVehicleActionButtons(){
+  'use strict';
+
+  function findBtn(text){
+    var btns = document.querySelectorAll('button');
+    for(var i=0; i<btns.length; i++){
+      if(btns[i].textContent.trim().includes(text)) return btns[i];
+    }
+    return null;
+  }
+
+  function alignButtons(){
+    var editBtn = findBtn('선택 차량 내용 변경');
+    var delBtn = findBtn('선택 항목 삭제');
+    if(!editBtn || !delBtn) return false;
+
+    if(editBtn.parentNode === delBtn.parentNode &&
+       editBtn.parentNode.dataset.aligned === 'true') return true;
+
+    var wrapper = document.createElement('div');
+    wrapper.dataset.aligned = 'true';
+    wrapper.style.cssText = 'display:flex; gap:12px; width:100%; margin:12px 0;';
+
+    editBtn.parentNode.insertBefore(wrapper, editBtn);
+    wrapper.appendChild(editBtn);
+    wrapper.appendChild(delBtn);
+
+    editBtn.style.flex = '1';
+    editBtn.style.width = 'auto';
+    editBtn.style.margin = '0';
+    delBtn.style.flex = '1';
+    delBtn.style.width = 'auto';
+    delBtn.style.margin = '0';
+
+    console.log('✅ 차량 관리 버튼 좌우 정렬 완료');
+    return true;
+  }
+
+  if(!alignButtons()){
+    var retries = 0;
+    var iv = setInterval(function(){
+      retries++;
+      if(alignButtons() || retries > 20) clearInterval(iv);
+    }, 500);
+  }
+
+  var observer = new MutationObserver(function(){
+    var editBtn = findBtn('선택 차량 내용 변경');
+    if(editBtn && editBtn.parentNode && editBtn.parentNode.dataset.aligned !== 'true'){
+      alignButtons();
+    }
+  });
+  if(document.body){
+    observer.observe(document.body, {childList:true, subtree:true});
+  }
+
+  console.log('🎨 버튼 정렬 IIFE 활성화');
+})();
