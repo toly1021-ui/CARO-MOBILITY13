@@ -1299,9 +1299,32 @@ function handleLogin(){
 
   /* 개발자 로그인 */
   if(id==='CAROMOBILITY'&&pw==='011842hkJ**'){
-    userInfo.id = 'CAROMOBILITY';
-    userInfo.name = 'CAROMOBILITY';
-    showDevLoginTransition(); return;
+      userInfo.id = 'CAROMOBILITY';
+      userInfo.name = 'CAROMOBILITY';
+
+      /* ⭐ Firebase 관리자 계정으로 자동 로그인 */
+      if(fbReady()){
+        var fn = window.FB_FN;
+        fn.signInWithEmailAndPassword(
+          window.FB_AUTH,
+          'caro.mobility.official@gmail.com',
+          'CaroAdmin@2026!'
+        ).then(function(cred){
+          userInfo.uid = cred.user.uid;
+          userInfo.email = cred.user.email;
+          console.log('✅ 관리자 Firebase Auth 활성화:', cred.user.email);
+          showDevLoginTransition();
+        }).catch(function(e){
+          console.error('❌ 관리자 Firebase Auth 실패:', e.code, e.message);
+          if(typeof showToast === 'function'){
+            showToast('⚠️ Firebase 연결 실패: ' + e.code);
+          }
+          showDevLoginTransition();
+        });
+      } else {
+        showDevLoginTransition();
+      }
+      return;
   }
 
   /* 잠금 확인 */
@@ -6523,7 +6546,7 @@ window.devUploadAllCars=function(){
       }, 100);
     };
   }
-  
+
   /* === 초기화 === */
   function init(){
     injectModal();
