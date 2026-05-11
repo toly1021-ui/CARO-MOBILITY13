@@ -6979,3 +6979,87 @@ window.devUploadAllCars=function(){
   setTimeout(modifyPopup, 500);
   console.log('🎨 이벤트 팝업 여백 v3 활성화');
 })();
+
+/* ===== 홈 이벤트 배너 우측 단순화 ===== */
+(function simplifyEventBanners(){
+  'use strict';
+
+  function getBannerConfig(bannerText){
+    if(bannerText.indexOf('블랙 라벨') >= 0){
+      return {
+        text: 'BLACK LABEL',
+        cssText: 'font-size:1.1rem;font-weight:700;letter-spacing:0.2em;font-family:"Oswald",sans-serif;color:#c8a96e;'
+      };
+    }
+    if(bannerText.indexOf('친구 추천') >= 0){
+      return {
+        text: '5,000P',
+        cssText: 'font-size:2rem;font-weight:900;color:#fff;letter-spacing:-0.02em;'
+      };
+    }
+    if(bannerText.indexOf('신규 가입') >= 0){
+      return {
+        text: '30%',
+        cssText: 'font-size:2.5rem;font-weight:900;color:#fff;'
+      };
+    }
+    if(bannerText.indexOf('주말') >= 0){
+      return {
+        text: '30%',
+        cssText: 'font-size:2.5rem;font-weight:900;color:#fff;'
+      };
+    }
+    return null;
+  }
+
+  function simplify(banner){
+    if(banner.dataset.bannerSimplifiedV1 === 'true') return;
+
+    var config = getBannerConfig(banner.textContent || '');
+    if(!config) return;
+
+    // 1. 모든 img, svg 숨기기
+    banner.querySelectorAll('img, svg').forEach(function(el){
+      el.style.display = 'none';
+    });
+
+    // 2. 마지막 직계 자식이 우측 장식이면 숨기기
+    var kids = Array.from(banner.children);
+    if(kids.length >= 2){
+      var last = kids[kids.length - 1];
+      var lastText = (last.textContent || '').trim();
+      if(lastText.length < 50){
+        last.style.display = 'none';
+      }
+    }
+
+    // 3. 우측 영역에 새 텍스트 추가
+    var existing = banner.querySelector('.bs-right-v1');
+    if(existing) existing.remove();
+
+    var rightEl = document.createElement('div');
+    rightEl.className = 'bs-right-v1';
+    rightEl.textContent = config.text;
+    rightEl.style.cssText =
+      'position:absolute;right:24px;top:50%;transform:translateY(-50%);' +
+      'z-index:10;text-align:right;line-height:1;pointer-events:none;' + config.cssText;
+
+    if(getComputedStyle(banner).position === 'static'){
+      banner.style.position = 'relative';
+    }
+
+    banner.appendChild(rightEl);
+    banner.dataset.bannerSimplifiedV1 = 'true';
+  }
+
+  function applyAll(){
+    document.querySelectorAll('.auto-slide-item').forEach(simplify);
+  }
+
+  setTimeout(applyAll, 300);
+  setTimeout(applyAll, 800);
+  setTimeout(applyAll, 1500);
+  setTimeout(applyAll, 3000);
+
+  console.log('🎨 이벤트 배너 단순화 IIFE 활성화');
+})();
