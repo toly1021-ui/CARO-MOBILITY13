@@ -1308,7 +1308,7 @@ function handleLogin(){
         fn.signInWithEmailAndPassword(
           window.FB_AUTH,
           'caro.mobility.official@gmail.com',
-          'CaroAdmin@2026!'
+          '011842hkJ**'
         ).then(function(cred){
           userInfo.uid = cred.user.uid;
           userInfo.email = cred.user.email;
