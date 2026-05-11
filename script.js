@@ -6133,3 +6133,108 @@ window.devUploadAllCars=function(){
   window.processCarImage = processAndCompressCar;
   console.log('✅ 차량 이미지 처리 v3 활성화 (밝은 색 차량 대응)');
 })();
+/* ─── 차량 이미지 처리 v4 (원본 해상도에서 처리) ─── */
+(function(){
+  function processAndCompressCar(dataUrl, maxW, maxH, quality){
+    maxW = maxW || 800;
+    maxH = maxH || 600;
+    quality = quality || 0.88;
+
+    return new Promise(function(resolve){
+      if(!dataUrl || dataUrl.indexOf('data:image') !== 0){
+        resolve(dataUrl); return;
+      }
+      var img = new Image();
+      img.onload = function(){
+        try {
+          /* === 1단계: 원본 해상도(최대 1600)에서 Flood Fill === */
+          var origW = img.width, origH = img.height;
+          var processW = origW, processH = origH;
+          var maxProcDim = 1600;
+          if(origW > maxProcDim || origH > maxProcDim){
+            var pRatio = Math.min(maxProcDim / origW, maxProcDim / origH);
+            processW = Math.round(origW * pRatio);
+            processH = Math.round(origH * pRatio);
+          }
+
+          var pCanvas = document.createElement('canvas');
+          pCanvas.width = processW;
+          pCanvas.height = processH;
+          var pCtx = pCanvas.getContext('2d');
+          pCtx.imageSmoothingEnabled = false;
+          pCtx.drawImage(img, 0, 0, processW, processH);
+
+          var imgData = pCtx.getImageData(0, 0, processW, processH);
+          var data = imgData.data;
+          var threshold = 15;  /* ⭐ 더 엄격 */
+          var visited = new Uint8Array(processW * processH);
+          var queue = [];
+          var changed = 0;
+
+          function isDark(idx){
+            return data[idx] < threshold &&
+                   data[idx+1] < threshold &&
+                   data[idx+2] < threshold;
+          }
+          function tryAdd(x, y){
+            if(x < 0 || y < 0 || x >= processW || y >= processH) return;
+            var pi = y * processW + x;
+            if(visited[pi]) return;
+            if(!isDark(pi * 4)) return;
+            visited[pi] = 1;
+            queue.push(x, y);
+          }
+
+          for(var x = 0; x < processW; x++){ tryAdd(x, 0); tryAdd(x, processH-1); }
+          for(var y = 0; y < processH; y++){ tryAdd(0, y); tryAdd(processW-1, y); }
+
+          while(queue.length > 0){
+            var qx = queue.shift(), qy = queue.shift();
+            var di = (qy * processW + qx) * 4;
+            data[di] = 232; data[di+1] = 234; data[di+2] = 238; data[di+3] = 255;
+            changed++;
+            tryAdd(qx+1, qy); tryAdd(qx-1, qy);
+            tryAdd(qx, qy+1); tryAdd(qx, qy-1);
+          }
+
+          /* ⚠️ 안전장치: 70% 이상 변환되면 원본 사용 */
+          var pct = Math.round(changed / (processW * processH) * 100);
+          if(pct > 70){
+            console.warn('⚠️ v4 ' + pct + '% — 너무 많아서 원본 사용');
+            pCtx.drawImage(img, 0, 0, processW, processH);
+          } else {
+            pCtx.putImageData(imgData, 0, 0);
+          }
+
+          /* === 2단계: 최종 크기로 축소 === */
+          var fRatio = Math.min(maxW / processW, maxH / processH, 1);
+          var finalW = Math.round(processW * fRatio);
+          var finalH = Math.round(processH * fRatio);
+
+          var fCanvas = document.createElement('canvas');
+          fCanvas.width = finalW;
+          fCanvas.height = finalH;
+          var fCtx = fCanvas.getContext('2d');
+          fCtx.imageSmoothingEnabled = true;
+          fCtx.imageSmoothingQuality = 'high';
+          fCtx.drawImage(pCanvas, 0, 0, finalW, finalH);
+
+          var result = fCanvas.toDataURL('image/jpeg', quality);
+          var status = pct > 65 ? '⚠️ 너무 많음' : (pct < 15 ? '⚠️ 너무 적음' : '✅ 정상');
+          console.log('🎨 v4: ' + processW + 'x' + processH + ' → ' + finalW + 'x' + finalH +
+                      ', 배경 ' + pct + '% ' + status);
+          resolve(result);
+        } catch(e) {
+          console.error('이미지 처리 실패:', e);
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = function(){ resolve(dataUrl); };
+      img.src = dataUrl;
+    });
+  }
+
+  window.compressImageBase64 = processAndCompressCar;
+  window.processCarImage = processAndCompressCar;
+  console.log('✅ 차량 이미지 처리 v4 활성화 (원본 해상도 처리)');
+})();
