@@ -7010,3 +7010,85 @@ window.devUploadAllCars=function(){
 
   console.log('🎨 이벤트 배너 단순화 IIFE 활성화');
 })();
+
+/* ===== 결제 화면 텍스트 중앙 정렬 (일반 + BL) ===== */
+(function centerPaymentScreen(){
+  'use strict';
+
+  function applyCentering(){
+    var ps = document.getElementById('payment-screen');
+    if(!ps) return;
+
+    // 1. 총 결제 금액
+    var totalRow = document.getElementById('pay-total-row');
+    if(totalRow) totalRow.style.textAlign = 'center';
+
+    // 2. step-heading (결제 수단 등)
+    var headings = ps.querySelectorAll('.step-heading');
+    headings.forEach(function(h){
+      h.style.textAlign = 'center';
+      h.style.width = '100%';
+    });
+
+    // 3. pay-select-row (결제 수단 선택 버튼)
+    var selectRows = ps.querySelectorAll('.pay-select-row, [onclick*="openPaySheet"]');
+    selectRows.forEach(function(el){
+      el.style.justifyContent = 'center';
+      el.style.textAlign = 'center';
+    });
+
+    // 4. pay-selected-label
+    var label = document.getElementById('pay-selected-label');
+    if(label){
+      label.style.textAlign = 'center';
+      label.style.flex = '1';
+      label.style.width = '100%';
+    }
+
+    // 5. 라디오 버튼 행 (신용/체크카드 등)
+    var radios = ps.querySelectorAll('input[type="radio"]');
+    radios.forEach(function(radio){
+      var parent = radio.closest('label') || radio.parentElement;
+      if(parent && parent.tagName !== 'INPUT'){
+        parent.style.justifyContent = 'center';
+        parent.style.textAlign = 'center';
+        parent.style.display = 'flex';
+        parent.style.alignItems = 'center';
+        parent.style.gap = '10px';
+      }
+    });
+
+    console.log('✅ 결제 화면 중앙 정렬 적용');
+  }
+
+  // goTo 함수 가로채기 - payment-screen 진입 시 매번 적용
+  function hookGoTo(){
+    if(typeof window.goTo !== 'function') return false;
+    if(window.goTo._paymentCenterHooked) return true;
+
+    var orig = window.goTo;
+    window.goTo = function(s, i){
+      orig.call(this, s, i);
+      if(s === 'payment-screen'){
+        setTimeout(applyCentering, 100);
+        setTimeout(applyCentering, 400);
+        setTimeout(applyCentering, 1000);
+      }
+    };
+    window.goTo._paymentCenterHooked = true;
+    return true;
+  }
+
+  if(!hookGoTo()){
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      if(hookGoTo() || tries > 20) clearInterval(iv);
+    }, 200);
+  }
+
+  setTimeout(applyCentering, 500);
+  setTimeout(applyCentering, 1500);
+
+  console.log('🎨 결제 화면 중앙 정렬 IIFE 활성화');
+})();
