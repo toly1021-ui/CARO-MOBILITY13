@@ -1872,3 +1872,24 @@ video::-webkit-media-controls-panel{display:none !important;}
   background:rgba(238,242,247,.7);
   color:var(--text-1);
 }
+/* ===== 이벤트 팝업 좌우 여백 (v5) ===== */
+#ev-detail-body {
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+  box-sizing: border-box !important;
+}
+#ev-detail-body ul,
+#ev-detail-body ol {
+  padding-left: 18px !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  text-align: left !important;
+  list-style-position: outside !important;
+}
+#ev-detail-body p {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+#ev-detail-body li {
+  text-align: left !important;
+}
