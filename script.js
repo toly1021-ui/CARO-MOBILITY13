@@ -2388,8 +2388,38 @@ function sendDeviceCommand(carId, cmdType){
   };
   console.log('📡 디바이스 명령:', deviceId, cmdType, cmdId);
   return fn.setDoc(fn.doc(db, 'devices', deviceId, 'commands', cmdId), cmdData)
-    .then(function(){ console.log('✅ 명령 큐잉 성공:', cmdType); return true; })
-    .catch(function(err){
+  .then(function(){
+        console.log('✅ 명령 큐잉 성공:', cmdType);
+
+        /* ── NEW: 명령 상태 실시간 추적 ── */
+        var cmdRef = fn.doc(db, 'devices', deviceId, 'commands', cmdId);
+        var unsub = null;
+        var timeoutId = setTimeout(function(){
+          if(unsub) unsub();
+          showCtrlToast('⏱ 디바이스 응답 없음 (' + cmdType + ')');
+        }, 30000);
+
+        unsub = fn.onSnapshot(cmdRef, function(snap){
+          if(!snap.exists()) return;
+          var d = snap.data();
+          console.log('📨 명령 상태:', d.status);
+
+          if(d.status === 'acked'){
+            showCtrlToast('📡 디바이스 응답 받음');
+          } else if(d.status === 'done'){
+            showCtrlToast(cmdType === 'unlock' ? '✅ 차량 문 열림' : '✅ 차량 문 잠김');
+            clearTimeout(timeoutId);
+            if(unsub) unsub();
+          } else if(d.status === 'failed'){
+            showCtrlToast('❌ 명령 실패: ' + (d.errorMsg || '알 수 없음'));
+            clearTimeout(timeoutId);
+            if(unsub) unsub();
+          }
+        });
+
+        return true;
+      })
+      .catch(function(err){
       console.error('❌ 명령 전송 실패:', err.code, err.message);
       showCtrlToast('⚠️ 전송 실패: ' + err.code);
       return false;
