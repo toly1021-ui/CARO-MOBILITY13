@@ -2357,7 +2357,45 @@ function renderMyReservations(){
 ───────────────────────────────────────────── */
 var ctrlResIdx=-1;
 var ctrlPhotoOpen=false;
-
+/* ─────────────────────────────────────────────
+   디바이스 명령 전송 (도어락/언락/시동차단)
+───────────────────────────────────────────── */
+function sendDeviceCommand(carId, cmdType){
+  if(!fbReady()){
+    showCtrlToast('⚠️ Firebase 연결 안 됨');
+    return Promise.resolve(false);
+  }
+  if(!window.FB_AUTH || !window.FB_AUTH.currentUser){
+    showCtrlToast('⚠️ 로그인이 필요합니다');
+    return Promise.resolve(false);
+  }
+  var fn = window.FB_FN, db = window.FB_DB;
+  /* 임시: carId=1 → CARO-001. 디바이스 늘어나면 devices 컬렉션 동적 조회로 교체 */
+  var deviceId = (String(carId) === '1') ? 'CARO-001' : null;
+  if(!deviceId){
+    console.warn('차량에 연결된 디바이스 없음:', carId);
+    showCtrlToast('⚠️ 이 차량은 디바이스 미연결');
+    return Promise.resolve(false);
+  }
+  var cmdId = 'cmd_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  var cmdData = {
+    type: cmdType,
+    issuedBy: userInfo.uid || '',
+    issuedByEmail: userInfo.email || userInfo.id || '',
+    issuedAt: fn.serverTimestamp(),
+    status: 'pending',
+    timestamp: Date.now()
+  };
+  console.log('📡 디바이스 명령:', deviceId, cmdType, cmdId);
+  return fn.setDoc(fn.doc(db, 'devices', deviceId, 'commands', cmdId), cmdData)
+    .then(function(){ console.log('✅ 명령 큐잉 성공:', cmdType); return true; })
+    .catch(function(err){
+      console.error('❌ 명령 전송 실패:', err.code, err.message);
+      showCtrlToast('⚠️ 전송 실패: ' + err.code);
+      return false;
+    });
+}
+window.sendDeviceCommand = sendDeviceCommand;
 /* 홈 컨트롤러 전용 액션 */
 function ctrlActionHome(type){
   /* 방향별 사진 촬영 */
@@ -2370,17 +2408,31 @@ function ctrlActionHome(type){
   if(type==='extend'){ openExtendSheet(); return; }
   /* 문열림/잠금 */
   if(type==='unlock'){
-    showCtrlToast('🔓 차량 문이 열렸습니다.');
-    var b=document.getElementById('ctrl-btn-unlock');
-    if(b){ b.classList.add('ctrl-sq-btn-active'); setTimeout(function(){ b.classList.remove('ctrl-sq-btn-active'); },2000); }
-    return;
-  }
+      var b=document.getElementById('ctrl-btn-unlock');
+      if(b){ b.classList.add('ctrl-sq-btn-active'); setTimeout(function(){ b.classList.remove('ctrl-sq-btn-active'); },2000); }
+      var carIdU = (ctrlResIdx>=0 && myReservations[ctrlResIdx]) ? myReservations[ctrlResIdx].car.id : null;
+      if(carIdU){
+        sendDeviceCommand(carIdU, 'unlock').then(function(ok){
+          if(ok) showCtrlToast('🔓 잠금 해제 명령 전송됨');
+        });
+      } else {
+        showCtrlToast('🔓 차량 문이 열렸습니다.');
+      }
+      return;
+    }
   if(type==='lock'){
-    showCtrlToast('🔒 차량 문이 잠겼습니다.');
-    var b2=document.getElementById('ctrl-btn-lock');
-    if(b2){ b2.classList.add('ctrl-sq-btn-active'); setTimeout(function(){ b2.classList.remove('ctrl-sq-btn-active'); },2000); }
-    return;
-  }
+      var b2=document.getElementById('ctrl-btn-lock');
+      if(b2){ b2.classList.add('ctrl-sq-btn-active'); setTimeout(function(){ b2.classList.remove('ctrl-sq-btn-active'); },2000); }
+      var carIdL = (ctrlResIdx>=0 && myReservations[ctrlResIdx]) ? myReservations[ctrlResIdx].car.id : null;
+      if(carIdL){
+        sendDeviceCommand(carIdL, 'lock').then(function(ok){
+          if(ok) showCtrlToast('🔒 잠금 명령 전송됨');
+        });
+      } else {
+        showCtrlToast('🔒 차량 문이 잠겼습니다.');
+      }
+      return;
+    }
   var pkText=document.getElementById('home-ctrl-park')?document.getElementById('home-ctrl-park').textContent:'확인 중';
   var msgs={
     hazard:'⚠️ 비상등이 3회 점멸되었습니다.',
