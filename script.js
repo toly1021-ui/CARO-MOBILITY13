@@ -2426,6 +2426,93 @@ function sendDeviceCommand(carId, cmdType){
     });
 }
 window.sendDeviceCommand = sendDeviceCommand;
+/* ─────────────────────────────────────────────
+   디바이스 status 실시간 표시 (컨트롤러 배지)
+───────────────────────────────────────────── */
+(function(){
+  var _deviceStatusUnsub = null;
+
+  function fmtRelativeTime(date){
+    var diff = (new Date() - date) / 1000;
+    if(diff < 60) return Math.floor(diff) + '초 전';
+    if(diff < 3600) return Math.floor(diff/60) + '분 전';
+    if(diff < 86400) return Math.floor(diff/3600) + '시간 전';
+    return Math.floor(diff/86400) + '일 전';
+  }
+
+  function updateBadge(status, lastSeen){
+    var badge = document.getElementById('device-status-badge');
+    if(!badge){
+      var carName = document.getElementById('home-ctrl-car-name');
+      if(!carName) return;
+      badge = document.createElement('div');
+      badge.id = 'device-status-badge';
+      badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:4px 10px;border-radius:14px;font-size:.7rem;font-weight:700;letter-spacing:.04em;width:fit-content;';
+      carName.parentNode.appendChild(badge);
+    }
+    if(status === 'online'){
+      badge.style.background = 'rgba(29,122,58,.12)';
+      badge.style.color = '#1d7a3a';
+      badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#1d7a3a;box-shadow:0 0 6px rgba(29,122,58,.7);"></span> 디바이스 온라인';
+    } else if(status === 'offline'){
+      badge.style.background = 'rgba(120,120,120,.1)';
+      badge.style.color = '#888';
+      var timeStr = lastSeen ? '· ' + fmtRelativeTime(lastSeen) : '· 응답 없음';
+      badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#888;"></span> 오프라인 ' + timeStr;
+    } else {
+      badge.style.background = 'rgba(178,58,58,.08)';
+      badge.style.color = '#b23a3a';
+      badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#b23a3a;"></span> 디바이스 미등록';
+    }
+  }
+
+  function subscribeDeviceStatus(deviceId){
+    if(_deviceStatusUnsub){ try{_deviceStatusUnsub();}catch(e){} _deviceStatusUnsub=null; }
+    if(!fbReady() || !deviceId){ updateBadge('unknown'); return; }
+    var fn = window.FB_FN, db = window.FB_DB;
+    _deviceStatusUnsub = fn.onSnapshot(fn.doc(db, 'devices', deviceId), function(snap){
+      if(!snap.exists()){ updateBadge('unknown'); return; }
+      var d = snap.data();
+      var lastSeen = (d.lastSeen && d.lastSeen.toDate) ? d.lastSeen.toDate() : null;
+      var isOnline = d.status === 'online' && lastSeen && (new Date() - lastSeen) < 60000;
+      updateBadge(isOnline ? 'online' : 'offline', lastSeen);
+    });
+  }
+
+  function unsubscribeDeviceStatus(){
+    if(_deviceStatusUnsub){ try{_deviceStatusUnsub();}catch(e){} _deviceStatusUnsub=null; }
+    var badge = document.getElementById('device-status-badge');
+    if(badge) badge.remove();
+  }
+
+  /* openHomeCtrl 후크 */
+  var origOpen = window.openHomeCtrl;
+  if(typeof origOpen === 'function'){
+    window.openHomeCtrl = function(){
+      origOpen.apply(this, arguments);
+      setTimeout(function(){
+        if(typeof ctrlResIdx !== 'undefined' && ctrlResIdx >= 0 && myReservations[ctrlResIdx]){
+          var carId = myReservations[ctrlResIdx].car.id;
+          var deviceId = (String(carId) === '1') ? 'CARO-001' : null;
+          subscribeDeviceStatus(deviceId);
+        }
+      }, 250);
+    };
+  }
+
+  /* close 후크 */
+  var origClose = window.closeHomeCtrl;
+  if(typeof origClose === 'function'){
+    window.closeHomeCtrl = function(){ unsubscribeDeviceStatus(); origClose.apply(this, arguments); };
+  }
+  var origCloseDirect = window.closeHomeCtrlDirect;
+  if(typeof origCloseDirect === 'function'){
+    window.closeHomeCtrlDirect = function(){ unsubscribeDeviceStatus(); origCloseDirect.apply(this, arguments); };
+  }
+
+  console.log('✅ 디바이스 status 실시간 표시 활성화');
+})();
+
 /* 홈 컨트롤러 전용 액션 */
 function ctrlActionHome(type){
   /* 방향별 사진 촬영 */
