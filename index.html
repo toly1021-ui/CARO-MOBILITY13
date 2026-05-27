@@ -1892,23 +1892,537 @@ if(window.navigator.standalone){
     </div>
     <div style="flex:1;overflow-y:auto;padding:24px 20px 0;">
       <div style="font-size:1rem;font-weight:700;color:var(--text-1);margin-bottom:12px;">주요 안내</div>
-      <div class="cs-menu-item"><span>카로 이용안내</span><span>›</span></div>
-      <div class="cs-menu-item"><span>사고 대처 및 보험 적용 안내</span><span>›</span></div>
-      <div class="cs-menu-item"><span>예약 변경 및 예약 취소</span><span>›</span></div>
-      <div class="cs-menu-item"><span>취소 수수료 안내</span><span>›</span></div>
-      <div class="cs-menu-item"><span>반납 및 연장</span><span>›</span></div>
+      <div class="cs-menu-item" onclick="goToCsDetail(0)"><span>카로 이용안내</span><span>›</span></div>
+      <div class="cs-menu-item" onclick="goToCsDetail(1)"><span>사고 대처 및 보험 적용 안내</span><span>›</span></div>
+      <div class="cs-menu-item" onclick="goToCsDetail(2)"><span>예약 변경 및 예약 취소</span><span>›</span></div>
+      <div class="cs-menu-item" onclick="goToCsDetail(3)"><span>취소 수수료 안내</span><span>›</span></div>
+      <div class="cs-menu-item" onclick="goToCsDetail(4)"><span>반납 및 연장</span><span>›</span></div>
     </div>
     <div style="padding:16px 20px 24px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;gap:10px;">
-        <button class="cs-contact-btn cs-accident" onclick="alert('사고 접수')" style="flex:1;">🚨 사고 접수</button>
-        <button class="cs-contact-btn cs-call" onclick="alert('전화 상담')" style="flex:1;">📞 전화 상담</button>
+        <button class="cs-contact-btn cs-accident" onclick="goTo('accident-screen')" style="flex:1;"> 사고 접수</button>
+        <button class="cs-contact-btn cs-call" onclick="csCallSupport()" style="flex:1;"> 전화 상담</button>
       </div>
-      <button class="cs-contact-btn cs-simple" onclick="alert('간편 문의')">✉️ 간편 문의</button>
-      <button class="cs-contact-btn cs-chat" onclick="alert('채팅 상담')">💬 채팅 상담</button>
+      <button class="cs-contact-btn cs-simple" onclick="goTo('inquiry-screen')"> 간편 문의</button>
+      <button class="cs-contact-btn cs-chat" onclick="goTo('chat-screen')"> 채팅 상담</button>
     </div>
   </div>
 </div>
 
+
+<!-- ═══ 1. 고객센터 상세 (5개 카테고리 아코디언) ═══ -->
+<div id="cs-detail-screen" class="screen">
+  <div class="metal-bg"></div>
+  <div class="csd-wrap">
+    <div class="csd-header">
+      <button class="csd-back" onclick="goTo('cs-screen')">←</button>
+      <span class="csd-title">고객센터</span>
+      <span style="width:36px;"></span>
+    </div>
+
+    <div class="csd-body">
+      <div class="csd-section-label">주요 안내</div>
+      <div class="csd-accordion">
+
+        <!-- 1. 카로 이용안내 -->
+        <div class="csd-acc-item">
+          <button class="csd-acc-head" onclick="csToggleAcc(this)">
+            <span class="csd-acc-head-text"><span class="csd-acc-num">1</span><span>카로 이용안내</span></span>
+            <span class="csd-acc-arrow">›</span>
+          </button>
+          <div class="csd-acc-body"><div class="csd-acc-inner">
+            <h4 class="csd-h4">가입하기</h4>
+            <p>스마트폰에 카로(CARO) 앱을 설치한 후, 본인 명의의 운전면허증과 결제수단(신용·체크카드)을 등록해 주세요. 본인 인증 및 운전면허 진위 확인 절차가 자동으로 진행됩니다.</p>
+            <div class="csd-info-box"><strong>이용 자격</strong><br>▪ 만 21세 이상<br>▪ 운전면허 취득 후 1년 이상 경과<br>▪ 본인 명의의 결제수단 보유<br><span class="csd-small">※ 「여객자동차 운수사업법」 제34조의2에 따른 운전자격 확인 절차</span></div>
+
+            <h4 class="csd-h4">예약하기</h4>
+            <p>앱에서 이용 시간과 픽업 위치를 설정한 후, 원하는 차종을 선택해 주세요. 가까운 <strong>카로존(CARO ZONE)</strong>에서 차량을 픽업하거나 약정 위치로 호출할 수 있습니다.</p>
+            <ul><li>최소 이용 단위 — 30분부터 (10분 단위 연장)</li><li>최대 예약 가능 기간 — 30일</li><li>예약 확정 시점에 대여요금이 청구됩니다.</li></ul>
+
+            <h4 class="csd-h4">차량 찾기 및 인수</h4>
+            <p>예약 완료 시 지도에서 차량 위치, 주차 구역, 차량 번호를 확인할 수 있습니다. <strong>스마트키 기능</strong>으로 비대면 차량 개폐가 가능합니다.</p>
+
+            <h4 class="csd-h4">이용하기</h4>
+            <p>탑승 전 반드시 차량 외관·내부 상태, 연료(또는 충전) 잔량을 확인하고 앱을 통해 <strong>사전 점검 사진</strong>을 촬영해 주세요.</p>
+            <ol><li>차량 외관 4면(전·후·좌·우) 촬영</li><li>내부 상태(시트·대시보드·트렁크) 확인</li><li>연료/충전 잔량 계기판 촬영</li><li>이상 발견 시 즉시 앱 [신고하기]</li></ol>
+
+            <h4 class="csd-h4">반납하기</h4>
+            <p>지정 반납 장소(카로존 또는 약정 반납지)에 주차, 차량 내 소지품 확인 후 차문 잠금. 앱에서 <strong>[반납하기]</strong> 버튼으로 자동 정산됩니다.</p>
+
+            <div class="csd-legal">근거 — 「여객자동차 운수사업법」, 「자동차대여 표준약관」(공정거래위원회 제10064호)</div>
+          </div></div>
+        </div>
+
+        <!-- 2. 사고 대처 및 보험 적용 안내 -->
+        <div class="csd-acc-item">
+          <button class="csd-acc-head" onclick="csToggleAcc(this)">
+            <span class="csd-acc-head-text"><span class="csd-acc-num">2</span><span>사고 대처 및 보험 적용 안내</span></span>
+            <span class="csd-acc-arrow">›</span>
+          </button>
+          <div class="csd-acc-body"><div class="csd-acc-inner">
+            <div class="csd-info-box csd-error"><strong>⚠ 사고 발생 시 가장 먼저 해야 할 일</strong><br>① 부상자 구호 및 119 신고<br>② 안전 확보 (비상등·삼각대)<br>③ 경찰 신고(112) — 인적 피해·교통 방해 시 의무<br>④ 카로 고객센터 즉시 접수 (24시간)</div>
+
+            <h4 class="csd-h4">사고 처리 5단계</h4>
+            <ul class="csd-step-list">
+              <li><span class="csd-step-title">현장 안전 확보</span>부상자 응급조치 후 비상등 점등, 안전삼각대 설치</li>
+              <li><span class="csd-step-title">증거 자료 확보</span>사고 차량 위치, 파손 부위, 상대 차량 번호판 등 사진·동영상</li>
+              <li><span class="csd-step-title">경찰 및 카로 신고</span>인적 피해 또는 교통 방해 시 112 신고는 의무, 카로 앱 [사고 접수]로 <strong>지체 없이</strong> 신고</li>
+              <li><span class="csd-step-title">상대방 정보 교환</span>연락처·보험사·차량번호 확인 후 앱에 입력</li>
+              <li><span class="csd-step-title">보험사 출동 및 처리</span>카로 지정 보험사가 현장 출동·견인·수리 진행</li>
+            </ul>
+
+            <h4 class="csd-h4">보험 보장 범위</h4>
+            <p>「자동차손해배상 보장법」 제5조에 따라 모든 카로 차량은 자동차종합보험에 가입되어 있습니다.</p>
+            <table class="csd-table">
+              <thead><tr><th>담보 항목</th><th>보장 한도</th></tr></thead>
+              <tbody>
+              <tr><td>대인배상 Ⅰ (의무)</td><td>자배법 한도</td></tr>
+              <tr><td>대인배상 Ⅱ</td><td>무제한</td></tr>
+              <tr><td>대물배상</td><td>1사고당 5억 원</td></tr>
+              <tr><td>자기신체사고</td><td>1인당 최대 3,000만 원</td></tr>
+              <tr><td>자기차량손해</td><td>차량가액 한도 내</td></tr>
+              </tbody>
+            </table>
+
+            <h4 class="csd-h4">차량손해면책제도 (선택)</h4>
+            <table class="csd-table">
+              <thead><tr><th>면책 유형</th><th>자기부담금</th><th>휴차보상료</th></tr></thead>
+              <tbody>
+              <tr><td>일반 면책</td><td>최대 70만 원</td><td>발생</td></tr>
+              <tr><td>고급 면책</td><td>최대 30만 원</td><td>발생</td></tr>
+              <tr><td>완전 면책</td><td>0 원</td><td>면제</td></tr>
+              </tbody>
+            </table>
+
+            <div class="csd-info-box csd-warn"><strong>면책 적용 제외 사유</strong>
+              <ul><li>음주·약물·무면허 운전, 면허정지·취소 중 운전</li><li>「교통사고처리 특례법」상 12대 중과실 사고</li><li>사고를 <strong>지체 없이 신고하지 않은 경우</strong></li><li>등록되지 않은 운전자가 운전한 경우 (제3자 운전 금지)</li><li>고의 또는 중대한 과실 사고</li><li>경주·시험·교습 등 용도 외 사용</li></ul>
+            </div>
+
+            <div class="csd-legal">근거 — 「자동차손해배상 보장법」 제5조, 「여객자동차 운수사업법」 제34조의5, 「교통사고처리 특례법」 제3조, 「도로교통법」 제54조</div>
+          </div></div>
+        </div>
+
+        <!-- 3. 예약 변경 및 예약 취소 -->
+        <div class="csd-acc-item">
+          <button class="csd-acc-head" onclick="csToggleAcc(this)">
+            <span class="csd-acc-head-text"><span class="csd-acc-num">3</span><span>예약 변경 및 예약 취소</span></span>
+            <span class="csd-acc-arrow">›</span>
+          </button>
+          <div class="csd-acc-body"><div class="csd-acc-inner">
+            <h4 class="csd-h4">예약 변경</h4>
+            <p>앱 내 <strong>[예약 내역] → [변경하기]</strong>에서 가능합니다.</p>
+            <ul><li><strong>변경 가능 항목</strong> — 시간, 위치, 차종, 운전자 추가</li><li><strong>변경 가능 시점</strong> — 이용 시작 1시간 전까지</li><li><strong>변경 횟수</strong> — 3회까지 무료, 이후 건당 1,000원</li><li>차종 변경 시 요금 차액 발생 가능</li></ul>
+
+            <div class="csd-info-box"><strong>변경이 제한되는 경우</strong><br>▪ 이용 시작 시각 1시간 이내<br>▪ 변경하려는 시간대 차량 재고 부족<br>▪ 이미 차량 인수 후 ([연장] 또는 [조기 반납] 이용)</div>
+
+            <h4 class="csd-h4">예약 취소</h4>
+            <p>앱 내 <strong>[예약 내역] → [취소하기]</strong>로 즉시 처리.</p>
+            <ul><li>등록 결제수단으로 자동 환불 (카드 3~5일)</li><li>포인트·쿠폰은 즉시 복원</li><li>회사 사유(차량 고장 등) 시 <strong>수수료 없이 전액 환불</strong></li></ul>
+
+            <div class="csd-legal">근거 — 「자동차대여 표준약관」 제2조·제24조, 「전자상거래법」 제17조</div>
+          </div></div>
+        </div>
+
+        <!-- 4. 취소 수수료 -->
+        <div class="csd-acc-item">
+          <button class="csd-acc-head" onclick="csToggleAcc(this)">
+            <span class="csd-acc-head-text"><span class="csd-acc-num">4</span><span>취소 수수료 안내</span></span>
+            <span class="csd-acc-arrow">›</span>
+          </button>
+          <div class="csd-acc-body"><div class="csd-acc-inner">
+            <p>고객 사유 취소 시 「자동차대여 표준약관」 제24조에 따라 부과됩니다.</p>
+
+            <h4 class="csd-h4">예약 시작 전 취소</h4>
+            <table class="csd-table">
+              <thead><tr><th>취소 시점</th><th>수수료</th></tr></thead>
+              <tbody>
+              <tr><td>48시간 이전</td><td>없음 (전액 환불)</td></tr>
+              <tr><td>48~24시간 전</td><td>대여요금 10%</td></tr>
+              <tr><td>24시간~1시간 전</td><td>대여요금 20%</td></tr>
+              <tr><td>1시간 이내 / 미사용</td><td>대여요금 30%</td></tr>
+              </tbody>
+            </table>
+
+            <h4 class="csd-h4">이용 중 중도 해지</h4>
+            <ul><li>이용 시간 요금 + <strong>잔여 요금의 10%</strong></li><li>회사 귀책 사유 시 미사용 잔여 요금 전액 환불</li></ul>
+
+            <h4 class="csd-h4">환불 절차</h4>
+            <ol><li>앱 [예약 내역] → [취소] 시 자동 산정</li><li>최종 환불 금액 확인 후 확정</li><li>등록 결제수단으로 환불 (카드 3~5일, 계좌 2~3일)</li><li>포인트·쿠폰은 즉시 복원</li></ol>
+
+            <div class="csd-info-box csd-success"><strong>수수료 면제 사유</strong>
+              <ul><li>회사 귀책 — 차량 고장·사고·배차 불가</li><li>천재지변·정부 행정조치</li><li>예약 후 1시간 이내 취소(시작 24시간 전 이상 남은 경우)</li></ul>
+            </div>
+
+            <div class="csd-legal">근거 — 공정거래위원회 「자동차대여 표준약관」 제10064호 제24조</div>
+          </div></div>
+        </div>
+
+        <!-- 5. 반납 및 연장 -->
+        <div class="csd-acc-item">
+          <button class="csd-acc-head" onclick="csToggleAcc(this)">
+            <span class="csd-acc-head-text"><span class="csd-acc-num">5</span><span>반납 및 연장</span></span>
+            <span class="csd-acc-arrow">›</span>
+          </button>
+          <div class="csd-acc-body"><div class="csd-acc-inner">
+            <h4 class="csd-h4">반납 절차</h4>
+            <ul class="csd-step-list">
+              <li><span class="csd-step-title">지정 반납 장소 주차</span>카로존 또는 약정 반납 위치 정상 주차 (주정차 금지 구역 과태료 본인 부담)</li>
+              <li><span class="csd-step-title">차량 내부 확인</span>개인 소지품·분실물 확인</li>
+              <li><span class="csd-step-title">연료/충전 상태</span>인수 시 잔량 그대로 (Full to Full)</li>
+              <li><span class="csd-step-title">반납 사진 촬영</span>외관 4면 + 계기판</li>
+              <li><span class="csd-step-title">차문 잠금 및 반납 완료</span>앱 [반납하기] → 자동 정산</li>
+            </ul>
+
+            <h4 class="csd-h4">연료·충전 부족 시 청구</h4>
+            <table class="csd-table">
+              <thead><tr><th>차량 유형</th><th>청구 기준</th></tr></thead>
+              <tbody>
+              <tr><td>휘발유/경유</td><td>시중가 + 주유 수수료 5,000원</td></tr>
+              <tr><td>전기차</td><td>부족 충전량(kWh) × 단가 + 충전 수수료</td></tr>
+              <tr><td>LPG</td><td>시중가 + 주유 수수료 5,000원</td></tr>
+              </tbody>
+            </table>
+
+            <h4 class="csd-h4">연장 신청</h4>
+            <ul><li><strong>신청 시점</strong> — 이용 종료 10분 전까지</li><li><strong>최소 단위</strong> — 10분</li><li><strong>최대 연장</strong> — 24시간</li><li>다음 예약자가 없는 경우 승인</li></ul>
+
+            <h4 class="csd-h4">지연 반환 시 추가 요금</h4>
+            <table class="csd-table">
+              <thead><tr><th>지연 시간</th><th>추가 요금</th></tr></thead>
+              <tbody>
+              <tr><td>10분 미만</td><td>없음 (유예)</td></tr>
+              <tr><td>10분~1시간</td><td>시간 요금 2배</td></tr>
+              <tr><td>1~4시간</td><td>시간 요금 2배 + 휴차보상료</td></tr>
+              <tr><td>4시간 초과</td><td>1일 요금 2배 + 휴차보상료</td></tr>
+              </tbody>
+            </table>
+
+            <div class="csd-info-box csd-warn"><strong>주의사항</strong><br>▪ 다음 예약자 피해 시 별도 보상 책임<br>▪ 24시간 이상 무단 지연 시 횡령·점유이탈 등으로 경찰 신고 가능<br>▪ 반납 후 주정차 위반 단속 시 과태료 본인 부담</div>
+
+            <div class="csd-legal">근거 — 「자동차대여 표준약관」 제22·25조, 「도로교통법」 제32·33조</div>
+          </div></div>
+        </div>
+
+      </div>
+      <div style="height:24px;"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ 2. 사고 접수 ═══ -->
+<div id="accident-screen" class="screen">
+  <div class="metal-bg"></div>
+  <div class="csd-wrap">
+    <div class="csd-header">
+      <button class="csd-back" onclick="goTo('cs-screen')">←</button>
+      <span class="csd-title">사고 접수</span>
+      <span style="width:36px;"></span>
+    </div>
+
+    <div class="csd-body" style="padding-bottom:96px;">
+
+      <div class="csd-emergency">
+        <div class="csd-emergency-title">⚠ 긴급 상황 시 먼저 신고하세요</div>
+        <div class="csd-emergency-desc">부상자가 있거나 즉각적인 도움이 필요한 경우, 본 접수보다 119·112 신고를 우선해 주세요.<br><span class="csd-small">「도로교통법」 제54조 — 사고 발생 시 즉시 조치 의무</span></div>
+        <div class="csd-em-call">
+          <a href="tel:119">🚑 119 응급</a>
+          <a href="tel:112">🚓 112 경찰</a>
+        </div>
+      </div>
+
+      <form id="cs-accident-form" onsubmit="csSubmitAccident(event)">
+
+        <div class="csd-section">
+          <h3 class="csd-section-title">1. 사고 기본 정보</h3>
+          <div class="input-group"><label class="input-label">사고 발생 일시 <span style="color:#b23a3a;">*</span></label><input type="datetime-local" class="form-input" name="datetime" required></div>
+          <div class="input-group"><label class="input-label">사고 발생 장소 <span style="color:#b23a3a;">*</span></label><input type="text" class="form-input" name="location" placeholder="예: 서울 강남구 테헤란로 152 앞" required></div>
+          <div class="input-group"><label class="input-label">차량 번호 / 예약 번호 <span style="color:#b23a3a;">*</span></label><input type="text" class="form-input" name="vehicle" placeholder="예: 12가 3456 / CR-XXXX" required></div>
+        </div>
+
+        <div class="csd-section">
+          <h3 class="csd-section-title">2. 사고 유형</h3>
+          <div class="input-group">
+            <label class="input-label">사고 종류 <span style="color:#b23a3a;">*</span></label>
+            <div class="csd-radio-group">
+              <div class="csd-radio-item"><input type="radio" id="cs-t1" name="type" value="차대차" required><label for="cs-t1">차대차</label></div>
+              <div class="csd-radio-item"><input type="radio" id="cs-t2" name="type" value="차대사람" required><label for="cs-t2">차대사람</label></div>
+              <div class="csd-radio-item"><input type="radio" id="cs-t3" name="type" value="단독사고" required><label for="cs-t3">단독사고</label></div>
+              <div class="csd-radio-item"><input type="radio" id="cs-t4" name="type" value="기타" required><label for="cs-t4">기타</label></div>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">부상자 발생 여부 <span style="color:#b23a3a;">*</span></label>
+            <div class="csd-radio-group">
+              <div class="csd-radio-item"><input type="radio" id="cs-i1" name="injury" value="없음" required onchange="csToggleInjury(false)"><label for="cs-i1">없음</label></div>
+              <div class="csd-radio-item"><input type="radio" id="cs-i2" name="injury" value="경상" required onchange="csToggleInjury(true)"><label for="cs-i2">경상</label></div>
+              <div class="csd-radio-item"><input type="radio" id="cs-i3" name="injury" value="중상" required onchange="csToggleInjury(true)"><label for="cs-i3">중상</label></div>
+            </div>
+            <div class="csd-conditional" id="cs-injury-detail">
+              <input type="text" class="form-input" name="injuryDetail" placeholder="부상자 인원 및 상태 (예: 운전자 본인 — 목 통증)">
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">경찰 신고 여부 <span style="color:#b23a3a;">*</span></label>
+            <div class="csd-radio-group">
+              <div class="csd-radio-item"><input type="radio" id="cs-p1" name="police" value="신고완료" required><label for="cs-p1">신고 완료</label></div>
+              <div class="csd-radio-item"><input type="radio" id="cs-p2" name="police" value="진행중" required><label for="cs-p2">진행 중</label></div>
+              <div class="csd-radio-item"><input type="radio" id="cs-p3" name="police" value="미신고" required><label for="cs-p3">미신고</label></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="csd-section">
+          <h3 class="csd-section-title">3. 상대 차량 정보 (해당 시)</h3>
+          <div class="input-group"><label class="input-label">상대 차량 번호</label><input type="text" class="form-input" name="otherVehicle" placeholder="예: 34나 5678"></div>
+          <div class="input-group"><label class="input-label">상대 운전자 연락처</label><input type="tel" class="form-input" name="otherPhone" placeholder="010-0000-0000"></div>
+          <div class="input-group"><label class="input-label">상대 보험사</label><input type="text" class="form-input" name="otherInsurance" placeholder="예: 삼성화재, DB손해보험"></div>
+        </div>
+
+        <div class="csd-section">
+          <h3 class="csd-section-title">4. 사고 상황 상세</h3>
+          <div class="input-group">
+            <label class="input-label">사고 경위 설명 <span style="color:#b23a3a;">*</span></label>
+            <textarea class="form-input csd-textarea" name="description" placeholder="언제·어디서·어떻게 사고가 발생했는지 자세히 적어 주세요." required></textarea>
+          </div>
+          <div class="input-group">
+            <label class="input-label">사고 현장 사진</label>
+            <label class="csd-file-upload" for="cs-acc-photo">
+              <span class="csd-file-text">📷 <strong>사진 첨부하기</strong></span>
+              <span class="csd-file-hint">최대 10장 · JPG, PNG · 한 장당 10MB 이하</span>
+              <input type="file" id="cs-acc-photo" accept="image/*" multiple onchange="csHandleAccFiles(event)">
+            </label>
+            <div class="csd-file-list" id="cs-acc-file-list"></div>
+          </div>
+        </div>
+
+        <div class="csd-section">
+          <h3 class="csd-section-title">5. 추가 요청 사항</h3>
+          <div class="input-group">
+            <label class="input-label">필요한 지원</label>
+            <div class="csd-radio-group">
+              <div class="csd-check-item"><input type="checkbox" id="cs-s1" name="services" value="견인"><label for="cs-s1">견인 서비스</label></div>
+              <div class="csd-check-item"><input type="checkbox" id="cs-s2" name="services" value="대차"><label for="cs-s2">대차 차량</label></div>
+              <div class="csd-check-item"><input type="checkbox" id="cs-s3" name="services" value="보험"><label for="cs-s3">보험사 출동</label></div>
+              <div class="csd-check-item"><input type="checkbox" id="cs-s4" name="services" value="상담"><label for="cs-s4">전문가 상담</label></div>
+            </div>
+          </div>
+          <div class="input-group"><label class="input-label">연락 가능한 전화번호 <span style="color:#b23a3a;">*</span></label><input type="tel" class="form-input" name="phone" placeholder="010-0000-0000" required></div>
+          <div class="input-group"><label class="input-label">기타 전달사항</label><textarea class="form-input csd-textarea" name="memo" placeholder="추가로 알려주실 내용이 있다면 적어 주세요."></textarea></div>
+        </div>
+
+      </form>
+    </div>
+
+    <div class="csd-submit-bar">
+      <button type="submit" form="cs-accident-form" class="submit-btn" style="margin:0;">사고 접수 제출하기</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ 3. 간편 문의 ═══ -->
+<div id="inquiry-screen" class="screen">
+  <div class="metal-bg"></div>
+  <div class="csd-wrap">
+    <div class="csd-header">
+      <button class="csd-back" onclick="goTo('cs-screen')">←</button>
+      <span class="csd-title">간편 문의</span>
+      <span style="width:36px;"></span>
+    </div>
+
+    <div class="csd-tabs">
+      <button class="csd-tab-btn csd-tab-active" onclick="csSwitchTab('write', this)">문의 작성</button>
+      <button class="csd-tab-btn" onclick="csSwitchTab('faq', this)">자주 묻는 질문</button>
+      <button class="csd-tab-btn" onclick="csSwitchTab('mine', this)">내 문의 내역</button>
+    </div>
+
+    <div class="csd-body" style="padding-bottom:96px;">
+
+      <!-- ─── 탭 1: 문의 작성 ─── -->
+      <div class="csd-pane csd-pane-active" id="cs-pane-write">
+        <form id="cs-inquiry-form" onsubmit="csSubmitInquiry(event)">
+
+          <div class="csd-section">
+            <h3 class="csd-section-title">문의 유형</h3>
+            <div class="input-group">
+              <label class="input-label">유형 선택 <span style="color:#b23a3a;">*</span></label>
+              <select class="form-input csd-select" name="category" required>
+                <option value="">유형을 선택해 주세요</option>
+                <option value="이용">이용 방법 안내</option>
+                <option value="예약">예약·변경·취소</option>
+                <option value="결제">결제·환불</option>
+                <option value="차량">차량 상태·관리</option>
+                <option value="회원">회원 정보·인증</option>
+                <option value="포인트">포인트·쿠폰</option>
+                <option value="시스템">앱 오류·시스템</option>
+                <option value="기타">기타</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="csd-section">
+            <h3 class="csd-section-title">문의 내용</h3>
+            <div class="input-group"><label class="input-label">제목 <span style="color:#b23a3a;">*</span></label><input type="text" class="form-input" name="title" placeholder="문의 제목을 입력해 주세요" maxlength="60" required></div>
+            <div class="input-group">
+              <label class="input-label">내용 <span style="color:#b23a3a;">*</span></label>
+              <textarea class="form-input csd-textarea" name="content" id="cs-inq-content" placeholder="문의 내용을 자세히 입력해 주세요." maxlength="2000" required oninput="csUpdateCharCount()"></textarea>
+              <div class="csd-char-count"><span id="cs-char-cur">0</span> / 2000자</div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">파일 첨부 (선택)</label>
+              <label class="csd-file-upload" for="cs-inq-photo">
+                <span class="csd-file-text">📎 <strong>파일 첨부하기</strong></span>
+                <span class="csd-file-hint">최대 5개 · JPG, PNG, PDF · 10MB 이하</span>
+                <input type="file" id="cs-inq-photo" accept="image/*,.pdf" multiple onchange="csHandleInqFiles(event)">
+              </label>
+              <div class="csd-file-list" id="cs-inq-file-list"></div>
+            </div>
+          </div>
+
+          <div class="csd-section">
+            <h3 class="csd-section-title">답변 받을 정보</h3>
+            <div class="input-group"><label class="input-label">이름 <span style="color:#b23a3a;">*</span></label><input type="text" class="form-input" name="name" placeholder="홍길동" required></div>
+            <div class="input-group"><label class="input-label">연락처 <span style="color:#b23a3a;">*</span></label><input type="tel" class="form-input" name="phone" placeholder="010-0000-0000" required></div>
+            <div class="input-group"><label class="input-label">이메일</label><input type="email" class="form-input" name="email" placeholder="example@email.com"></div>
+            <div class="input-group">
+              <label class="input-label">답변 방식</label>
+              <select class="form-input csd-select" name="replyMethod">
+                <option value="앱알림">앱 알림</option>
+                <option value="이메일">이메일</option>
+                <option value="문자">문자(SMS)</option>
+                <option value="전화">전화</option>
+              </select>
+            </div>
+            <div class="csd-info-box" style="margin-top:8px;">💡 일반 문의는 영업일 기준 <strong>24시간 이내</strong> 답변드립니다.<br>⏰ 운영시간 — 평일 09:00 ~ 18:00<br>🚨 사고·고장은 <strong>전화 상담</strong> 또는 사고 접수를 이용해 주세요.</div>
+          </div>
+
+          <div class="csd-section">
+            <h3 class="csd-section-title">개인정보 수집·이용 동의</h3>
+            <div class="csd-info-box" style="margin-top:0;"><strong>수집 항목</strong> — 이름, 연락처, 이메일, 문의 내용<br><strong>수집 목적</strong> — 문의 접수 및 답변 제공<br><strong>보유 기간</strong> — 답변 완료 후 3년 (전자상거래법 제6조)</div>
+            <label class="csd-agree-row">
+              <input type="checkbox" id="cs-agree" name="agree" required>
+              <span class="csd-agree-box"></span>
+              <span class="csd-agree-text">위 개인정보 수집·이용에 <strong>동의합니다</strong>. <span style="color:#b23a3a;">*</span></span>
+            </label>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ─── 탭 2: FAQ ─── -->
+      <div class="csd-pane" id="cs-pane-faq">
+        <div class="csd-faq-item">
+          <button class="csd-faq-q" onclick="csToggleFAQ(this)"><span class="csd-q-mark">Q</span><span class="csd-faq-text">카로 이용 자격은 어떻게 되나요?</span><span class="csd-faq-arr">∨</span></button>
+          <div class="csd-faq-a"><div class="csd-faq-a-inner"><strong>만 21세 이상이며 운전면허 취득 후 1년 이상 경과</strong>한 분이 이용 가능합니다. 「여객자동차 운수사업법」 제34조의2에 따라 가입 시 운전면허 진위 확인이 자동 진행됩니다.</div></div>
+        </div>
+        <div class="csd-faq-item">
+          <button class="csd-faq-q" onclick="csToggleFAQ(this)"><span class="csd-q-mark">Q</span><span class="csd-faq-text">예약은 언제까지 변경·취소할 수 있나요?</span><span class="csd-faq-arr">∨</span></button>
+          <div class="csd-faq-a"><div class="csd-faq-a-inner"><strong>이용 시작 1시간 전까지</strong> 자유롭게 변경 가능합니다. 취소는 시점에 따라 수수료가 달라집니다 — 48시간 전 무료, 24시간 전 10%, 1시간 전 20%, 1시간 이내 30%.</div></div>
+        </div>
+        <div class="csd-faq-item">
+          <button class="csd-faq-q" onclick="csToggleFAQ(this)"><span class="csd-q-mark">Q</span><span class="csd-faq-text">결제 후 환불은 얼마나 걸리나요?</span><span class="csd-faq-arr">∨</span></button>
+          <div class="csd-faq-a"><div class="csd-faq-a-inner">카드 결제는 <strong>영업일 기준 3~5일 이내</strong> 카드사 승인 취소, 계좌이체는 2~3일 소요됩니다. 포인트·쿠폰은 즉시 복원됩니다.</div></div>
+        </div>
+        <div class="csd-faq-item">
+          <button class="csd-faq-q" onclick="csToggleFAQ(this)"><span class="csd-q-mark">Q</span><span class="csd-faq-text">사고가 났을 때 어떻게 해야 하나요?</span><span class="csd-faq-arr">∨</span></button>
+          <div class="csd-faq-a"><div class="csd-faq-a-inner">① 부상자 구호 및 119 신고 → ② 안전 확보 및 사진 촬영 → ③ 인적 피해 시 112 신고(의무) → ④ 카로 앱 [사고 접수] 즉시 접수. <strong>즉시 신고하지 않으면 면책 적용이 제외</strong>됩니다.</div></div>
+        </div>
+        <div class="csd-faq-item">
+          <button class="csd-faq-q" onclick="csToggleFAQ(this)"><span class="csd-q-mark">Q</span><span class="csd-faq-text">차량을 다른 사람이 운전해도 되나요?</span><span class="csd-faq-arr">∨</span></button>
+          <div class="csd-faq-a"><div class="csd-faq-a-inner"><strong>등록된 운전자 외에는 운전할 수 없습니다.</strong> 「여객자동차 운수사업법」 제34조의5에 따른 제3자 운전 금지 의무이며, 위반 시 모든 사고에 대해 면책이 적용되지 않습니다.</div></div>
+        </div>
+        <div class="csd-faq-item">
+          <button class="csd-faq-q" onclick="csToggleFAQ(this)"><span class="csd-q-mark">Q</span><span class="csd-faq-text">반납 시간을 초과하면 어떻게 되나요?</span><span class="csd-faq-arr">∨</span></button>
+          <div class="csd-faq-a"><div class="csd-faq-a-inner">10분까지는 유예시간이지만, 이후 <strong>시간 요금 2배</strong>가 부과됩니다. 4시간 초과 시 1일 요금 2배 + 휴차보상료가 청구됩니다.</div></div>
+        </div>
+        <div class="csd-faq-item">
+          <button class="csd-faq-q" onclick="csToggleFAQ(this)"><span class="csd-q-mark">Q</span><span class="csd-faq-text">차량에 물건을 두고 내렸어요. 어떻게 찾나요?</span><span class="csd-faq-arr">∨</span></button>
+          <div class="csd-faq-a"><div class="csd-faq-a-inner">반납 직후라면 <strong>즉시 고객센터</strong>로 연락 주세요. 시간이 지난 경우 다음 이용자에게 차량이 배차되어 회수가 어려울 수 있습니다.</div></div>
+        </div>
+      </div>
+
+      <!-- ─── 탭 3: 내 문의 내역 ─── -->
+      <div class="csd-pane" id="cs-pane-mine">
+        <div class="csd-empty">
+          <div class="csd-empty-icon">📋</div>
+          <div class="csd-empty-text">아직 등록된 문의가 없습니다.</div>
+          <div class="csd-empty-sub">문의 접수 후 진행 상태와 답변을 확인할 수 있습니다.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="csd-submit-bar" id="cs-inq-submit-bar">
+      <button type="submit" form="cs-inquiry-form" class="submit-btn" style="margin:0;">문의 접수하기</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ 4. 채팅 상담 ═══ -->
+<div id="chat-screen" class="screen">
+  <div class="metal-bg"></div>
+  <div class="csd-chat-wrap">
+
+    <div class="csd-chat-header">
+      <button class="csd-back" onclick="csConfirmExitChat()">←</button>
+      <div class="csd-agent-avatar">C<span class="csd-status-dot"></span></div>
+      <div class="csd-agent-info">
+        <div class="csd-agent-name">카로 상담원</div>
+        <div class="csd-agent-status">평균 응답 2분 이내</div>
+      </div>
+      <button class="csd-icon-btn" onclick="csCallSupport()" title="전화">📞</button>
+      <button class="csd-icon-btn" onclick="csEndChat()" title="종료">✕</button>
+    </div>
+
+    <div class="csd-info-banner" id="cs-info-banner">💬 평일 09:00 ~ 18:00 운영 · 그 외 시간에는 답변이 지연될 수 있습니다</div>
+
+    <div class="csd-messages" id="cs-messages">
+      <div class="csd-day-divider"><span id="cs-today-label">오늘</span></div>
+      <div class="csd-msg csd-system"><div class="csd-msg-bubble">상담이 시작되었습니다 · 상담 내용은 서비스 품질 향상을 위해 저장됩니다</div></div>
+      <div class="csd-msg csd-agent-msg">
+        <div class="csd-msg-avatar">C</div>
+        <div class="csd-msg-content">
+          <div class="csd-msg-bubble">안녕하세요, <strong>카로 모빌리티</strong> 상담원입니다. 무엇을 도와드릴까요?<br><br>아래 자주 묻는 항목을 선택하시거나, 메시지를 직접 입력해 주세요.</div>
+          <div class="csd-msg-time" id="cs-first-time">방금</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="csd-quick-chips" id="cs-quick-chips">
+      <button class="csd-chip" onclick="csSendQuick('이용 안내가 궁금해요')">이용 안내</button>
+      <button class="csd-chip" onclick="csSendQuick('예약 변경하고 싶어요')">예약 변경</button>
+      <button class="csd-chip" onclick="csSendQuick('예약을 취소하고 싶어요')">예약 취소</button>
+      <button class="csd-chip" onclick="csSendQuick('취소 수수료가 궁금해요')">취소 수수료</button>
+      <button class="csd-chip" onclick="csSendQuick('사고가 났어요')">사고 접수</button>
+      <button class="csd-chip" onclick="csSendQuick('반납 방법을 알려주세요')">반납 방법</button>
+      <button class="csd-chip" onclick="csSendQuick('연장하고 싶어요')">이용 연장</button>
+      <button class="csd-chip" onclick="csSendQuick('환불은 언제 되나요')">환불 문의</button>
+    </div>
+
+    <div class="csd-input-bar">
+      <button class="csd-attach-btn" onclick="csAttachChatFile()" title="파일">📎</button>
+      <div class="csd-input-wrap"><textarea class="csd-msg-input" id="cs-msg-input" placeholder="메시지를 입력하세요..." rows="1" oninput="csAutoGrow(this)" onkeydown="csHandleKey(event)"></textarea></div>
+      <button class="csd-send-btn" id="cs-send-btn" onclick="csSendMessage()" title="전송">➤</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══ 공통 성공 모달 ═══ -->
+<div id="cs-success-modal" class="modal-overlay" style="z-index:9999;">
+  <div class="modal-box">
+    <div class="modal-body" style="padding:32px 24px 24px;text-align:center;">
+      <div class="csd-success-icon">✓</div>
+      <div class="csd-success-title" id="cs-modal-title">접수가 완료되었습니다</div>
+      <div class="csd-success-text" id="cs-modal-text">담당 상담원이 곧 연락드릴 예정입니다.<br>접수 번호를 보관해 주세요.</div>
+      <div class="csd-receipt-num" id="cs-receipt-num">CR-X-000000</div>
+      <button class="submit-btn" style="margin-top:18px;width:100%;" onclick="csCloseSuccess()">확인</button>
+    </div>
+  </div>
+</div>
 
 
 <!-- ══ 회원 탈퇴 확인 모달 ══ -->
