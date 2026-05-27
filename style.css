@@ -3281,3 +3281,22 @@ video::-webkit-media-controls-panel{display:none !important;}
   background: #1d7a3a !important;
   box-shadow: 0 0 8px rgba(29,122,58,.5);
 }
+/* ═══════════════════════════════════════════
+   사고접수 - 추가 요청 사항 버튼 (연한 회색 강조)
+═══════════════════════════════════════════ */
+
+/* 선택된 상태 - 연한 회색 배경만 */
+#accident-screen .csd-check-btn.csd-active,
+#accident-screen .csd-check-btn.active,
+#accident-screen .csd-check-btn.selected,
+#accident-screen .csd-check-btn.checked,
+#accident-screen .csd-support-btn.csd-active,
+#accident-screen .csd-support-btn.selected,
+#accident-screen button.csd-active,
+#accident-screen [class*="check"].active,
+#accident-screen [class*="check"].selected {
+  background: #d8dce2 !important;
+  border: 1px solid #b8bcc4 !important;
+  color: #18191c !important;
+  font-weight: 600 !important;
+}
