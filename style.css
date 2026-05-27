@@ -3360,3 +3360,61 @@ video::-webkit-media-controls-panel{display:none !important;}
   cursor: default !important;
   pointer-events: none !important;
 }
+
+/* ═══════════════════════════════════════════
+   계정 관리 상세 - 헤더 정리
+   (제목을 가운데 / 하단 버튼 제거 / CARO MOBILITY 제거)
+═══════════════════════════════════════════ */
+
+/* 1. "CARO MOBILITY" 텍스트 숨기기 */
+#account-detail-screen .mpd-brand {
+  display: none !important;
+}
+
+/* 2. 하단 뒤로가기 버튼 완전 제거 */
+#account-detail-screen .mpd-footer {
+  display: none !important;
+}
+
+/* 3. wrap에 기준점 설정 */
+#account-detail-screen .mpd-wrap {
+  position: relative !important;
+}
+
+/* 4. 헤더 - 뒤로가기 버튼 클릭 가능하도록 z-index */
+#account-detail-screen .mpd-header {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+#account-detail-screen .mpd-back-icon {
+  position: relative !important;
+  z-index: 3 !important;
+}
+
+/* 5. 제목을 헤더 위치로 절대좌표 이동 (가운데) */
+#account-detail-screen .mpd-title-row {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin: 0 !important;
+  padding: 16px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+/* 6. 제목 텍스트 스타일 (CARO MOBILITY 자리에 맞춤) */
+#account-detail-screen .mpd-title {
+  text-align: center !important;
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  color: var(--text-1) !important;
+  letter-spacing: .02em !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
