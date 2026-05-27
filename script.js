@@ -7767,3 +7767,122 @@ window.devUploadAllCars=function(){
   window.csCloseSuccess        = csCloseSuccess;
 
 }());
+/* ═══════════════════════════════════════════════════════════════
+   CARO MOBILITY — 고객센터 JS 수정 패치 v1
+   적용 위치: script.js 파일 맨 아래에 추가
+
+   수정 사항:
+   1. goToCsDetail 오버라이드 — 선택한 카테고리만 보이게
+   2. 채팅 — 24시간 운영 (운영시간 배너 항상 숨김 + 응답 메시지 변경)
+═══════════════════════════════════════════════════════════════ */
+
+(function(){
+  'use strict';
+
+  /* ════════════════════════════════════════
+     [수정 1] 카테고리별 별도 표시
+     클릭한 카테고리만 보이고 나머지는 숨김
+  ════════════════════════════════════════ */
+  window.goToCsDetail = function(index) {
+    if (typeof goTo === 'function') goTo('cs-detail-screen');
+
+    setTimeout(function(){
+      var items = document.querySelectorAll('#cs-detail-screen .csd-acc-item');
+
+      items.forEach(function(item, i) {
+        if (i === index) {
+          /* 선택한 카테고리만 표시 + 자동 펼침 */
+          item.classList.remove('csd-acc-hidden');
+          var head = item.querySelector('.csd-acc-head');
+          var body = item.querySelector('.csd-acc-body');
+          if (head) head.classList.add('csd-open');
+          if (body) body.classList.add('csd-open');
+        } else {
+          /* 나머지 모든 카테고리 숨김 */
+          item.classList.add('csd-acc-hidden');
+        }
+      });
+
+      /* 상단으로 스크롤 */
+      var screen = document.getElementById('cs-detail-screen');
+      if (screen) screen.scrollTop = 0;
+    }, 150);
+  };
+
+  /* 뒤로 가기로 cs-screen으로 돌아갈 때 — 다음에 들어올 때 정상 표시 */
+  /* (별도 처리 불필요 — goToCsDetail이 호출될 때마다 다시 세팅됨) */
+
+
+  /* ════════════════════════════════════════
+     [수정 2] 채팅 24시간 운영
+     운영시간 응답을 24시간으로 변경
+  ════════════════════════════════════════ */
+
+  /* csSendMessage 오버라이드 — 운영시간 키워드 응답을 24시간으로 변경 */
+  var _origSendMessage = window.csSendMessage;
+  if (typeof _origSendMessage === 'function') {
+    /* csReplyTo는 IIFE 내부 함수라 직접 접근 불가 →
+       메시지 추가 후 DOM에서 운영시간 텍스트를 24시간으로 치환 */
+
+    /* MutationObserver로 새 메시지 추가 감지 → 텍스트 치환 */
+    var chatBody = document.getElementById('cs-chat-body')
+                || document.querySelector('#chat-screen .csd-chat-body')
+                || document.querySelector('#chat-screen .csd-msgs');
+
+    function patchOperatingHours() {
+      var bubbles = document.querySelectorAll('#chat-screen .csd-msg.csd-agent-msg .csd-msg-bubble');
+      bubbles.forEach(function(bubble){
+        if (bubble.dataset.csdPatched) return;
+        var html = bubble.innerHTML;
+        if (html && (html.indexOf('평일 09:00') !== -1 || html.indexOf('주말·공휴일') !== -1)) {
+          /* 운영시간 응답 → 24시간 운영으로 치환 */
+          html = html.replace(/▪ <strong>채팅·일반 상담<\/strong> — 평일 09:00 ~ 18:00<br>/g,
+                               '▪ <strong>채팅·일반 상담</strong> — 24시간 운영<br>');
+          html = html.replace(/▪ <strong>주말·공휴일<\/strong> — 일반 상담 휴무/g,
+                               '▪ <strong>주말·공휴일</strong> — 정상 운영');
+          bubble.innerHTML = html;
+          bubble.dataset.csdPatched = '1';
+        }
+      });
+    }
+
+    /* 페이지 로드 시점에 옵저버 시작 */
+    function startObserver() {
+      var target = document.getElementById('chat-screen');
+      if (!target) {
+        setTimeout(startObserver, 500);
+        return;
+      }
+      var observer = new MutationObserver(function(){
+        patchOperatingHours();
+      });
+      observer.observe(target, { childList: true, subtree: true });
+      /* 초기 한 번 실행 */
+      patchOperatingHours();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startObserver);
+    } else {
+      startObserver();
+    }
+  }
+
+
+  /* 운영시간 배너 — 24시간 운영이므로 항상 숨김 */
+  function hideBanner() {
+    var banner = document.getElementById('cs-info-banner');
+    if (banner) {
+      banner.style.display = 'none';
+      banner.classList.add('csd-hidden');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', hideBanner);
+  } else {
+    hideBanner();
+  }
+
+  console.log('[CARO] 고객센터 패치 v1 적용 완료');
+})();
