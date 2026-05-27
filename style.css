@@ -3295,11 +3295,3 @@ video::-webkit-media-controls-panel{display:none !important;}
   color: #18191c !important;
   font-weight: 600 !important;
 }
-
-/* 미선택 상태 - 흰색 유지 */
-#accident-screen .csd-check-item input:not(:checked) + label {
-  background: #fff !important;
-  background-color: #fff !important;
-  color: #18191c !important;
-  border: 1px solid #d0d4dc !important;
-}
