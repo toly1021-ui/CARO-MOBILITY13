@@ -2920,3 +2920,364 @@ video::-webkit-media-controls-panel{display:none !important;}
   .csd-radio-item label, .csd-check-item label { font-size: .8rem; padding: 9px 6px; }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   CARO MOBILITY — 고객센터 수정 패치 v1
+   적용 위치: style.css 파일 맨 아래에 추가
+
+   수정 사항:
+   1. 하단 4개 버튼 색상 통일 (검정 primary)
+   2. 카테고리별 별도 표시 (다른 카테고리 숨김)
+   3. 상세 화면 글씨/배경 가독성 개선
+   4. 채팅 화면 글씨/배경 가독성 개선
+═══════════════════════════════════════════════════════════════ */
+
+
+/* ════════════════════════════════════════════════
+   [수정 1] 하단 4개 버튼 색상 통일
+   사고 접수, 전화 상담, 간편 문의, 채팅 상담
+   → 모두 동일한 검정 primary 스타일
+════════════════════════════════════════════════ */
+#cs-screen .cs-contact-btn,
+#cs-screen .cs-contact-btn.cs-accident,
+#cs-screen .cs-contact-btn.cs-call,
+#cs-screen .cs-contact-btn.cs-simple,
+#cs-screen .cs-contact-btn.cs-chat {
+  background: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+  font-weight: 700;
+  letter-spacing: .02em;
+  transition: all .2s ease;
+}
+
+#cs-screen .cs-contact-btn:hover,
+#cs-screen .cs-contact-btn.cs-accident:hover,
+#cs-screen .cs-contact-btn.cs-call:hover,
+#cs-screen .cs-contact-btn.cs-simple:hover,
+#cs-screen .cs-contact-btn.cs-chat:hover {
+  background: #2e3138 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+
+#cs-screen .cs-contact-btn:active {
+  transform: translateY(0);
+  opacity: .9;
+}
+
+
+/* ════════════════════════════════════════════════
+   [수정 2] 카테고리별 별도 표시
+   다른 카테고리는 숨김 (csd-acc-hidden 클래스)
+════════════════════════════════════════════════ */
+#cs-detail-screen .csd-acc-item.csd-acc-hidden {
+  display: none !important;
+}
+
+
+/* ════════════════════════════════════════════════
+   [수정 3] 상세 화면 글씨/배경 가독성 개선
+   메탈 배경에 묻히지 않도록 진한 글씨 + 불투명 배경
+════════════════════════════════════════════════ */
+
+/* 상세 화면 전체 배경 (메탈 무늬 위에 약간 불투명 레이어) */
+#cs-detail-screen {
+  background: linear-gradient(180deg, rgba(245,247,250,.4) 0%, rgba(240,243,247,.55) 100%);
+}
+
+/* 아코디언 항목 카드 — 더 불투명하게 */
+#cs-detail-screen .csd-acc-item {
+  background: rgba(255,255,255,.92) !important;
+  border: 1px solid rgba(140,148,160,.22) !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06) !important;
+  margin-bottom: 14px !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+}
+
+/* 아코디언 헤더 */
+#cs-detail-screen .csd-acc-head {
+  background: rgba(248,250,253,.95) !important;
+  color: #18191c !important;
+  font-weight: 700;
+}
+
+#cs-detail-screen .csd-acc-head:hover {
+  background: rgba(240,244,250,1) !important;
+}
+
+#cs-detail-screen .csd-acc-head.csd-open {
+  background: rgba(240,244,250,1) !important;
+  border-bottom: 1px solid rgba(140,148,160,.18);
+}
+
+/* 아코디언 본문 — 진한 배경, 진한 글씨 */
+#cs-detail-screen .csd-acc-body {
+  background: rgba(255,255,255,.85) !important;
+}
+
+#cs-detail-screen .csd-acc-inner {
+  color: #18191c !important;
+}
+
+#cs-detail-screen .csd-acc-inner p,
+#cs-detail-screen .csd-acc-inner li,
+#cs-detail-screen .csd-acc-inner div,
+#cs-detail-screen .csd-acc-inner span,
+#cs-detail-screen .csd-acc-inner td,
+#cs-detail-screen .csd-acc-inner th {
+  color: #18191c !important;
+}
+
+#cs-detail-screen .csd-acc-inner strong {
+  color: #000 !important;
+  font-weight: 700 !important;
+}
+
+/* 섹션 제목 (가입하기, 사고 처리 5단계 등) */
+#cs-detail-screen .csd-h4,
+#cs-detail-screen .csd-section-title {
+  color: #000 !important;
+  font-weight: 700 !important;
+  border-left: 3px solid #18191c !important;
+  padding-left: 8px;
+}
+
+/* 정보 박스 */
+#cs-detail-screen .csd-info-box {
+  background: rgba(255,255,255,.88) !important;
+  border: 1px solid rgba(140,148,160,.28) !important;
+  color: #18191c !important;
+}
+
+#cs-detail-screen .csd-info-box.csd-warn {
+  background: rgba(255,247,225,.95) !important;
+  border-color: rgba(200,160,30,.5) !important;
+  color: #6b4500 !important;
+}
+
+#cs-detail-screen .csd-info-box.csd-warn strong {
+  color: #6b4500 !important;
+}
+
+#cs-detail-screen .csd-info-box.csd-error {
+  background: rgba(255,235,235,.95) !important;
+  border-color: rgba(200,50,50,.5) !important;
+  color: #8b1d1d !important;
+}
+
+#cs-detail-screen .csd-info-box.csd-error strong {
+  color: #8b1d1d !important;
+}
+
+#cs-detail-screen .csd-info-box.csd-success {
+  background: rgba(225,245,232,.95) !important;
+  border-color: rgba(29,122,58,.5) !important;
+  color: #0e5028 !important;
+}
+
+#cs-detail-screen .csd-info-box.csd-success strong {
+  color: #0e5028 !important;
+}
+
+/* 사고 처리 단계 제목 */
+#cs-detail-screen .csd-step-title {
+  color: #000 !important;
+  font-weight: 700 !important;
+}
+
+/* 테이블 (보험 보장 범위 등) */
+#cs-detail-screen .csd-table {
+  background: rgba(255,255,255,.92) !important;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#cs-detail-screen .csd-table th {
+  background: rgba(232,238,245,.95) !important;
+  color: #18191c !important;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(140,148,160,.3);
+}
+
+#cs-detail-screen .csd-table td {
+  color: #18191c !important;
+  border-bottom: 1px solid rgba(140,148,160,.15);
+}
+
+/* 아코디언 화살표 */
+#cs-detail-screen .csd-acc-head::after,
+#cs-detail-screen .csd-acc-icon {
+  color: #18191c !important;
+}
+
+/* 카테고리 원형 점 */
+#cs-detail-screen .csd-acc-dot,
+#cs-detail-screen .csd-acc-head > span:first-child {
+  color: #18191c !important;
+}
+
+/* 카테고리 페이지 헤더 영역 */
+#cs-detail-screen .csd-header,
+#cs-detail-screen .csd-page-header {
+  background: rgba(255,255,255,.92) !important;
+}
+
+#cs-detail-screen .csd-title,
+#cs-detail-screen .csd-page-title {
+  color: #18191c !important;
+}
+
+
+/* ════════════════════════════════════════════════
+   [수정 4] 채팅 화면 가독성 개선
+════════════════════════════════════════════════ */
+
+/* 채팅 화면 배경 — 메탈 위 반투명 레이어 */
+#chat-screen {
+  background: linear-gradient(180deg, rgba(245,247,250,.4) 0%, rgba(240,243,247,.55) 100%);
+}
+
+/* 상단 헤더 */
+#chat-screen .csd-header,
+#chat-screen .csd-page-header {
+  background: rgba(255,255,255,.92) !important;
+  border-bottom: 1px solid rgba(140,148,160,.22) !important;
+}
+
+#chat-screen .csd-title,
+#chat-screen .csd-page-title {
+  color: #18191c !important;
+  font-weight: 700 !important;
+}
+
+/* "평균 응답 2분 이내" 상태 텍스트 */
+#chat-screen .csd-status,
+#chat-screen .csd-subtitle {
+  color: #1d7a3a !important;
+  font-weight: 600 !important;
+}
+
+/* 운영시간 안내 배너 — 24시간 운영이므로 항상 숨김 */
+#chat-screen #cs-info-banner,
+#chat-screen .csd-banner {
+  display: none !important;
+}
+
+/* 날짜 라벨 (5월 28일) */
+#chat-screen .csd-date-label,
+#chat-screen #cs-today-label {
+  background: rgba(255,255,255,.9) !important;
+  color: #18191c !important;
+  border: 1px solid rgba(140,148,160,.25) !important;
+  font-weight: 600;
+}
+
+/* 시스템 메시지 (상담이 시작되었습니다) */
+#chat-screen .csd-msg.csd-system .csd-msg-bubble {
+  background: rgba(255,255,255,.85) !important;
+  color: #44474f !important;
+  border: 1px dashed rgba(140,148,160,.4) !important;
+  font-weight: 500;
+}
+
+/* 상담원 메시지 (왼쪽) */
+#chat-screen .csd-msg.csd-agent-msg .csd-msg-bubble {
+  background: rgba(255,255,255,.95) !important;
+  color: #18191c !important;
+  border: 1px solid rgba(140,148,160,.25) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+#chat-screen .csd-msg.csd-agent-msg .csd-msg-bubble strong {
+  color: #18191c !important;
+}
+
+/* 사용자 메시지 (오른쪽) — 검정 배경에 흰 글씨로 */
+#chat-screen .csd-msg.csd-user-msg .csd-msg-bubble {
+  background: #18191c !important;
+  color: #e8ecf0 !important;
+  font-weight: 500;
+}
+
+/* 메시지 시간 */
+#chat-screen .csd-msg-time {
+  color: #44474f !important;
+  font-weight: 500;
+}
+
+/* 빠른 답변 칩 영역 */
+#chat-screen .csd-chips,
+#chat-screen .csd-quick-replies {
+  background: rgba(255,255,255,.92) !important;
+  border-top: 1px solid rgba(140,148,160,.2) !important;
+}
+
+#chat-screen .csd-chip {
+  background: rgba(248,250,253,.95) !important;
+  color: #18191c !important;
+  border: 1px solid rgba(140,148,160,.35) !important;
+  font-weight: 600;
+}
+
+#chat-screen .csd-chip:hover {
+  background: rgba(232,238,245,1) !important;
+  border-color: rgba(140,148,160,.55) !important;
+}
+
+/* 메시지 입력창 영역 */
+#chat-screen .csd-input-bar,
+#chat-screen .csd-msg-input-wrap {
+  background: rgba(255,255,255,.95) !important;
+  border-top: 1px solid rgba(140,148,160,.25) !important;
+}
+
+#chat-screen .csd-msg-input {
+  background: rgba(248,250,253,.95) !important;
+  color: #18191c !important;
+  border: 1px solid rgba(140,148,160,.35) !important;
+}
+
+#chat-screen .csd-msg-input::placeholder {
+  color: #888d98 !important;
+}
+
+/* 첨부 버튼 */
+#chat-screen .csd-attach-btn {
+  color: #44474f !important;
+}
+
+#chat-screen .csd-attach-btn:hover {
+  background: rgba(140,148,160,.15) !important;
+  color: #18191c !important;
+}
+
+/* 전화 버튼 */
+#chat-screen .csd-call-btn,
+#chat-screen .csd-icon-btn {
+  background: rgba(255,255,255,.85) !important;
+  color: #b23a3a !important;
+  border: 1px solid rgba(178,58,58,.3) !important;
+}
+
+#chat-screen .csd-call-btn:hover,
+#chat-screen .csd-icon-btn:hover {
+  background: rgba(255,235,235,.95) !important;
+}
+
+/* 닫기 버튼 (X) */
+#chat-screen .csd-close-btn {
+  color: #18191c !important;
+}
+
+/* 상담원 아바타 */
+#chat-screen .csd-msg-avatar {
+  background: rgba(255,255,255,.9) !important;
+  border: 1px solid rgba(140,148,160,.25) !important;
+}
+
+/* 상태 점 (초록 동그라미) */
+#chat-screen .csd-status-dot {
+  background: #1d7a3a !important;
+  box-shadow: 0 0 8px rgba(29,122,58,.5);
+}
