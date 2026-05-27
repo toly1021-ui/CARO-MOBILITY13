@@ -3295,3 +3295,68 @@ video::-webkit-media-controls-panel{display:none !important;}
   color: #18191c !important;
   font-weight: 600 !important;
 }
+
+/* ═══════════════════════════════════════════
+   고객센터 - 아코디언 펼침 고정 (항상 펼침)
+═══════════════════════════════════════════ */
+
+/* 1. 모든 콘텐츠 강제로 펼침 */
+#cs-screen .cs-card-body,
+#cs-screen .cs-accordion-content,
+#cs-screen .cs-content,
+#cs-screen .accordion-content,
+#cs-screen .accordion-body,
+#cs-screen [class*="cs-card"] [class*="content"],
+#cs-screen [class*="cs-card"] [class*="body"]:not([class*="header"]),
+#cs-screen [class*="collapse"] {
+  display: block !important;
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* 2. 펼침/접힘 화살표 숨기기 */
+#cs-screen .cs-chevron,
+#cs-screen .cs-arrow,
+#cs-screen .cs-toggle-icon,
+#cs-screen .accordion-arrow,
+#cs-screen .cs-card-toggle,
+#cs-screen [class*="chevron"],
+#cs-screen [class*="cs-card"] [class*="arrow"]:not(.back-arrow) {
+  display: none !important;
+}
+
+/* 3. 헤더 클릭 시 커서 기본값 (눌러도 변화 없음 표시) */
+#cs-screen .cs-card-header,
+#cs-screen .cs-accordion-header,
+#cs-screen [class*="cs-card"] [class*="header"] {
+  cursor: default !important;
+}
+
+/* ═══════════════════════════════════════════
+   고객센터 상세 - 아코디언 항상 펼침 고정
+═══════════════════════════════════════════ */
+
+/* 1. 모든 콘텐츠 강제 펼침 */
+#cs-detail-screen .csd-acc-body,
+#cs-detail-screen .csd-acc-inner {
+  display: block !important;
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* 2. 펼침/접힘 화살표 숨기기 */
+#cs-detail-screen .csd-acc-arrow {
+  display: none !important;
+}
+
+/* 3. 헤더 클릭 비활성화 (눌러도 변화 없음) */
+#cs-detail-screen .csd-acc-head {
+  cursor: default !important;
+  pointer-events: none !important;
+}
