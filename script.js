@@ -7261,3 +7261,509 @@ window.devUploadAllCars=function(){
 
   console.log('🎨 결제 화면 중앙 정렬 IIFE 활성화');
 })();
+
+/* ═══════════════════════════════════════════════════════════════
+   📌 STEP 4 — 카로 모빌리티 고객센터 JS 추가본
+
+   ✅ 적용 방법: script.js 파일의 맨 아래에 통째로 붙여넣기
+
+   포함 기능:
+   1. 고객센터 상세 — 5개 카테고리 아코디언 (goToCsDetail)
+   2. 사고 접수 — 폼 제출, 파일 첨부, 부상자 토글
+   3. 간편 문의 — 탭 전환, FAQ, 글자수, 파일 첨부
+   4. 채팅 상담 — 메시지 송수신, 키워드 자동 응답
+   5. 공통 — 전화 연결, 성공 모달
+═══════════════════════════════════════════════════════════════ */
+
+(function() {
+  'use strict';
+
+  /* 카로 고객센터 전화번호 — 실제 번호로 변경하세요 */
+  var CARO_CS_PHONE = '1588-0000';
+
+  /* ─── 공통 유틸 ─── */
+  function csEscapeHtml(s) {
+    return String(s).replace(/[<>&"']/g, function(c){
+      return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function csNowTime() {
+    var d = new Date();
+    var h = d.getHours();
+    var m = d.getMinutes();
+    var ampm = h < 12 ? '오전' : '오후';
+    h = h % 12 || 12;
+    return ampm + ' ' + h + ':' + (m < 10 ? '0' + m : m);
+  }
+
+  /* ════════════════════════════════════════
+     1. 고객센터 상세 — 아코디언
+  ════════════════════════════════════════ */
+  function csToggleAcc(btn) {
+    var body = btn.nextElementSibling;
+    var isOpen = btn.classList.contains('csd-open');
+
+    document.querySelectorAll('#cs-detail-screen .csd-acc-head.csd-open').forEach(function(b){
+      b.classList.remove('csd-open');
+      b.nextElementSibling.classList.remove('csd-open');
+    });
+
+    if (!isOpen) {
+      btn.classList.add('csd-open');
+      body.classList.add('csd-open');
+      setTimeout(function(){
+        btn.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
+    }
+  }
+
+  /* 메인 메뉴(5개)에서 호출 — index = 0~4 */
+  function goToCsDetail(index) {
+    if (typeof goTo === 'function') goTo('cs-detail-screen');
+
+    document.querySelectorAll('#cs-detail-screen .csd-acc-head.csd-open').forEach(function(b){
+      b.classList.remove('csd-open');
+      b.nextElementSibling.classList.remove('csd-open');
+    });
+
+    setTimeout(function(){
+      var heads = document.querySelectorAll('#cs-detail-screen .csd-acc-head');
+      if (heads[index]) {
+        heads[index].classList.add('csd-open');
+        heads[index].nextElementSibling.classList.add('csd-open');
+        setTimeout(function(){
+          heads[index].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }, 150);
+  }
+
+  /* ════════════════════════════════════════
+     2. 사고 접수
+  ════════════════════════════════════════ */
+  function csToggleInjury(show) {
+    var el = document.getElementById('cs-injury-detail');
+    if (!el) return;
+    if (show) el.classList.add('csd-active');
+    else el.classList.remove('csd-active');
+  }
+
+  var csAccFiles = [];
+  function csHandleAccFiles(e) {
+    var files = Array.from(e.target.files);
+    files.forEach(function(f){
+      if (csAccFiles.length >= 10) return;
+      if (f.size > 10 * 1024 * 1024) {
+        alert('한 파일당 10MB 이하만 첨부 가능합니다: ' + f.name);
+        return;
+      }
+      csAccFiles.push(f);
+    });
+    csRenderAccFileList();
+    e.target.value = '';
+  }
+  function csRenderAccFileList() {
+    var list = document.getElementById('cs-acc-file-list');
+    if (!list) return;
+    list.innerHTML = '';
+    csAccFiles.forEach(function(f, i){
+      var chip = document.createElement('div');
+      chip.className = 'csd-file-chip';
+      chip.innerHTML = '📎 ' + csEscapeHtml(f.name) + ' <button onclick="csRemoveAccFile(' + i + ')" type="button">×</button>';
+      list.appendChild(chip);
+    });
+  }
+  function csRemoveAccFile(i) {
+    csAccFiles.splice(i, 1);
+    csRenderAccFileList();
+  }
+
+  function csGenReceiptNum(prefix) {
+    return 'CR-' + prefix + '-' + Date.now().toString().slice(-6);
+  }
+
+  function csSubmitAccident(e) {
+    e.preventDefault();
+    var btn = document.querySelector('#accident-screen .submit-btn');
+    btn.disabled = true;
+    btn.textContent = '접수 처리 중...';
+
+    /* TODO: Firebase Firestore 연동 — 사고 접수 데이터 저장 */
+    setTimeout(function(){
+      csShowSuccessModal(
+        '사고 접수가 완료되었습니다',
+        '담당 상담원이 곧 연락드릴 예정입니다.<br>접수 번호를 보관해 주세요.',
+        csGenReceiptNum('A')
+      );
+      btn.disabled = false;
+      btn.textContent = '사고 접수 제출하기';
+      document.getElementById('cs-accident-form').reset();
+      csAccFiles = [];
+      csRenderAccFileList();
+      csToggleInjury(false);
+    }, 1000);
+  }
+
+  /* ════════════════════════════════════════
+     3. 간편 문의
+  ════════════════════════════════════════ */
+  function csSwitchTab(name, btn) {
+    document.querySelectorAll('#inquiry-screen .csd-tab-btn').forEach(function(t){ t.classList.remove('csd-tab-active'); });
+    document.querySelectorAll('#inquiry-screen .csd-pane').forEach(function(p){ p.classList.remove('csd-pane-active'); });
+    btn.classList.add('csd-tab-active');
+    document.getElementById('cs-pane-' + name).classList.add('csd-pane-active');
+    var bar = document.getElementById('cs-inq-submit-bar');
+    if (bar) bar.style.display = (name === 'write') ? 'block' : 'none';
+  }
+
+  function csUpdateCharCount() {
+    var el = document.getElementById('cs-inq-content');
+    var cur = el ? el.value.length : 0;
+    var cnt = document.getElementById('cs-char-cur');
+    if (cnt) cnt.textContent = cur;
+  }
+
+  var csInqFiles = [];
+  function csHandleInqFiles(e) {
+    var files = Array.from(e.target.files);
+    files.forEach(function(f){
+      if (csInqFiles.length >= 5) return;
+      if (f.size > 10 * 1024 * 1024) {
+        alert('한 파일당 10MB 이하만 첨부 가능합니다: ' + f.name);
+        return;
+      }
+      csInqFiles.push(f);
+    });
+    csRenderInqFileList();
+    e.target.value = '';
+  }
+  function csRenderInqFileList() {
+    var list = document.getElementById('cs-inq-file-list');
+    if (!list) return;
+    list.innerHTML = '';
+    csInqFiles.forEach(function(f, i){
+      var chip = document.createElement('div');
+      chip.className = 'csd-file-chip';
+      chip.innerHTML = '📎 ' + csEscapeHtml(f.name) + ' <button onclick="csRemoveInqFile(' + i + ')" type="button">×</button>';
+      list.appendChild(chip);
+    });
+  }
+  function csRemoveInqFile(i) {
+    csInqFiles.splice(i, 1);
+    csRenderInqFileList();
+  }
+
+  function csToggleFAQ(btn) {
+    var ans = btn.nextElementSibling;
+    var isOpen = btn.classList.contains('csd-open');
+    document.querySelectorAll('.csd-faq-q.csd-open').forEach(function(b){
+      b.classList.remove('csd-open');
+      b.nextElementSibling.classList.remove('csd-open');
+    });
+    if (!isOpen) {
+      btn.classList.add('csd-open');
+      ans.classList.add('csd-open');
+    }
+  }
+
+  function csSubmitInquiry(e) {
+    e.preventDefault();
+    var btn = document.querySelector('#inquiry-screen .submit-btn');
+    btn.disabled = true;
+    btn.textContent = '접수 처리 중...';
+
+    /* TODO: Firebase Firestore 연동 — 문의 데이터 저장 */
+    setTimeout(function(){
+      csShowSuccessModal(
+        '문의가 접수되었습니다',
+        '영업일 기준 24시간 이내에<br>답변드릴 예정입니다.',
+        csGenReceiptNum('Q')
+      );
+      btn.disabled = false;
+      btn.textContent = '문의 접수하기';
+      document.getElementById('cs-inquiry-form').reset();
+      csInqFiles = [];
+      csRenderInqFileList();
+      csUpdateCharCount();
+    }, 800);
+  }
+
+  /* ════════════════════════════════════════
+     4. 채팅 상담
+  ════════════════════════════════════════ */
+  function csAddMessage(text, isUser) {
+    var box = document.getElementById('cs-messages');
+    if (!box) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'csd-msg ' + (isUser ? 'csd-user-msg' : 'csd-agent-msg');
+    var html = '';
+    if (!isUser) html += '<div class="csd-msg-avatar">C</div>';
+    html += '<div class="csd-msg-content">';
+    html += '  <div class="csd-msg-bubble">' + text + '</div>';
+    html += '  <div class="csd-msg-time">' + csNowTime() + '</div>';
+    html += '</div>';
+    wrap.innerHTML = html;
+    box.appendChild(wrap);
+    csScrollChatToBottom();
+  }
+
+  function csAddSystemMessage(text) {
+    var box = document.getElementById('cs-messages');
+    if (!box) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'csd-msg csd-system';
+    wrap.innerHTML = '<div class="csd-msg-bubble">' + text + '</div>';
+    box.appendChild(wrap);
+    csScrollChatToBottom();
+  }
+
+  function csShowTyping() {
+    var box = document.getElementById('cs-messages');
+    if (!box) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'csd-msg csd-agent-msg';
+    wrap.id = 'cs-typing-msg';
+    wrap.innerHTML = '<div class="csd-msg-avatar">C</div><div class="csd-msg-content"><div class="csd-msg-bubble"><div class="csd-typing-dots"><span></span><span></span><span></span></div></div></div>';
+    box.appendChild(wrap);
+    csScrollChatToBottom();
+  }
+  function csRemoveTyping() {
+    var t = document.getElementById('cs-typing-msg');
+    if (t) t.remove();
+  }
+
+  function csScrollChatToBottom() {
+    var box = document.getElementById('cs-messages');
+    if (!box) return;
+    setTimeout(function(){ box.scrollTop = box.scrollHeight; }, 50);
+  }
+
+  function csAutoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  }
+
+  function csHandleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      csSendMessage();
+    }
+  }
+
+  function csSendQuick(text) {
+    var input = document.getElementById('cs-msg-input');
+    if (!input) return;
+    input.value = text;
+    csSendMessage();
+  }
+
+  function csSendMessage() {
+    var input = document.getElementById('cs-msg-input');
+    if (!input) return;
+    var text = input.value.trim();
+    if (!text) return;
+    csAddMessage(csEscapeHtml(text), true);
+    input.value = '';
+    csAutoGrow(input);
+    csRespondTo(text);
+  }
+
+  function csRespondTo(userText) {
+    csShowTyping();
+    var delay = 800 + Math.random() * 800;
+    setTimeout(function(){
+      csRemoveTyping();
+      csAddMessage(csMatchReply(userText), false);
+    }, delay);
+  }
+
+  function csMatchReply(text) {
+    var t = text.toLowerCase();
+
+    if (/이용|사용|방법|어떻게|가입/.test(t)) {
+      return '카로 이용 절차를 안내드릴게요. 📱<br><br>'
+           + '① <strong>가입</strong> — 운전면허증·결제카드 등록 (만 21세 이상, 면허 1년 이상)<br>'
+           + '② <strong>예약</strong> — 시간·위치·차종 선택<br>'
+           + '③ <strong>이용</strong> — 카로존에서 스마트키로 차량 개폐<br>'
+           + '④ <strong>반납</strong> — 지정 장소 주차 후 앱 [반납하기]<br><br>'
+           + '더 자세한 안내는 <strong>고객센터 → 카로 이용안내</strong>를 참고해 주세요.';
+    }
+    if (/예약\s*변경|변경하|시간\s*변경|차종\s*변경/.test(t)) {
+      return '예약 변경 안내드릴게요. ✏️<br><br>'
+           + '▪ <strong>변경 가능 시점</strong> — 이용 시작 1시간 전까지<br>'
+           + '▪ <strong>변경 항목</strong> — 시간·위치·차종·운전자 추가<br>'
+           + '▪ <strong>방법</strong> — 앱 [예약 내역] → [변경하기]<br>'
+           + '▪ <strong>수수료</strong> — 3회까지 무료, 이후 건당 1,000원';
+    }
+    if (/취소|환불|돌려/.test(t) && !/수수료/.test(t)) {
+      return '예약 취소 방법을 안내드릴게요. 🔁<br><br>'
+           + '앱에서 <strong>[예약 내역] → [취소하기]</strong>로 즉시 처리 가능합니다.<br><br>'
+           + '▪ 환불은 결제수단으로 자동 반환 (카드 3~5일, 계좌 2~3일)<br>'
+           + '▪ 포인트·쿠폰은 즉시 복원<br>'
+           + '▪ 시점에 따라 취소 수수료가 부과될 수 있습니다';
+    }
+    if (/수수료|취소료|위약/.test(t)) {
+      return '취소 수수료 기준을 안내드려요. 💰<br><br>'
+           + '▪ <strong>48시간 전</strong> — 없음 (전액 환불)<br>'
+           + '▪ <strong>48~24시간 전</strong> — 10%<br>'
+           + '▪ <strong>24시간~1시간 전</strong> — 20%<br>'
+           + '▪ <strong>1시간 이내</strong> — 30%<br><br>'
+           + '회사 귀책 사유 시 수수료 면제이며 전액 환불됩니다.';
+    }
+    if (/사고|충돌|접촉|긁|파손|접수/.test(t)) {
+      return '🚨 사고 발생 시 다음 순서대로 진행해 주세요.<br><br>'
+           + '① <strong>부상자 구호</strong> 및 119 신고<br>'
+           + '② 안전한 곳으로 이동 및 비상등 점등<br>'
+           + '③ 사고 현장 사진·동영상 촬영<br>'
+           + '④ 인적 피해 시 <strong>112 신고 (의무)</strong><br>'
+           + '⑤ 카로 앱 <strong>[사고 접수]</strong>로 즉시 신고<br><br>'
+           + '⚠️ <strong>즉시 신고하지 않으면 면책 적용이 제외</strong>됩니다.';
+    }
+    if (/반납|반환|돌려놓|주차/.test(t)) {
+      return '반납 절차 안내드릴게요. 🅿️<br><br>'
+           + '① 지정 카로존 주차<br>'
+           + '② 차량 내 소지품 확인<br>'
+           + '③ 연료/충전 상태 확인 (Full to Full)<br>'
+           + '④ 외관 4면 사진 촬영<br>'
+           + '⑤ 차문 잠금 후 <strong>[반납하기]</strong><br><br>'
+           + '주정차 금지 구역 반납 시 과태료는 본인 부담입니다.';
+    }
+    if (/연장|시간\s*추가|더\s*쓰/.test(t)) {
+      return '이용 연장 안내드릴게요. ⏰<br><br>'
+           + '▪ <strong>신청 시점</strong> — 이용 종료 10분 전까지<br>'
+           + '▪ <strong>최소 단위</strong> — 10분<br>'
+           + '▪ <strong>최대 연장</strong> — 24시간<br>'
+           + '▪ <strong>방법</strong> — 앱 [이용 중] → [연장하기]';
+    }
+    if (/환불|언제.*돈|돌려받/.test(t)) {
+      return '환불 처리 일정 안내드릴게요. 💳<br><br>'
+           + '▪ <strong>신용·체크카드</strong> — 영업일 3~5일<br>'
+           + '▪ <strong>계좌이체</strong> — 영업일 2~3일<br>'
+           + '▪ <strong>포인트·쿠폰</strong> — 즉시 복원';
+    }
+    if (/운영|영업|시간|평일|주말/.test(t)) {
+      return '고객센터 운영 안내드려요. 🕐<br><br>'
+           + '▪ <strong>채팅·일반 상담</strong> — 평일 09:00 ~ 18:00<br>'
+           + '▪ <strong>사고·고장 (24시간)</strong> — ' + CARO_CS_PHONE + '<br>'
+           + '▪ <strong>주말·공휴일</strong> — 일반 상담 휴무';
+    }
+    if (/안녕|반갑|hi|hello/.test(t)) {
+      return '안녕하세요! 카로 모빌리티 상담원입니다. 😊 어떤 부분을 도와드릴까요?';
+    }
+    if (/감사|고마|땡큐|thanks/.test(t)) {
+      return '도움이 되셨다니 다행이에요! 😊 안전 운전 하세요!';
+    }
+    return '문의하신 내용을 확인했습니다. 더 자세한 안내를 위해 상담원이 곧 연결됩니다. 🙏<br><br>'
+         + '급하신 경우 <strong>' + CARO_CS_PHONE + '</strong>으로 전화 상담 또는 <strong>[간편 문의]</strong>를 이용해 주세요.';
+  }
+
+  function csCallSupport() {
+    if (confirm('카로 고객센터(' + CARO_CS_PHONE + ')로 전화 연결하시겠습니까?')) {
+      window.location.href = 'tel:' + CARO_CS_PHONE;
+    }
+  }
+
+  function csEndChat() {
+    if (confirm('상담을 종료하시겠습니까?')) {
+      csAddSystemMessage('상담이 종료되었습니다. 이용해 주셔서 감사합니다.');
+      var inp = document.getElementById('cs-msg-input');
+      var snd = document.getElementById('cs-send-btn');
+      var chips = document.getElementById('cs-quick-chips');
+      if (inp) inp.disabled = true;
+      if (snd) snd.disabled = true;
+      if (chips) chips.style.display = 'none';
+    }
+  }
+
+  function csConfirmExitChat() {
+    if (confirm('상담을 종료하고 나가시겠습니까?')) {
+      if (typeof goTo === 'function') goTo('cs-screen');
+    }
+  }
+
+  function csAttachChatFile() {
+    alert('파일 첨부 기능은 곧 지원될 예정입니다.\n사진은 [간편 문의]에서 첨부해 주세요.');
+  }
+
+  /* ════════════════════════════════════════
+     5. 공통 성공 모달
+  ════════════════════════════════════════ */
+  function csShowSuccessModal(title, text, num) {
+    document.getElementById('cs-modal-title').textContent = title;
+    document.getElementById('cs-modal-text').innerHTML = text;
+    document.getElementById('cs-receipt-num').textContent = num;
+    var modal = document.getElementById('cs-success-modal');
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+  }
+  function csCloseSuccess() {
+    var modal = document.getElementById('cs-success-modal');
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+    if (typeof goTo === 'function') goTo('cs-screen');
+  }
+
+  /* ════════════════════════════════════════
+     6. 초기화
+  ════════════════════════════════════════ */
+  function csInit() {
+    /* 사고 접수 — 일시 기본값 */
+    var dtInput = document.querySelector('#accident-screen input[name="datetime"]');
+    if (dtInput && !dtInput.value) {
+      var now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      dtInput.value = now.toISOString().slice(0, 16);
+    }
+
+    /* 채팅 — 첫 메시지 시간, 날짜 라벨, 운영시간 배너 */
+    var firstTime = document.getElementById('cs-first-time');
+    if (firstTime) firstTime.textContent = csNowTime();
+
+    var todayLabel = document.getElementById('cs-today-label');
+    if (todayLabel) {
+      var d = new Date();
+      todayLabel.textContent = (d.getMonth()+1) + '월 ' + d.getDate() + '일 (' + ['일','월','화','수','목','금','토'][d.getDay()] + ')';
+    }
+
+    var banner = document.getElementById('cs-info-banner');
+    if (banner) {
+      var now2 = new Date();
+      var h = now2.getHours();
+      var day = now2.getDay();
+      var isOpen = (day >= 1 && day <= 5) && (h >= 9 && h < 18);
+      if (isOpen) banner.classList.add('csd-hidden');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', csInit);
+  } else {
+    csInit();
+  }
+
+  /* ════════════════════════════════════════
+     7. window 전역 등록
+  ════════════════════════════════════════ */
+  window.csToggleAcc           = csToggleAcc;
+  window.goToCsDetail          = goToCsDetail;
+  window.csToggleInjury        = csToggleInjury;
+  window.csHandleAccFiles      = csHandleAccFiles;
+  window.csRemoveAccFile       = csRemoveAccFile;
+  window.csSubmitAccident      = csSubmitAccident;
+  window.csSwitchTab           = csSwitchTab;
+  window.csUpdateCharCount     = csUpdateCharCount;
+  window.csHandleInqFiles      = csHandleInqFiles;
+  window.csRemoveInqFile       = csRemoveInqFile;
+  window.csToggleFAQ           = csToggleFAQ;
+  window.csSubmitInquiry       = csSubmitInquiry;
+  window.csAutoGrow            = csAutoGrow;
+  window.csHandleKey           = csHandleKey;
+  window.csSendQuick           = csSendQuick;
+  window.csSendMessage         = csSendMessage;
+  window.csCallSupport         = csCallSupport;
+  window.csEndChat             = csEndChat;
+  window.csConfirmExitChat     = csConfirmExitChat;
+  window.csAttachChatFile      = csAttachChatFile;
+  window.csCloseSuccess        = csCloseSuccess;
+
+}());
