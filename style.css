@@ -3418,3 +3418,16 @@ video::-webkit-media-controls-panel{display:none !important;}
   margin: 0 !important;
   padding: 0 !important;
 }
+
+/* ═══════════════════════════════════════════
+   고객센터 하단 버튼 - 모서리 둥글게
+═══════════════════════════════════════════ */
+
+#cs-screen .cs-contact-btn,
+#cs-screen .cs-accident,
+#cs-screen .cs-call,
+#cs-screen .cs-simple,
+#cs-screen .cs-chat {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
