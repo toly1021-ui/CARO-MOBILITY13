@@ -3428,6 +3428,6 @@ video::-webkit-media-controls-panel{display:none !important;}
 #cs-screen .cs-call,
 #cs-screen .cs-simple,
 #cs-screen .cs-chat {
-  border-radius: 14px !important;
+  border-radius: 24px !important;
   overflow: hidden !important;
 }
