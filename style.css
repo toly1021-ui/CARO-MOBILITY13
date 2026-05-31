@@ -3508,3 +3508,37 @@ video::-webkit-media-controls-panel{display:none !important;}
   line-height: 1.7 !important;
   margin: 0 !important;
 }
+
+/* ═══════════════════════════════════════════
+   고객센터 - 큰 검은 점 → 작은 점으로 변경
+═══════════════════════════════════════════ */
+
+/* 1. FAQ Q 마크 - 작은 점 */
+#inquiry-screen .csd-q-mark {
+  width: 10px !important;
+  height: 10px !important;
+  min-width: 10px !important;
+  min-height: 10px !important;
+  border-radius: 50% !important;
+  font-size: 0 !important;
+  background: #18191c !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  margin-right: 10px !important;
+  display: inline-block !important;
+}
+
+/* 2. 고객센터 상세 - 번호 ⚫ 작은 점으로 */
+#cs-detail-screen .csd-acc-num {
+  width: 10px !important;
+  height: 10px !important;
+  min-width: 10px !important;
+  min-height: 10px !important;
+  border-radius: 50% !important;
+  font-size: 0 !important;
+  background: #18191c !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+  margin-right: 10px !important;
+  display: inline-block !important;
+}
