@@ -9232,3 +9232,167 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] 휴대폰 번호 동기화 패치 v1 적용');
 })();
+/* ═══════════════════════════════════════════
+   결제 카드 통합 동기화 패치
+   계정관리 ↔ 차량 대여 결제 카드 양방향 연동
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  const APD_KEY = 'caro_apd_cards';
+  const FALLBACK_KEYS = ['caro_cards', 'caroCards', 'savedCards', 'userCards', 'paymentCards', 'cards'];
+
+  /* 카드 정규화 (다양한 형식을 통일) */
+  function normalizeCard(c){
+    if(!c || typeof c !== 'object') return null;
+    const numStr = String(c.cardNum || c.number || c.cardNumber || c.num || '').replace(/\D/g, '');
+    const last4 = c.last4 || numStr.slice(-4);
+    if(!last4 || last4.length !== 4) return null;
+
+    return {
+      id: c.id || Date.now() + Math.floor(Math.random() * 10000),
+      bank: c.bank || c.brand || c.issuer || c.company || '카드',
+      last4: last4,
+      alias: c.alias || c.name || c.nickname || `카드 ****${last4}`,
+      isDefault: !!(c.isDefault || c.default || c.primary),
+      // 원본 데이터 보존 (호환성)
+      number: c.number || c.cardNum,
+      exp: c.exp || c.expiry || c.expiration
+    };
+  }
+
+  /* 특정 키에서 카드 읽기 */
+  function getCardsFromKey(key){
+    try{
+      const raw = localStorage.getItem(key);
+      if(!raw) return [];
+      const parsed = JSON.parse(raw);
+      if(!Array.isArray(parsed)) return [];
+      return parsed.map(normalizeCard).filter(Boolean);
+    }catch(e){
+      return [];
+    }
+  }
+
+  /* 모든 위치에서 카드를 찾아 통합 */
+  function mergeAllCards(){
+    const all = [];
+    const seenLast4 = new Set();
+
+    function addCards(cards){
+      cards.forEach(c => {
+        if(c && !seenLast4.has(c.last4)){
+          seenLast4.add(c.last4);
+          all.push(c);
+        }
+      });
+    }
+
+    // 1. APD 저장소
+    addCards(getCardsFromKey(APD_KEY));
+
+    // 2. 알려진 폴백 키들
+    FALLBACK_KEYS.forEach(k => addCards(getCardsFromKey(k)));
+
+    // 3. localStorage 전체 스캔 (카드처럼 보이는 데이터)
+    for(let i = 0; i < localStorage.length; i++){
+      const key = localStorage.key(i);
+      if(!key || key === APD_KEY || FALLBACK_KEYS.includes(key)) continue;
+      try{
+        const raw = localStorage.getItem(key);
+        if(!raw) continue;
+        const val = JSON.parse(raw);
+        if(Array.isArray(val) && val.length > 0){
+          const first = val[0];
+          if(first && typeof first === 'object' &&
+             (first.last4 || first.cardNum || first.cardNumber || first.number)){
+            addCards(val.map(normalizeCard).filter(Boolean));
+          }
+        }
+      }catch(e){}
+    }
+
+    // 기본 카드 처리: isDefault가 없으면 첫 번째를 기본으로
+    if(all.length > 0 && !all.some(c => c.isDefault)){
+      all[0].isDefault = true;
+    }
+
+    return all;
+  }
+
+  /* 통합된 카드 목록을 모든 위치에 저장 */
+  function setUnifiedCards(cards){
+    try{ localStorage.setItem(APD_KEY, JSON.stringify(cards)); }catch(e){}
+    FALLBACK_KEYS.forEach(k => {
+      try{ localStorage.setItem(k, JSON.stringify(cards)); }catch(e){}
+    });
+  }
+
+  /* 동기화 실행 */
+  function syncCards(){
+    const all = mergeAllCards();
+    setUnifiedCards(all);
+    return all;
+  }
+
+  /* 기존 저장 함수 후킹 (saveCard, saveCardFromPI) */
+  ['saveCard', 'saveCardFromPI'].forEach(fnName => {
+    if(typeof window[fnName] === 'function'){
+      const orig = window[fnName];
+      window[fnName] = function(){
+        const result = orig.apply(this, arguments);
+        setTimeout(syncCards, 100);
+        setTimeout(syncCards, 500);
+        setTimeout(syncCards, 1500);
+        return result;
+      };
+    }
+  });
+
+  /* APD에서 카드 추가/삭제 시 즉시 동기화 */
+  document.addEventListener('click', function(e){
+    const target = e.target;
+    if(!target) return;
+
+    // 카드 추가 버튼
+    if(target.id === 'apd-card-add'){
+      setTimeout(syncCards, 200);
+      setTimeout(syncCards, 800);
+    }
+
+    // 카드 삭제 버튼
+    if(target.dataset && target.dataset.cardDel){
+      setTimeout(syncCards, 200);
+      setTimeout(syncCards, 800);
+    }
+  }, true);
+
+  /* 다양한 시점에 동기화 */
+  syncCards();
+  setTimeout(syncCards, 500);
+  setTimeout(syncCards, 2000);
+
+  /* Firebase 인증 시 재동기화 */
+  try{
+    if(typeof firebase !== 'undefined' && firebase.auth){
+      firebase.auth().onAuthStateChanged(() => {
+        setTimeout(syncCards, 300);
+        setTimeout(syncCards, 1500);
+      });
+    }
+  }catch(e){}
+
+  /* 페이지 전환 시 재동기화 */
+  if(typeof window.goTo === 'function'){
+    const origGoTo = window.goTo;
+    window.goTo = function(screen){
+      const result = origGoTo.apply(this, arguments);
+      if(screen === 'account-detail-screen' || screen === 'payment-screen' || screen === 'payment-info-screen' || screen === 'reservation-screen'){
+        setTimeout(syncCards, 100);
+      }
+      return result;
+    };
+  }
+
+  console.log('[CARO] 카드 통합 동기화 패치 v1 적용 — 계정관리 ↔ 차량 대여 결제 연동');
+})();
