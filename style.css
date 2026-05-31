@@ -3587,3 +3587,706 @@ video::-webkit-media-controls-panel{display:none !important;}
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CARO MOBILITY — 계정관리 상세 화면 통합 CSS 패치
+   범위: 9개 항목 (비밀번호, 휴대폰, 계정연동, 요금제, 결제카드,
+        크레딧, 미결제, 할인쿠폰, 혜택&이벤트, 약관 및 정책)
+   ※ 회원 탈퇴 제외
+═══════════════════════════════════════════════════════════════ */
+
+/* ─── 공통 콘텐츠 컨테이너 ─── */
+#account-detail-screen .mpd-content {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 16px 18px 24px !important;
+  display: block !important;
+}
+#account-detail-screen .mpd-content .mpd-empty-wrap {
+  display: none !important;
+}
+
+/* ─── 섹션 ─── */
+.apd-section {
+  background: rgba(255,255,255,.6);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.apd-section-title {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.apd-section-title-icon {
+  font-size: 1rem;
+}
+.apd-section-desc {
+  font-size: .8rem;
+  color: var(--text-m);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+/* ─── 입력 필드 ─── */
+.apd-input-group {
+  margin-bottom: 12px;
+}
+.apd-input-label {
+  display: block;
+  font-size: .82rem;
+  font-weight: 700;
+  color: var(--text-2);
+  margin-bottom: 6px;
+}
+.apd-input-label .req {
+  color: #b23a3a;
+  margin-left: 2px;
+}
+.apd-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(255,255,255,.85);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  font-family: var(--font);
+  font-size: .9rem;
+  color: var(--text-1);
+  box-sizing: border-box;
+  transition: border-color .2s;
+}
+.apd-input:focus {
+  outline: none;
+  border-color: rgba(200,169,110,.6);
+}
+.apd-input:disabled {
+  background: rgba(0,0,0,.04);
+  color: var(--text-m);
+  cursor: not-allowed;
+}
+.apd-input-hint {
+  display: block;
+  font-size: .74rem;
+  color: var(--text-m);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* ─── 비밀번호 강도 바 ─── */
+.apd-pw-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(0,0,0,.06);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.apd-pw-bar-fill {
+  height: 100%;
+  width: 0%;
+  transition: width .3s, background .3s;
+  border-radius: 2px;
+}
+.apd-pw-bar-fill.weak { background: #b23a3a; width: 30%; }
+.apd-pw-bar-fill.medium { background: #b07d2a; width: 60%; }
+.apd-pw-bar-fill.strong { background: #1d7a3a; width: 100%; }
+
+/* ─── 버튼 ─── */
+.apd-btn {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: var(--r);
+  font-family: var(--font);
+  font-size: .92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.apd-btn-primary {
+  background: var(--accent);
+  color: #18191c;
+}
+.apd-btn-primary:hover {
+  background: #b89860;
+}
+.apd-btn-primary:disabled {
+  background: rgba(0,0,0,.1);
+  color: var(--text-m);
+  cursor: not-allowed;
+}
+.apd-btn-secondary {
+  background: rgba(255,255,255,.6);
+  border: 1.5px solid var(--border);
+  color: var(--text-1);
+}
+.apd-btn-danger {
+  background: rgba(178,58,58,.08);
+  border: 1.5px solid rgba(178,58,58,.25);
+  color: #b23a3a;
+}
+.apd-btn-pass {
+  background: linear-gradient(135deg, #3182f6, #1a5fd4);
+  color: #fff;
+}
+.apd-btn-pass:disabled {
+  background: rgba(49,130,246,.4);
+  cursor: not-allowed;
+}
+
+/* ─── 행 (라벨 + 값) ─── */
+.apd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0,0,0,.05);
+}
+.apd-row:last-child {
+  border-bottom: none;
+}
+.apd-row-label {
+  font-size: .85rem;
+  color: var(--text-2);
+  font-weight: 600;
+}
+.apd-row-value {
+  font-size: .88rem;
+  color: var(--text-1);
+  font-weight: 700;
+}
+.apd-row-value.muted {
+  color: var(--text-m);
+  font-weight: 500;
+}
+
+/* ─── 알림 박스 ─── */
+.apd-info {
+  background: rgba(29,122,58,.06);
+  border: 1px solid rgba(29,122,58,.18);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  font-size: .78rem;
+  color: var(--text-2);
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.apd-info strong {
+  color: #1d7a3a;
+  font-weight: 700;
+}
+.apd-warn {
+  background: rgba(176,125,42,.06);
+  border: 1px solid rgba(176,125,42,.18);
+}
+.apd-warn strong {
+  color: #b07d2a;
+}
+.apd-error {
+  background: rgba(178,58,58,.06);
+  border: 1px solid rgba(178,58,58,.2);
+}
+.apd-error strong {
+  color: #b23a3a;
+}
+
+/* ─── 법령 근거 ─── */
+.apd-legal {
+  margin-top: 10px;
+  font-size: .72rem;
+  color: var(--text-m);
+  font-style: italic;
+  line-height: 1.5;
+  border-top: 1px dashed rgba(0,0,0,.08);
+  padding-top: 8px;
+}
+
+/* ─── 통신사 선택 ─── */
+.apd-carrier-row {
+  display: flex;
+  gap: 8px;
+}
+.apd-carrier-btn {
+  flex: 1;
+  padding: 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: rgba(255,255,255,.6);
+  font-family: var(--font);
+  font-size: .82rem;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .2s;
+}
+.apd-carrier-btn.active {
+  border-color: #1d7a3a;
+  background: rgba(29,122,58,.08);
+  color: #1d7a3a;
+  font-weight: 700;
+}
+
+/* ─── SNS 연동 ─── */
+.apd-sns-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: rgba(255,255,255,.6);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 8px;
+}
+.apd-sns-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.apd-sns-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+.apd-sns-icon.kakao { background: #fee500; color: #381e1e; }
+.apd-sns-icon.naver { background: #03c75a; }
+.apd-sns-icon.google { background: #fff; color: #4285f4; border: 1px solid #ddd; }
+.apd-sns-icon.apple { background: #000; }
+.apd-sns-name {
+  font-size: .9rem;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.apd-sns-status {
+  font-size: .74rem;
+  color: var(--text-m);
+  margin-top: 2px;
+}
+.apd-sns-status.connected {
+  color: #1d7a3a;
+}
+.apd-sns-btn {
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,.8);
+  font-family: var(--font);
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .2s;
+}
+.apd-sns-btn.connected {
+  background: rgba(178,58,58,.06);
+  border-color: rgba(178,58,58,.25);
+  color: #b23a3a;
+}
+
+/* ─── 요금제 카드 ─── */
+.apd-plan {
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  background: rgba(255,255,255,.6);
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+}
+.apd-plan.current {
+  border-color: var(--accent);
+  background: rgba(200,169,110,.08);
+}
+.apd-plan.current::after {
+  content: 'CURRENT';
+  position: absolute;
+  top: 12px; right: 14px;
+  font-family: 'Oswald', sans-serif;
+  font-size: .68rem;
+  letter-spacing: .12em;
+  color: var(--accent);
+  font-weight: 700;
+}
+.apd-plan-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: .88rem;
+  letter-spacing: .1em;
+  font-weight: 600;
+  color: var(--text-1);
+  margin-bottom: 6px;
+}
+.apd-plan-price {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 8px;
+}
+.apd-plan-price small {
+  font-size: .76rem;
+  color: var(--text-m);
+  font-weight: 500;
+  margin-left: 2px;
+}
+.apd-plan-desc {
+  font-size: .76rem;
+  color: var(--text-m);
+  line-height: 1.6;
+}
+
+/* ─── 카드 ─── */
+.apd-card-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255,255,255,.7);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.apd-card-item.default {
+  border-color: var(--accent);
+}
+.apd-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+.apd-card-icon {
+  width: 36px;
+  height: 24px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #3a3f47, #2e3138);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .68rem;
+  font-weight: 700;
+  color: #c8a96e;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+}
+.apd-card-num {
+  font-family: 'Oswald', sans-serif;
+  font-size: .82rem;
+  letter-spacing: .04em;
+  color: var(--text-1);
+  font-weight: 600;
+}
+.apd-card-alias {
+  font-size: .74rem;
+  color: var(--text-m);
+  margin-top: 2px;
+}
+.apd-card-default-badge {
+  font-family: 'Oswald', sans-serif;
+  font-size: .62rem;
+  letter-spacing: .1em;
+  color: var(--accent);
+  font-weight: 700;
+  background: rgba(200,169,110,.12);
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+/* ─── 크레딧 박스 ─── */
+.apd-credit-box {
+  background: linear-gradient(135deg, #2e3138, #18191c);
+  color: #c8a96e;
+  border-radius: var(--r);
+  padding: 22px 20px;
+  text-align: center;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.apd-credit-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: .72rem;
+  letter-spacing: .18em;
+  color: rgba(200,169,110,.6);
+  margin-bottom: 6px;
+}
+.apd-credit-amount {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: #c8a96e;
+}
+.apd-credit-amount small {
+  font-size: .9rem;
+  color: rgba(200,169,110,.6);
+  margin-left: 4px;
+}
+
+/* ─── 쿠폰 ─── */
+.apd-coupon {
+  background: rgba(255,255,255,.7);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+.apd-coupon.used,
+.apd-coupon.expired {
+  opacity: .5;
+}
+.apd-coupon::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(228,232,238,.9);
+  transform: translateY(-50%);
+}
+.apd-coupon::after {
+  content: '';
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(228,232,238,.9);
+  transform: translateY(-50%);
+}
+.apd-coupon-name {
+  font-size: .92rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 4px;
+}
+.apd-coupon-discount {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.apd-coupon-meta {
+  font-size: .72rem;
+  color: var(--text-m);
+  line-height: 1.5;
+}
+.apd-coupon-badge {
+  display: inline-block;
+  font-family: 'Oswald', sans-serif;
+  font-size: .62rem;
+  letter-spacing: .12em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.apd-coupon-badge.available {
+  background: rgba(29,122,58,.12);
+  color: #1d7a3a;
+}
+.apd-coupon-badge.used {
+  background: rgba(0,0,0,.08);
+  color: var(--text-m);
+}
+.apd-coupon-badge.expired {
+  background: rgba(178,58,58,.1);
+  color: #b23a3a;
+}
+
+/* ─── 미결제 ─── */
+.apd-unpaid-item {
+  background: rgba(178,58,58,.04);
+  border: 1px solid rgba(178,58,58,.15);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.apd-unpaid-title {
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 4px;
+}
+.apd-unpaid-date {
+  font-size: .74rem;
+  color: var(--text-m);
+  margin-bottom: 8px;
+}
+.apd-unpaid-amount {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #b23a3a;
+  margin-bottom: 10px;
+}
+
+/* ─── 토글 스위치 ─── */
+.apd-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(0,0,0,.05);
+}
+.apd-toggle-row:last-child {
+  border-bottom: none;
+}
+.apd-toggle-info {
+  flex: 1;
+}
+.apd-toggle-title {
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 2px;
+}
+.apd-toggle-desc {
+  font-size: .74rem;
+  color: var(--text-m);
+  line-height: 1.4;
+}
+.apd-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(0,0,0,.15);
+  cursor: pointer;
+  transition: background .2s;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+.apd-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform .2s;
+}
+.apd-toggle.on {
+  background: #1d7a3a;
+}
+.apd-toggle.on::after {
+  transform: translateX(20px);
+}
+
+/* ─── 약관 목록 ─── */
+.apd-terms-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(0,0,0,.05);
+  cursor: pointer;
+}
+.apd-terms-item:last-child {
+  border-bottom: none;
+}
+.apd-terms-name {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.apd-terms-arrow {
+  color: var(--text-m);
+  font-size: 1rem;
+}
+
+/* ─── 빈 상태 ─── */
+.apd-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-m);
+}
+.apd-empty-icon {
+  font-size: 2.4rem;
+  margin-bottom: 8px;
+  opacity: .4;
+}
+.apd-empty-text {
+  font-size: .88rem;
+  font-weight: 600;
+}
+.apd-empty-sub {
+  font-size: .76rem;
+  margin-top: 4px;
+}
+
+/* ─── 탭 ─── */
+.apd-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.apd-tab {
+  flex: 1;
+  padding: 12px;
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text-m);
+  cursor: pointer;
+  position: relative;
+  transition: color .2s;
+}
+.apd-tab.active {
+  color: var(--text-1);
+  font-weight: 700;
+}
+.apd-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 20%; right: 20%;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+/* ─── 결과 표시 ─── */
+.apd-result {
+  padding: 12px 14px;
+  border-radius: var(--r);
+  font-size: .86rem;
+  font-weight: 700;
+  text-align: center;
+  margin-top: 10px;
+}
+.apd-result.success {
+  background: rgba(29,122,58,.08);
+  color: #1d7a3a;
+  border: 1px solid rgba(29,122,58,.2);
+}
+.apd-result.error {
+  background: rgba(178,58,58,.08);
+  color: #b23a3a;
+  border: 1px solid rgba(178,58,58,.2);
+}
