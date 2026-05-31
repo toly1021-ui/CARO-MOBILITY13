@@ -165,7 +165,7 @@ if(window.navigator.standalone){
       </button>
       <div class="hg-small-col">
         <button class="hg-small hg-top black-card" onclick="goBlackLabel()">
-          <div class="hg-label-en">BLACK LABEL</div>
+          <div class="hg-label-en">CARO THE BLACK</div>
         </button>
         <button class="hg-small hg-bottom" onclick="goTo('my-reservation-screen')">
           <div class="hg-icon">📋</div>
@@ -197,7 +197,7 @@ if(window.navigator.standalone){
             </div>
           </div>
         </div>
-        <!-- 슬라이드 2: 블랙라벨 -->
+        <!-- 슬라이드 2: 카로 더 블랙 -->
         <div class="auto-slide-item sg2">
           <div class="slide-inner">
             <div class="slide-text-col">
@@ -213,7 +213,7 @@ if(window.navigator.standalone){
                 <circle cx="22" cy="51" r="3" fill="rgba(200,169,110,.9)"/>
                 <circle cx="58" cy="51" r="7" fill="rgba(200,169,110,.45)" stroke="rgba(200,169,110,.75)" stroke-width="1.2"/>
                 <circle cx="58" cy="51" r="3" fill="rgba(200,169,110,.9)"/>
-                <text x="40" y="12" text-anchor="middle" font-family="Oswald,sans-serif" font-size="7" font-weight="500" fill="rgba(200,169,110,.85)" letter-spacing="3">BLACK LABEL</text>
+                <text x="40" y="12" text-anchor="middle" font-family="Oswald,sans-serif" font-size="7" font-weight="500" fill="rgba(200,169,110,.85)" letter-spacing="3">CARO THE BLACK</text>
               </svg>
             </div>
           </div>
@@ -362,10 +362,10 @@ if(window.navigator.standalone){
   </div>
 </div>
 
-<!-- ══ BLACK LABEL 전환 오버레이 (body 최상위) ══ -->
+<!-- ══ CARO THE BLACK 전환 오버레이 (body 최상위) ══ -->
 <div class="bl-transition-overlay" id="bl-transition-overlay">
   <div class="bl-transition-content">
-    <div class="bl-transition-logo">BLACK LABEL</div>
+    <div class="bl-transition-logo">CARO THE BLACK</div>
     <div class="bl-transition-diamonds">
       <span class="bl-diamond"></span>
       <span class="bl-diamond"></span>
@@ -375,11 +375,11 @@ if(window.navigator.standalone){
   </div>
 </div>
 
-<!-- ══ BLACK LABEL ══ -->
+<!-- ══ CARO THE BLACK ══ -->
 <div id="black-label-screen" class="screen">
   <div class="bl-screen-bg"></div>
   <div class="bl-header">
-    <span class="bl-title">BLACK LABEL</span>
+    <span class="bl-title">CARO THE BLACK</span>
   </div>
   <div class="bl-body">
     <div class="bl-desc" data-i18n="bl_desc">CARO 블랙 라벨 · 프리미엄 차량 대여 서비스<br>서울 · 인천 지역 한정 운영</div>
@@ -388,12 +388,12 @@ if(window.navigator.standalone){
   </div>
 </div>
 
-<!-- ══ BLACK LABEL DETAIL ══ -->
+<!-- ══ CARO THE BLACK DETAIL ══ -->
 <div id="bl-detail-screen" class="screen">
   <div class="metal-bg"></div>
   <div class="page-header center-header">
     <button class="back-icon-btn" onclick="goTo('black-label-screen')"></button>
-    <span class="page-title">BLACK LABEL</span>
+    <span class="page-title">CARO THE BLACK</span>
     <span style="width:36px;"></span>
   </div>
   <div id="bl-detail-content"></div>
@@ -1312,7 +1312,7 @@ if(window.navigator.standalone){
           <div class="dev-card" id="dev-car-overview"></div>
         </div>
         <div class="dev-section">
-          <div class="dev-section-title">⭐ 블랙라벨 차량 현황</div>
+          <div class="dev-section-title">⭐ 카로 더 블랙 차량 현황</div>
           <div class="dev-card" id="dev-bl-overview"></div>
         </div>
 
@@ -1323,7 +1323,7 @@ if(window.navigator.standalone){
             <!-- 탭 -->
             <div style="display:flex;border-bottom:1px solid rgba(91,200,255,.1);">
               <button id="dev-tab-normal" class="dev-tab-btn dev-tab-active" onclick="devSwitchTab('normal')">일반 차량</button>
-              <button id="dev-tab-bl" class="dev-tab-btn" onclick="devSwitchTab('bl')">블랙라벨</button>
+              <button id="dev-tab-bl" class="dev-tab-btn" onclick="devSwitchTab('bl')">카로 더 블랙</button>
             </div>
 
             <!-- 일반 차량 등록 -->
@@ -1392,7 +1392,7 @@ if(window.navigator.standalone){
               </div>
             </div>
 
-            <!-- 블랙라벨 등록 -->
+            <!-- 카로 더 블랙 등록 -->
             <div id="dev-reg-bl" style="display:none;">
               <!-- 차량 선택 + 지역 선택 -->
               <div class="dev-row" style="padding-top:12px;gap:6px;">
@@ -1459,7 +1459,7 @@ if(window.navigator.standalone){
               </div>
               <!-- 등록 버튼 -->
               <div class="dev-row">
-                <button class="dev-btn dev-btn-primary" style="flex:1;" onclick="devApplyOrAddCar('bl')">✅ 블랙라벨 등록 / 사진 적용</button>
+                <button class="dev-btn dev-btn-primary" style="flex:1;" onclick="devApplyOrAddCar('bl')">✅ 카로 더 블랙 등록 / 사진 적용</button>
               </div>
             </div>
           </div>
@@ -1472,7 +1472,7 @@ if(window.navigator.standalone){
             <!-- 탭 -->
             <div style="display:flex;border-bottom:1px solid rgba(91,200,255,.1);">
               <button id="dev-del-tab-normal" class="dev-tab-btn dev-tab-active" onclick="devSwitchDelTab('normal')">일반 차량 <span id="dev-del-count-normal" style="font-size:.65rem;color:rgba(240,90,90,.8);margin-left:2px;"></span></button>
-              <button id="dev-del-tab-bl" class="dev-tab-btn" onclick="devSwitchDelTab('bl')">블랙라벨 <span id="dev-del-count-bl" style="font-size:.65rem;color:rgba(240,90,90,.8);margin-left:2px;"></span></button>
+              <button id="dev-del-tab-bl" class="dev-tab-btn" onclick="devSwitchDelTab('bl')">카로 더 블랙 <span id="dev-del-count-bl" style="font-size:.65rem;color:rgba(240,90,90,.8);margin-left:2px;"></span></button>
             </div>
             <div id="dev-car-delete-list"></div>
             <div id="dev-bl-delete-list" style="display:none;"></div>
