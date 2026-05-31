@@ -9710,3 +9710,111 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] 카드 + 면허증 영구 저장 패치 v1 적용');
 })();
+
+/* ═══════════════════════════════════════════
+   등록된 카드 결제 시 토스 건너뛰기 패치
+   ※ 테스트 환경용 - 카드 선택 시 즉시 결제 완료
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  /* ─── 1. 선택한 카드 ID 추적 ─── */
+  window._caroSelectedCardId = null;
+
+  /* confirmPaySheet 후킹 - 선택한 카드 저장 */
+  const origConfirmPaySheet = window.confirmPaySheet;
+  window.confirmPaySheet = function(){
+    const selected = document.querySelector('input[name="pay-card"]:checked');
+    if(selected){
+      window._caroSelectedCardId = selected.value;
+      console.log('[CARO] 선택한 카드 ID:', window._caroSelectedCardId);
+    }
+    if(typeof origConfirmPaySheet === 'function'){
+      return origConfirmPaySheet.apply(this, arguments);
+    }
+  };
+
+  /* ─── 2. handlePayment 후킹 - 카드 있으면 토스 건너뛰기 ─── */
+  const origHandlePayment = window.handlePayment;
+  window.handlePayment = function(){
+    // 등록된 카드 확인
+    let cards = [];
+    try{
+      cards = JSON.parse(localStorage.getItem('caro_apd_cards') || '[]');
+    }catch(e){ cards = []; }
+
+    // 카드가 선택되어 있는지 확인 (label에 카드 번호 표시되어 있는지)
+    const label = document.getElementById('pay-selected-label');
+    const labelText = label ? label.textContent : '';
+    const hasCardSelected = labelText.includes('****') || labelText.includes('카드');
+
+    // 카드 없거나 미선택 시 → 원본 함수 (토스) 호출
+    if(cards.length === 0 || !hasCardSelected || labelText.includes('선택')){
+      if(typeof origHandlePayment === 'function'){
+        return origHandlePayment.apply(this, arguments);
+      }
+      return;
+    }
+
+    /* ─── 카드 선택됨 → 토스 건너뛰고 바로 결제 완료 ─── */
+    console.log('[CARO] ✅ 등록된 카드로 결제 (토스 건너뛰기)');
+
+    const pd = window._payData || {};
+    const car = pd.car || window.selectedCar;
+    const ins = pd.ins || window.selectedIns || (window.INSURANCE && window.INSURANCE[0]);
+    const total = pd.total || 0;
+    const startDt = pd.start instanceof Date ? pd.start : (pd.start ? new Date(pd.start) : null);
+    const endDt = pd.end instanceof Date ? pd.end : (pd.end ? new Date(pd.end) : null);
+
+    if(!car || !startDt || !endDt || isNaN(startDt) || isNaN(endDt)){
+      if(typeof showToast === 'function') showToast('예약 정보가 올바르지 않습니다. 다시 시도해 주세요.');
+      return;
+    }
+
+    // 선택한 카드 정보
+    const selectedCard = cards.find(c => String(c.id) === String(window._caroSelectedCardId))
+                       || cards.find(c => c.isDefault)
+                       || cards[0];
+
+    // 예약 번호 생성
+    const bookNo = 'CR' + Date.now().toString().slice(-8);
+
+    // 결제 데이터 저장 (원본 함수와 동일)
+    try{
+      localStorage.setItem('caro_pay_uid', (window.userInfo && window.userInfo.id) || '');
+      localStorage.setItem('caro_pay_data', JSON.stringify({
+        car: {
+          id: car.id, name: car.name, nameen: car.nameen, nameja: car.nameja, namezh: car.namezh,
+          pricePerHour: car.pricePerHour
+        },
+        ins: ins,
+        hrs: pd.hrs || 0,
+        total: total,
+        start: startDt.toISOString(),
+        end: endDt.toISOString(),
+        card: {
+          bank: selectedCard.bank,
+          last4: selectedCard.last4,
+          alias: selectedCard.alias
+        },
+        paymentMethod: '등록된 카드',
+        bookNo: bookNo
+      }));
+    }catch(e){}
+
+    // 결제 성공 페이지로 이동 (토스 successUrl과 동일한 패턴)
+    const successUrl = window.location.href.split('?')[0] + '?payment=success&bookNo=' + bookNo;
+
+    // 사용자에게 알림
+    if(typeof showToast === 'function'){
+      showToast(`✅ ${selectedCard.bank} 카드로 결제 완료!`);
+    }
+
+    // 짧은 지연 후 페이지 이동
+    setTimeout(() => {
+      window.location.href = successUrl;
+    }, 500);
+  };
+
+  console.log('[CARO] 토스 건너뛰기 패치 v1 적용 — 등록된 카드 직접 결제');
+})();
