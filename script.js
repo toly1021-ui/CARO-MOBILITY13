@@ -8668,10 +8668,10 @@ window.devUploadAllCars=function(){
       <div class="apd-section">
         <div class="apd-section-title"><span class="apd-section-title-icon">ℹ️</span>사업자 정보</div>
         <div class="apd-row"><span class="apd-row-label">상호</span><span class="apd-row-value">(주)카로 모빌리티</span></div>
-        <div class="apd-row"><span class="apd-row-label">대표자</span><span class="apd-row-value">홍길동</span></div>
+        <div class="apd-row"><span class="apd-row-label">대표자</span><span class="apd-row-value">허경준</span></div>
         <div class="apd-row"><span class="apd-row-label">사업자등록번호</span><span class="apd-row-value">123-45-67890</span></div>
-        <div class="apd-row"><span class="apd-row-label">통신판매업신고</span><span class="apd-row-value">2026-서울강남-0000</span></div>
-        <div class="apd-row"><span class="apd-row-label">주소</span><span class="apd-row-value">서울특별시 강남구 테헤란로</span></div>
+        <div class="apd-row"><span class="apd-row-label">통신판매업신고</span><span class="apd-row-value">2026-인천 송도-0000</span></div>
+        <div class="apd-row"><span class="apd-row-label">주소</span><span class="apd-row-value">인천광역시 연수구 송도동</span></div>
         <div class="apd-row"><span class="apd-row-label">고객센터</span><span class="apd-row-value">1588-0000</span></div>
       </div>
 
