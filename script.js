@@ -10324,3 +10324,100 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] 청소년 보호정책 → 차량손해면책제도 이용약관 교체 완료');
 })();
+
+/* ═══════════════════════════════════════════
+   1. 차량 10분 전 사용 가능
+   2. 환불 정책 법령 기준 변경
+      (자동차대여 표준약관 + 소비자분쟁해결기준)
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  /* ───── 1. 환불 정책 변경 ───── */
+  window.getRefundPolicy = function(diffMin, total){
+    var pct, label, note;
+
+    if(diffMin >= 1440){          // 24시간 이전
+      pct = 100;
+      label = '전액 환불 (100%)';
+      note = '24시간 이전 취소';
+    }
+    else if(diffMin >= 720){      // 12 ~ 24시간 전
+      pct = 70;
+      label = '70% 환불';
+      note = '12~24시간 전 취소';
+    }
+    else if(diffMin >= 180){      // 3 ~ 12시간 전
+      pct = 30;
+      label = '30% 환불';
+      note = '3~12시간 전 취소';
+    }
+    else if(diffMin >= 60){       // 1 ~ 3시간 전
+      pct = 10;
+      label = '10% 환불';
+      note = '1~3시간 전 취소';
+    }
+    else if(diffMin > 0){          // 1시간 이내
+      pct = 0;
+      label = '환불 불가';
+      note = '대여 1시간 이내 취소';
+    }
+    else {                          // 대여 시작 후
+      pct = 0;
+      label = '환불 불가';
+      note = '대여 시작 후 (중도해지는 콜센터 문의)';
+    }
+
+    var amt = pct > 0 ? Math.round(total * pct / 100) : 0;
+    return {pct: pct, label: label, note: note, amt: amt};
+  };
+
+  /* ───── 2. 10분 전 차량 사용 가능 ───── */
+  function activate10minRentals(){
+    // 모든 예약 카드에서 "대여 임박" → "대여 중"으로 표시 + 버튼 활성화
+    var allEls = document.querySelectorAll('*');
+    allEls.forEach(function(el){
+      if(el.children.length === 0 && el.textContent && el.textContent.trim() === '대여 임박'){
+        el.textContent = '대여 중';
+        el.style.color = '#b23a3a';
+
+        // 같은 카드 내 잠금/사용/스마트키 버튼 활성화
+        var card = el.closest('[class*="resv"], [class*="card"], [class*="reservation"], li, .item');
+        if(card){
+          card.querySelectorAll('button').forEach(function(btn){
+            var t = (btn.textContent || '').trim();
+            if(t.includes('잠금') || t.includes('해제') || t.includes('스마트키') ||
+               t.includes('사용') || t.includes('시작') || t.includes('키')){
+              btn.disabled = false;
+              btn.removeAttribute('disabled');
+              btn.style.opacity = '1';
+              btn.style.cursor = 'pointer';
+              btn.style.pointerEvents = 'auto';
+            }
+          });
+        }
+      }
+    });
+  }
+
+  // DOM 변경 감지로 자동 적용
+  var observer = new MutationObserver(function(){
+    activate10minRentals();
+  });
+
+  if(document.body){
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  }
+
+  // 5초마다 갱신 (시간 흐름 따라)
+  setInterval(activate10minRentals, 5000);
+  setTimeout(activate10minRentals, 500);
+
+  console.log('[CARO] 환불 정책 v2 + 10분 전 사용 가능 패치 완료');
+  console.log('  - 24h+ → 100% / 12-24h → 70% / 3-12h → 30% / 1-3h → 10% / <1h → 0%');
+  console.log('  - 대여 10분 전부터 차량 사용 가능');
+})();
