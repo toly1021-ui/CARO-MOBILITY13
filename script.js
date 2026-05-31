@@ -140,7 +140,7 @@ window.isCarInMapBounds=isCarInMapBounds;
 var CARS_DATA = [];
 
 /* ─────────────────────────────────────────────
-   3. 블랙 라벨 차량 데이터 (GV80 전기 제거, 연료를 옵션에 포함)
+   3. 카로 더 블랙 차량 데이터 (GV80 전기 제거, 연료를 옵션에 포함)
 ───────────────────────────────────────────── */
 var BL_CARS = [];
 /* ─────────────────────────────────────────────
@@ -242,10 +242,10 @@ var LANGS = {
     event_banner_title:'🎉 진행 중인 이벤트', notice_title:'📢 공지사항',
     no_reservation:'예약 내역이 없습니다',
     res_detail_title:'예약 상세 내역',
-    bl_desc:'CARO 블랙 라벨 · 프리미엄 전기차 대여 서비스\n서울 · 인천 지역 한정 운영',
+    bl_desc:'CARO 카로 더 블랙 · 프리미엄 전기차 대여 서비스\n서울 · 인천 지역 한정 운영',
     menu_event:'이벤트', ev_sub:'CARO의 특별한 혜택을 확인하세요',
     ev1_title:'신규 가입 첫 대여 30% 할인', ev1_desc:'가입 후 7일 이내 첫 대여 시 자동 적용',
-    ev2_title:'CARO 블랙 라벨 출시', ev2_desc:'프리미엄 차량 · 전담 컨시어지 서비스',
+    ev2_title:'CARO 카로 더 블랙 출시', ev2_desc:'프리미엄 차량 · 전담 컨시어지 서비스',
     ev3_title:'친구 추천 5,000P 적립', ev3_desc:'추천인·피추천인 모두 포인트 지급',
     ev4_title:'주말 특별 할인 최대 30%', ev4_desc:'전기차 한정 · 해당 차량에만 적용',
     always:'상시', weekend_period:'매주 토~일',
@@ -4239,7 +4239,7 @@ function closeResDetail(e){
 }
 
 /* ─────────────────────────────────────────────
-   18. 블랙 라벨
+   18. 카로 더 블랙
 ───────────────────────────────────────────── */
 function renderBLCars(){
   var list=document.getElementById('bl-car-list'); if(!list) return;
@@ -4312,9 +4312,9 @@ var EVENT_DETAILS = [
     period:'2026.03.01 ~ 2026.12.31'
   },
   {
-    title:'CARO 블랙 라벨 출시 기념',
+    title:'CARO 카로 더 블랙 출시 기념',
     titleen:'CARO CARO THE BLACK Launch Event',
-    body:'<h4 style="text-align:center">이벤트 내용</h4><p>CARO 블랙 라벨 서비스 출시를 기념하여 <strong>블랙 라벨 첫 이용 고객</strong>께 전담 컨시어지 서비스를 <strong>무료</strong>로 제공합니다.</p><h4 style="text-align:center">블랙 라벨이란?</h4><ul><li>제네시스 GV80·G90, BMW iX, 메르세데스 EQS, 포르쉐 타이칸 등 프리미엄 차량</li><li>서울·인천 지역 한정 운영</li><li>전담 컨시어지 배차 및 반납 서비스</li><li>차량 내 프리미엄 어메니티 제공</li></ul><h4 style="text-align:center">이벤트 기간</h4><p style="text-align:center">2026년 3월 1일 ~ 2026년 6월 30일</p>',
+    body:'<h4 style="text-align:center">이벤트 내용</h4><p>CARO 카로 더 블랙 서비스 출시를 기념하여 <strong>카로 더 블랙 첫 이용 고객</strong>께 전담 컨시어지 서비스를 <strong>무료</strong>로 제공합니다.</p><h4 style="text-align:center">카로 더 블랙이란?</h4><ul><li>제네시스 GV80·G90, BMW iX, 메르세데스 EQS, 포르쉐 타이칸 등 프리미엄 차량</li><li>서울·인천 지역 한정 운영</li><li>전담 컨시어지 배차 및 반납 서비스</li><li>차량 내 프리미엄 어메니티 제공</li></ul><h4 style="text-align:center">이벤트 기간</h4><p style="text-align:center">2026년 3월 1일 ~ 2026년 6월 30일</p>',
     period:'2026.03.01 ~ 2026.06.30'
   },
   {
@@ -7063,7 +7063,7 @@ window.devUploadAllCars=function(){
     EVENT_DETAILS[0].period = '상시';
   }
 
-  // 2. CARO 블랙 라벨 출시 기념
+  // 2. CARO THE BLACK 출시 기념
   if(EVENT_DETAILS[1]){
     EVENT_DETAILS[1].body = EVENT_DETAILS[1].body
       .replace(/<li>제네시스 GV80[^<]*<\/li>/, '')
@@ -7101,7 +7101,7 @@ window.devUploadAllCars=function(){
   'use strict';
 
   function getBannerConfig(bannerText){
-    if(bannerText.indexOf('블랙 라벨') >= 0){
+    if(bannerText.indexOf('카로 더 블랙') >= 0){
       return {
         text: 'CARO THE BLACK',
         cssText: 'font-size:1.1rem;font-weight:700;letter-spacing:0.2em;font-family:"Oswald",sans-serif;color:#c8a96e;'
