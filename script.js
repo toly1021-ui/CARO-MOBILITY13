@@ -8911,3 +8911,324 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] 크레딧 화면 패치 v2 적용 — 적립/지급 방식');
 })();
+/* ═══════════════════════════════════════════
+   계정관리 - 신규 가입자 데이터 초기화 + 크레딧 화면 업데이트
+   ※ 한 번만 실행되며, 사용자 활동 시 자동 누적됨
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  const STORE = {
+    get(key, def){
+      try{ const v=localStorage.getItem('caro_apd_'+key); return v?JSON.parse(v):def; }
+      catch(e){ return def; }
+    },
+    set(key, val){
+      try{ localStorage.setItem('caro_apd_'+key, JSON.stringify(val)); }
+      catch(e){}
+    },
+    has(key){
+      return localStorage.getItem('caro_apd_'+key) !== null;
+    }
+  };
+
+  /* ─── 1. 신규 가입자 초기화 (최초 1회만 실행) ─── */
+  const INIT_KEY = 'init_v3';
+  if(!STORE.has(INIT_KEY)){
+    // 기존 테스트 데이터 모두 삭제
+    const KEYS_TO_RESET = ['credit', 'credit_history', 'cards', 'coupons', 'unpaid', 'sns', 'plan', 'notif', 'phone'];
+    KEYS_TO_RESET.forEach(k => localStorage.removeItem('caro_apd_' + k));
+
+    // 오늘 날짜
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+
+    // 1년 후 만료일 (쿠폰용)
+    const expiry = new Date(today);
+    expiry.setFullYear(expiry.getFullYear() + 1);
+    const expiryStr = `${expiry.getFullYear()}.${String(expiry.getMonth()+1).padStart(2,'0')}.${String(expiry.getDate()).padStart(2,'0')}`;
+
+    // 신규 가입 기본값 설정
+    STORE.set('credit', 10000);  // 신규 가입 +10,000원
+    STORE.set('credit_history', [
+      { date: dateStr, desc: '신규 가입 적립', amount: +10000 }
+    ]);
+    STORE.set('cards', []);  // 등록 카드 없음
+    STORE.set('coupons', [
+      { id:1, name:'신규 가입 30% 할인', discount:'-30%', expires: expiryStr, status:'available' }
+    ]);
+    STORE.set('unpaid', []);  // 미결제 없음
+    STORE.set('sns', { kakao:false, naver:false, google:false, apple:false });  // SNS 미연결
+    STORE.set('plan', 'lite');  // 기본 요금제 LITE (무료)
+    STORE.set('notif', { push:true, email:true, sms:false, marketing:false, night:false });
+    STORE.set('phone', '010-****-1234');  // 마스킹된 기본 번호
+
+    // 초기화 완료 플래그
+    STORE.set(INIT_KEY, true);
+
+    console.log('[CARO] 신규 가입자 데이터 초기화 완료');
+  }
+
+  /* ─── 2. 크레딧 화면 - 적립/지급 방식 ─── */
+  const originalOpenMpDetail = window.openMpDetail;
+
+  window.openMpDetail = function(title){
+    if(title !== '크레딧'){
+      if(typeof originalOpenMpDetail === 'function') return originalOpenMpDetail(title);
+      return;
+    }
+
+    if(typeof goTo === 'function') goTo('account-detail-screen');
+
+    const titleEl = document.getElementById('mpd-title');
+    if(titleEl) titleEl.textContent = title;
+
+    const content = document.querySelector('#account-detail-screen .mpd-content');
+    if(!content) return;
+
+    const balance = STORE.get('credit', 0);
+    const history = STORE.get('credit_history', []);
+
+    // 만료 예정 계산 (적립일로부터 1년 후 - 30일 이내)
+    let expiringSoon = 0;
+    let earliestExpiry = '-';
+    history.forEach(h => {
+      if(h.amount > 0 && h.date){
+        const earnDate = new Date(h.date.replace(/\./g, '-'));
+        const expireDate = new Date(earnDate);
+        expireDate.setFullYear(expireDate.getFullYear() + 1);
+        const daysUntilExpire = Math.floor((expireDate - new Date()) / (1000 * 60 * 60 * 24));
+        if(daysUntilExpire >= 0 && daysUntilExpire <= 90){
+          expiringSoon += h.amount;
+          if(earliestExpiry === '-'){
+            earliestExpiry = `${expireDate.getFullYear()}.${String(expireDate.getMonth()+1).padStart(2,'0')}.${String(expireDate.getDate()).padStart(2,'0')}`;
+          }
+        }
+      }
+    });
+
+    let histHtml = '';
+    history.forEach(h => {
+      const sign = h.amount > 0 ? '+' : '';
+      const color = h.amount > 0 ? '#1d7a3a' : '#b23a3a';
+      histHtml += `
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:600;color:var(--text-1);">${h.desc}</div>
+            <div style="font-size:.72rem;color:var(--text-m);margin-top:2px;">${h.date}</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.96rem;font-weight:700;color:${color};">${sign}${h.amount.toLocaleString()}원</div>
+        </div>
+      `;
+    });
+
+    content.innerHTML = `
+      <div class="apd-credit-box">
+        <div class="apd-credit-label">CARO CREDIT</div>
+        <div class="apd-credit-amount">${balance.toLocaleString()}<small>원</small></div>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">🎁</span>크레딧 적립 방법</div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">차량 대여 적립</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">대여 결제 금액의 일정 비율 자동 적립</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.96rem;font-weight:700;color:#1d7a3a;">5%</div>
+        </div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">신규 가입 적립</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">가입 완료 시 자동 지급</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.96rem;font-weight:700;color:#1d7a3a;">+10,000원</div>
+        </div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">친구 추천 적립</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">추천 코드 사용 시 추천인·피추천인 양쪽 지급</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.96rem;font-weight:700;color:#1d7a3a;">+5,000원</div>
+        </div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">이벤트 보너스</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">진행 중인 이벤트 참여 시 차등 지급</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.92rem;font-weight:700;color:#1d7a3a;">변동</div>
+        </div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">회사 지급</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">사과·보상·VIP 혜택 등 회사 정책에 따라 지급</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.86rem;font-weight:700;color:#b07d2a;">개별 안내</div>
+        </div>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">⏰</span>만료 예정 크레딧</div>
+        <div class="apd-row">
+          <span class="apd-row-label">3개월 이내 만료 예정</span>
+          <span class="apd-row-value" style="color:${expiringSoon>0?'#b23a3a':'var(--text-m)'};">${expiringSoon.toLocaleString()}원</span>
+        </div>
+        <div class="apd-row">
+          <span class="apd-row-label">가장 빠른 만료일</span>
+          <span class="apd-row-value">${earliestExpiry}</span>
+        </div>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">📋</span>적립/사용 내역</div>
+        ${history.length ? histHtml : '<div class="apd-empty"><div class="apd-empty-icon">📭</div><div class="apd-empty-text">내역이 없습니다</div></div>'}
+      </div>
+
+      <div class="apd-info">
+        <strong>💡 크레딧 안내</strong><br>
+        ▪ 적립된 크레딧은 <strong>1원 = 1크레딧</strong>으로 차량 대여 시 사용 가능<br>
+        ▪ 적립일로부터 <strong>1년간 유효</strong>하며 만료 시 자동 소멸<br>
+        ▪ 환불·양도·현금화 불가 (서비스 내 사용만 가능)<br>
+        ▪ 회원 탈퇴 시 잔여 크레딧은 자동 소멸<br>
+        ▪ 부정 적립 행위 적발 시 적립 취소 및 회수 가능<br>
+        <span class="apd-legal">근거 — 「전자상거래 등에서의 소비자보호에 관한 법률」 및 자체 약관</span>
+      </div>
+    `;
+
+    setTimeout(() => { content.scrollTop = 0; }, 10);
+  };
+
+  console.log('[CARO] 크레딧 패치 v3 적용 — 신규 가입자 초기화 + 적립 방식');
+})();
+/* ═══════════════════════════════════════════
+   휴대폰 번호 - 가입 시 인증한 실제 번호 동기화
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  const STORE = {
+    get(key, def){
+      try{ const v=localStorage.getItem('caro_apd_'+key); return v?JSON.parse(v):def; }
+      catch(e){ return def; }
+    },
+    set(key, val){
+      try{ localStorage.setItem('caro_apd_'+key, JSON.stringify(val)); }
+      catch(e){}
+    }
+  };
+
+  /* 휴대폰 번호 포맷팅 (010-1234-5678) */
+  function formatPhone(p){
+    if(!p) return '';
+    let num = String(p).replace(/[^0-9]/g, '');
+    if(num.startsWith('82')) num = '0' + num.slice(2);
+    if(num.length === 11) return num.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+    if(num.length === 10) return num.replace(/(\d{3})(\d{3,4})(\d{4})/, '$1-$2-$3');
+    return p;
+  }
+
+  /* 마스킹 (010-****-5678) */
+  function maskPhone(p){
+    if(!p) return '';
+    const formatted = formatPhone(p);
+    return formatted.replace(/(\d{3})-(\d{3,4})-(\d{4})/, '$1-****-$3');
+  }
+
+  /* 가입 시 인증한 번호 찾기 */
+  function findRegisteredPhone(){
+    // 1. Firebase Auth 사용자 metadata
+    try{
+      if(typeof firebase !== 'undefined' && firebase.auth){
+        const u = firebase.auth().currentUser;
+        if(u && u.phoneNumber) return formatPhone(u.phoneNumber);
+      }
+    }catch(e){}
+
+    // 2. 다양한 localStorage 키 검색
+    const userKeys = ['caro_user', 'caro_userinfo', 'caro_signup', 'caro_profile', 'user', 'currentUser', 'userInfo', 'profile'];
+    for(const k of userKeys){
+      try{
+        const raw = localStorage.getItem(k);
+        if(!raw) continue;
+        const obj = JSON.parse(raw);
+        const p = obj.phone || obj.phoneNumber || obj.mobile || obj.tel || obj.cell;
+        if(p) return formatPhone(p);
+      }catch(e){}
+    }
+
+    // 3. window 전역 변수
+    try{
+      const candidates = [window.currentUser, window.user, window.caroUser, window.userInfo];
+      for(const c of candidates){
+        if(!c) continue;
+        const p = c.phone || c.phoneNumber || c.mobile;
+        if(p) return formatPhone(p);
+      }
+    }catch(e){}
+
+    // 4. 회원가입 폼에 입력된 값
+    try{
+      const phoneInput = document.getElementById('su-phone');
+      if(phoneInput && phoneInput.value){
+        return formatPhone(phoneInput.value);
+      }
+    }catch(e){}
+
+    return null;
+  }
+
+  /* 번호 동기화 */
+  function syncPhone(){
+    const found = findRegisteredPhone();
+    if(found){
+      const masked = maskPhone(found);
+      STORE.set('phone', masked);
+      STORE.set('phone_full', found);  // 원본도 저장
+      console.log('[CARO] 가입 휴대폰 번호 동기화:', masked);
+    }
+  }
+
+  /* 즉시 + 지연 실행 (Firebase 로드 후) */
+  syncPhone();
+  setTimeout(syncPhone, 500);
+  setTimeout(syncPhone, 2000);
+
+  /* Firebase 인증 상태 변경 시 재동기화 */
+  try{
+    if(typeof firebase !== 'undefined' && firebase.auth){
+      firebase.auth().onAuthStateChanged(() => {
+        setTimeout(syncPhone, 300);
+      });
+    }
+  }catch(e){}
+
+  /* 회원가입 완료 시 번호 자동 저장 */
+  if(typeof window.handleSignup === 'function'){
+    const originalSignup = window.handleSignup;
+    window.handleSignup = function(){
+      try{
+        const phoneInput = document.getElementById('su-phone');
+        if(phoneInput && phoneInput.value){
+          const formatted = formatPhone(phoneInput.value);
+          STORE.set('phone', maskPhone(formatted));
+          STORE.set('phone_full', formatted);
+        }
+      }catch(e){}
+      return originalSignup.apply(this, arguments);
+    };
+  }
+
+  /* 기본값 '010-****-1234' 제거 */
+  const currentStored = STORE.get('phone', '');
+  if(currentStored === '010-****-1234'){
+    localStorage.removeItem('caro_apd_phone');
+    syncPhone(); // 다시 시도
+  }
+
+  console.log('[CARO] 휴대폰 번호 동기화 패치 v1 적용');
+})();
