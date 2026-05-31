@@ -298,10 +298,10 @@ var LANGS = {
     event_banner_title:'🎉 Current Events', notice_title:'📢 Notice',
     no_reservation:'No reservations yet',
     res_detail_title:'Booking Details',
-    bl_desc:'CARO CARO THE BLACK · Premium EV Rental\nSeoul · Incheon area only',
+    bl_desc:'CARO THE BLACK · Premium EV Rental\nSeoul · Incheon area only',
     menu_event:'Events', ev_sub:'Discover CARO\'s special offers',
     ev1_title:'30% off first ride for new members', ev1_desc:'Auto-applied within 7 days of signup',
-    ev2_title:'CARO CARO THE BLACK Launch', ev2_desc:'Premium vehicles · Dedicated concierge',
+    ev2_title:'CARO THE BLACK Launch', ev2_desc:'Premium vehicles · Dedicated concierge',
     ev3_title:'Refer a friend – earn 5,000P', ev3_desc:'Both referrer and referee earn points',
     ev4_title:'Weekend special up to 30% off', ev4_desc:'EV only · Applied to eligible vehicles',
     always:'Always', weekend_period:'Every Sat–Sun',
@@ -4313,7 +4313,7 @@ var EVENT_DETAILS = [
   },
   {
     title:'CARO 카로 더 블랙 출시 기념',
-    titleen:'CARO CARO THE BLACK Launch Event',
+    titleen:'CARO THE BLACK Launch Event',
     body:'<h4 style="text-align:center">이벤트 내용</h4><p>CARO 카로 더 블랙 서비스 출시를 기념하여 <strong>카로 더 블랙 첫 이용 고객</strong>께 전담 컨시어지 서비스를 <strong>무료</strong>로 제공합니다.</p><h4 style="text-align:center">카로 더 블랙이란?</h4><ul><li>제네시스 GV80·G90, BMW iX, 메르세데스 EQS, 포르쉐 타이칸 등 프리미엄 차량</li><li>서울·인천 지역 한정 운영</li><li>전담 컨시어지 배차 및 반납 서비스</li><li>차량 내 프리미엄 어메니티 제공</li></ul><h4 style="text-align:center">이벤트 기간</h4><p style="text-align:center">2026년 3월 1일 ~ 2026년 6월 30일</p>',
     period:'2026.03.01 ~ 2026.06.30'
   },
@@ -10422,3 +10422,56 @@ window.devUploadAllCars=function(){
   console.log('  - 대여 10분 전부터 차량 사용 가능');
 })();
 
+/* ═══════════════════════════════════
+   CARO THE BLACK 로딩: 마름모 제거 + 로딩 라인
+═══════════════════════════════════ */
+(function(){
+  'use strict';
+
+  if(!document.getElementById('caro-load-line-style')){
+    var st = document.createElement('style');
+    st.id = 'caro-load-line-style';
+    st.textContent =
+      '.caro-load-line{position:relative;width:120px;height:2px;margin:20px auto 0;'+
+      'border-radius:2px;background:rgba(200,169,110,.18);overflow:hidden;'+
+      'opacity:0;transform:translateY(10px);animation:caroLineRise .6s ease forwards;}'+
+      '.caro-load-line::after{content:"";position:absolute;top:0;left:-40%;width:40%;'+
+      'height:100%;background:linear-gradient(90deg,transparent,#c8a96e,transparent);'+
+      'animation:caroLineSweep 1.2s ease-in-out infinite;}'+
+      '@keyframes caroLineRise{to{opacity:1;transform:translateY(0);}}'+
+      '@keyframes caroLineSweep{0%{left:-40%;}100%{left:100%;}}';
+    document.head.appendChild(st);
+  }
+
+  function apply(){
+    var logo = document.querySelector('.bl-transition-logo');
+    if(!logo || !logo.parentElement) return;
+    var parent = logo.parentElement;
+
+    // 1) 마름모(◆) 요소 숨기기
+    parent.querySelectorAll('*').forEach(function(el){
+      if(el === logo || el.classList.contains('caro-load-line')) return;
+      var t = (el.textContent||'').replace(/\s/g,'');
+      if(t && el.children.length===0 && /^[◆◇♦◈❖]+$/.test(t)){
+        el.style.display='none';
+      }
+    });
+
+    // 2) 로딩 라인 추가 (중복 방지)
+    if(!parent.querySelector('.caro-load-line')){
+      var line = document.createElement('div');
+      line.className='caro-load-line';
+      logo.insertAdjacentElement('afterend', line);
+    }
+  }
+
+  [50,300,800,1500].forEach(function(t){ setTimeout(apply,t); });
+
+  var scheduled=false;
+  new MutationObserver(function(){
+    if(scheduled) return; scheduled=true;
+    requestAnimationFrame(function(){ scheduled=false; apply(); });
+  }).observe(document.documentElement,{childList:true,subtree:true});
+
+  console.log('[CARO] ✅ 로딩 마름모 → 라인 교체 완료');
+})();
