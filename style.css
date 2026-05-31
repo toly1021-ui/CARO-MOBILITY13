@@ -4305,3 +4305,77 @@ video::-webkit-media-controls-panel{display:none !important;}
 #pay-sheet-overlay button[onclick*="confirmPaySheet"]:hover {
   background: #2e3138 !important;
 }
+
+/* ═══════════════════════════════════════════
+   계정관리 모든 버튼 → 차콜 블랙 통일
+═══════════════════════════════════════════ */
+
+/* 메인/보조/PASS/위험 버튼 모두 통일 */
+#account-detail-screen .apd-btn,
+#account-detail-screen .apd-btn-primary,
+#account-detail-screen .apd-btn-secondary,
+#account-detail-screen .apd-btn-pass,
+#account-detail-screen .apd-btn-danger {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25) !important;
+}
+
+/* 호버 효과 */
+#account-detail-screen .apd-btn:hover,
+#account-detail-screen .apd-btn-primary:hover,
+#account-detail-screen .apd-btn-secondary:hover,
+#account-detail-screen .apd-btn-pass:hover,
+#account-detail-screen .apd-btn-danger:hover {
+  background: #2e3138 !important;
+  background-color: #2e3138 !important;
+}
+
+/* 비활성화 상태 */
+#account-detail-screen .apd-btn:disabled,
+#account-detail-screen .apd-btn-primary:disabled,
+#account-detail-screen .apd-btn-pass:disabled {
+  background: rgba(0,0,0,.15) !important;
+  background-color: rgba(0,0,0,.15) !important;
+  color: rgba(0,0,0,.4) !important;
+  border-color: rgba(0,0,0,.2) !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* SNS 연결/해제 버튼 */
+#account-detail-screen .apd-sns-btn {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+  font-weight: 700 !important;
+}
+
+#account-detail-screen .apd-sns-btn.connected {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #c8a96e !important;
+  border: 1px solid #2e3138 !important;
+}
+
+/* 충전 금액 버튼 (10k/30k/50k 등) */
+#account-detail-screen [data-charge] {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+  font-weight: 700 !important;
+}
+
+/* 통신사 선택 버튼 (활성화 상태) */
+#account-detail-screen .apd-carrier-btn.active {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border-color: #18191c !important;
+}
