@@ -10157,3 +10157,170 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] 약관 6종 콘텐츠 v2 적용 (data-terms 매칭)');
 })();
+/* ═══════════════════════════════════════════
+   청소년 보호정책 → 차량손해면책제도 이용약관 교체
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  /* 차량손해면책제도 약관 내용 */
+  const DAMAGE_WAIVER_CONTENT = {
+    title: '차량손해면책제도 이용약관',
+    body: `
+      <p>본 약관은 CARO MOBILITY 차량 대여 시 임차인의 사고 손해배상 부담을 완화하기 위한 차량손해면책제도(CDW: Collision Damage Waiver) 이용에 관한 사항을 규정합니다.</p>
+
+      <h4>제1조 (면책 상품 종류)</h4>
+      <ul>
+        <li><strong>완전면책 (자부담 5만원) — BEST</strong><br>
+        · 대인 무한, 대물 2억원<br>
+        · 자차손해 완전보상 + 긴급출동 + 대체차량<br>
+        · 시간당 +4,500원<br>
+        · 국토교통부 고시 기준
+        </li>
+        <li><strong>일반면책 (자부담 30만원)</strong><br>
+        · 대인 무한, 대물 1억원<br>
+        · 자차손해 포함<br>
+        · 시간당 +2,800원<br>
+        · 렌터카 의무보험 + 자차 특약 기준
+        </li>
+        <li><strong>기본면책 (자부담 70만원)</strong><br>
+        · 대인 무한, 대물 2천만원<br>
+        · 자차손해 미포함 (기본 책임보험만)<br>
+        · 시간당 +1,200원<br>
+        · 자동차손해배상보장법 최저 의무보험 기준
+        </li>
+      </ul>
+
+      <h4>제2조 (면책 한도)</h4>
+      <ul>
+        <li>대인배상 Ⅰ: 「자동차손해배상보장법」 기준 무한</li>
+        <li>대인배상 Ⅱ: 1억원 ~ 무한 (상품별 차등)</li>
+        <li>대물배상: 2천만원 ~ 2억원 (상품별 차등)</li>
+        <li>자차손해: 면책상품에 따라 적용</li>
+      </ul>
+
+      <h4>제3조 (면책 제외 사항 - 매우 중요)</h4>
+      <p>다음의 경우 <strong style="color:#b23a3a">면책제도가 적용되지 않으며 임차인이 전액 책임</strong>집니다.</p>
+      <ul>
+        <li>음주 운전 (혈중알코올농도 0.03% 이상)</li>
+        <li>약물 복용 운전</li>
+        <li>무면허 운전 또는 면허 무자격자에게 운전 위임</li>
+        <li>사고 후 미신고 또는 도주 (도로교통법 제54조 위반)</li>
+        <li>음주 측정 거부</li>
+        <li>차량 개조 또는 외관 변경</li>
+        <li>영업 목적 사용 (대리운전, 택배, 승차공유 등)</li>
+        <li>도로교통법 12대 중과실 위반</li>
+        <li>회사와 사전 합의 없는 임의 수리</li>
+      </ul>
+
+      <h4>제4조 (사고 시 처리 절차)</h4>
+      <ul>
+        <li>사고 즉시 회사 콜센터(1588-0000) 신고 (필수)</li>
+        <li>경찰서 신고 (인사사고 시 필수, 도로교통법 제54조)</li>
+        <li>보험사 신고 (24시간 이내)</li>
+        <li>사고 현장 사진·동영상 보존</li>
+        <li>회사 직원 도착 시까지 차량 임의 이동 금지</li>
+        <li>임의 합의·임의 수리 절대 금지 (면책 무효)</li>
+      </ul>
+
+      <h4>제5조 (휴차료 - 휴차손해)</h4>
+      <p>임차인의 귀책으로 차량 수리가 필요한 경우 수리 기간 중 휴차료가 발생합니다.</p>
+      <ul>
+        <li>산정식: <strong>일일대여요금 × 50% × 수리일수</strong></li>
+        <li>근거: 공정거래위원회 자동차대여 표준약관 (제10064호)</li>
+      </ul>
+
+      <h4>제6조 (자기부담금 결제)</h4>
+      <ul>
+        <li>사고 발생 시 자기부담금은 회사 정산 후 청구됩니다.</li>
+        <li>등록된 카드로 자동 결제됩니다.</li>
+        <li>분할 결제 가능 여부는 회사 정책에 따릅니다.</li>
+      </ul>
+
+      <h4>제7조 (면책 상품 변경 및 환불)</h4>
+      <ul>
+        <li>대여 시작 전: 면책 상품 변경 또는 환불 가능</li>
+        <li>대여 시작 후: 변경·환불 불가</li>
+        <li>대여 종료 후 무사고 시: 면책료는 환불되지 않음</li>
+      </ul>
+
+      <h4>제8조 (이중 보험 가입 시)</h4>
+      <p>임차인이 별도의 자동차 보험(개인 차량 보험 등)에 가입되어 있더라도, 본 면책제도는 별개로 적용됩니다. 대여 차량은 회사 보험 및 면책제도가 우선 적용됩니다.</p>
+
+      <h4>제9조 (분쟁 처리)</h4>
+      <ul>
+        <li>회사 분쟁 처리: 1588-0000 / claim@caromobility.com</li>
+        <li>금융감독원 분쟁조정위원회 (1332)</li>
+        <li>한국소비자원 분쟁조정 (1372)</li>
+      </ul>
+
+      <h4>제10조 (근거 법령)</h4>
+      <ul>
+        <li>자동차손해배상보장법</li>
+        <li>여신전문금융업법</li>
+        <li>공정거래위원회 자동차대여 표준약관 (제10064호)</li>
+        <li>국토교통부 자동차대여사업 면책상품 운용 기준</li>
+        <li>도로교통법</li>
+      </ul>
+
+      <p style="margin-top:16px;color:#888;font-size:.78rem;text-align:center;">본 약관은 2026년 5월 31일부터 시행합니다.</p>
+    `
+  };
+
+  /* "청소년 보호정책" 표시명 → "차량손해면책제도 이용약관"으로 변경 */
+  function replaceTermsLabel(){
+    const items = document.querySelectorAll('.apd-terms-item[data-terms="youth"]');
+    items.forEach(item => {
+      const nameEl = item.querySelector('.apd-terms-name');
+      if(nameEl && (nameEl.textContent.includes('청소년') || nameEl.textContent.trim().startsWith('청'))){
+        nameEl.textContent = '차량손해면책제도 이용약관';
+      }
+    });
+  }
+
+  /* 클릭 핸들러 - 차량손해면책제도 내용 표시 (높은 우선순위) */
+  document.addEventListener('click', function(e){
+    const target = e.target.closest('.apd-terms-item[data-terms="youth"]');
+    if(!target) return;
+
+    // 약간 지연 후 내용 덮어쓰기 (이전 핸들러 실행 후)
+    setTimeout(() => {
+      const titleEl = document.getElementById('notice-title');
+      const bodyEl = document.getElementById('notice-body');
+      if(titleEl) titleEl.textContent = DAMAGE_WAIVER_CONTENT.title;
+      if(bodyEl) bodyEl.innerHTML = DAMAGE_WAIVER_CONTENT.body;
+    }, 50);
+  }, true);
+
+  /* 화면 전환 시 텍스트 교체 */
+  const origGoTo = window.goTo;
+  if(typeof origGoTo === 'function'){
+    window.goTo = function(screen){
+      const result = origGoTo.apply(this, arguments);
+      if(screen === 'account-detail-screen'){
+        setTimeout(replaceTermsLabel, 30);
+        setTimeout(replaceTermsLabel, 200);
+        setTimeout(replaceTermsLabel, 500);
+      }
+      return result;
+    };
+  }
+
+  /* DOM 변경 감지로 자동 교체 (백업) */
+  const observer = new MutationObserver(() => {
+    replaceTermsLabel();
+  });
+
+  if(document.body){
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  /* 초기 실행 */
+  setTimeout(replaceTermsLabel, 500);
+  setTimeout(replaceTermsLabel, 1500);
+
+  console.log('[CARO] 청소년 보호정책 → 차량손해면책제도 이용약관 교체 완료');
+})();
