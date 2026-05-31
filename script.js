@@ -8769,3 +8769,145 @@ window.devUploadAllCars=function(){
   console.log('[CARO] 계정관리 패치 v1 적용 완료 — 9개 화면 + 회원 탈퇴 보존');
 
 })();
+/* ═══════════════════════════════════════════
+   크레딧 화면 - 적립/지급 방식으로 재구성 패치
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  const STORE = {
+    get(key, def){
+      try{ const v=localStorage.getItem('caro_apd_'+key); return v?JSON.parse(v):def; }
+      catch(e){ return def; }
+    },
+    set(key, val){
+      try{ localStorage.setItem('caro_apd_'+key, JSON.stringify(val)); }
+      catch(e){}
+    }
+  };
+
+  const originalOpenMpDetail = window.openMpDetail;
+
+  window.openMpDetail = function(title){
+    // 크레딧이 아니면 기존 함수 호출
+    if(title !== '크레딧'){
+      if(typeof originalOpenMpDetail === 'function') return originalOpenMpDetail(title);
+      return;
+    }
+
+    // 화면 전환
+    if(typeof goTo === 'function') goTo('account-detail-screen');
+
+    // 타이틀 설정
+    const titleEl = document.getElementById('mpd-title');
+    if(titleEl) titleEl.textContent = title;
+
+    const content = document.querySelector('#account-detail-screen .mpd-content');
+    if(!content) return;
+
+    const balance = STORE.get('credit', 15000);
+    const history = STORE.get('credit_history', [
+      { date:'2026.05.25', desc:'차량 대여 적립 (셀토스 4시간)', amount:+2400 },
+      { date:'2026.05.20', desc:'예약 결제 사용', amount:-5000 },
+      { date:'2026.05.10', desc:'친구 추천 적립', amount:+5000 },
+      { date:'2026.04.15', desc:'신규 가입 적립', amount:+10000 }
+    ]);
+
+    let histHtml = '';
+    history.forEach(h => {
+      const sign = h.amount > 0 ? '+' : '';
+      const color = h.amount > 0 ? '#1d7a3a' : '#b23a3a';
+      histHtml += `
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:600;color:var(--text-1);">${h.desc}</div>
+            <div style="font-size:.72rem;color:var(--text-m);margin-top:2px;">${h.date}</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.96rem;font-weight:700;color:${color};">${sign}${h.amount.toLocaleString()}원</div>
+        </div>
+      `;
+    });
+
+    content.innerHTML = `
+      <div class="apd-credit-box">
+        <div class="apd-credit-label">CARO CREDIT</div>
+        <div class="apd-credit-amount">${balance.toLocaleString()}<small>원</small></div>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">🎁</span>크레딧 적립 방법</div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">차량 대여 적립</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">대여 결제 금액의 일정 비율 자동 적립</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.96rem;font-weight:700;color:#1d7a3a;">5%</div>
+        </div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">신규 가입 적립</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">가입 완료 시 자동 지급</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.96rem;font-weight:700;color:#1d7a3a;">+10,000원</div>
+        </div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">친구 추천 적립</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">추천 코드 사용 시 추천인·피추천인 양쪽 지급</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.96rem;font-weight:700;color:#1d7a3a;">+5,000원</div>
+        </div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">이벤트 보너스</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">진행 중인 이벤트 참여 시 차등 지급</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.92rem;font-weight:700;color:#1d7a3a;">변동</div>
+        </div>
+
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:700;color:var(--text-1);">회사 지급</div>
+            <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">사과·보상·VIP 혜택 등 회사 정책에 따라 지급</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.86rem;font-weight:700;color:#b07d2a;">개별 안내</div>
+        </div>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">⏰</span>만료 예정 크레딧</div>
+        <div class="apd-row">
+          <span class="apd-row-label">3개월 이내 만료 예정</span>
+          <span class="apd-row-value" style="color:#b23a3a;">3,000원</span>
+        </div>
+        <div class="apd-row">
+          <span class="apd-row-label">가장 빠른 만료일</span>
+          <span class="apd-row-value">2026.07.31</span>
+        </div>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">📋</span>적립/사용 내역</div>
+        ${history.length ? histHtml : '<div class="apd-empty"><div class="apd-empty-text">내역이 없습니다</div></div>'}
+      </div>
+
+      <div class="apd-info">
+        <strong>💡 크레딧 안내</strong><br>
+        ▪ 적립된 크레딧은 <strong>1원 = 1크레딧</strong>으로 차량 대여 시 사용 가능<br>
+        ▪ 적립일로부터 <strong>1년간 유효</strong>하며 만료 시 자동 소멸<br>
+        ▪ 환불·양도·현금화 불가 (서비스 내 사용만 가능)<br>
+        ▪ 회원 탈퇴 시 잔여 크레딧은 자동 소멸<br>
+        ▪ 부정 적립 행위 적발 시 적립 취소 및 회수 가능<br>
+        <span class="apd-legal">근거 — 「전자상거래 등에서의 소비자보호에 관한 법률」 및 자체 약관</span>
+      </div>
+    `;
+
+    setTimeout(() => { content.scrollTop = 0; }, 10);
+  };
+
+  console.log('[CARO] 크레딧 화면 패치 v2 적용 — 적립/지급 방식');
+})();
