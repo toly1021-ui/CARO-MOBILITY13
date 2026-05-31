@@ -9396,3 +9396,12 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] 카드 통합 동기화 패치 v1 적용 — 계정관리 ↔ 차량 대여 결제 연동');
 })();
+// 1. 현재 카드 위치 찾기
+console.log('=== 카드 저장 위치 ===');
+for(let i = 0; i < localStorage.length; i++){
+  const k = localStorage.key(i);
+  const v = localStorage.getItem(k);
+  if(v && v.includes('last4') || (v && v.includes('cardNum'))){
+    console.log(k, '→', v.slice(0, 200));
+  }
+}
