@@ -4510,3 +4510,85 @@ button[style*="background-color:#18191c"]:not(.black-label) {
   color: #c8a96e !important;
   border: 1px solid #2e3138 !important;
 }
+
+/* ═══════════════════════════════════════════
+   모든 버튼 → 고객센터 버튼과 동일한 차콜 블랙
+   ※ 블랙라벨(.bl-rent-btn) 도 동일 색상 (블랙이라 OK)
+═══════════════════════════════════════════ */
+
+/* ─── 메인 submit 버튼 (로그인, 결제하기, 적용 등) ─── */
+.submit-btn:not(:disabled) {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+  transition: all .2s ease !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25) !important;
+}
+
+.submit-btn:not(:disabled):hover {
+  background: #2e3138 !important;
+  background-color: #2e3138 !important;
+}
+
+/* ─── 차량 예약 버튼 ─── */
+.car-rent-btn:not(:disabled) {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+  transition: all .2s ease !important;
+}
+
+.car-rent-btn:not(:disabled):hover {
+  background: #2e3138 !important;
+}
+
+/* ─── 계정관리 메인 버튼 ─── */
+#account-detail-screen .apd-btn-primary {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+  transition: all .2s ease !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25) !important;
+}
+
+#account-detail-screen .apd-btn-primary:hover {
+  background: #2e3138 !important;
+  background-color: #2e3138 !important;
+}
+
+/* ─── 결제 수단 시트 확인 버튼 ─── */
+#pay-sheet-overlay .submit-btn,
+#pay-sheet-overlay button[onclick*="confirmPaySheet"] {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+}
+
+/* ─── 비활성화 상태 ─── */
+.submit-btn:disabled,
+.car-rent-btn:disabled,
+.apd-btn-primary:disabled {
+  background: rgba(0,0,0,.15) !important;
+  background-color: rgba(0,0,0,.15) !important;
+  color: rgba(0,0,0,.4) !important;
+  border-color: rgba(0,0,0,.2) !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* ─── 블랙라벨 예약 버튼 (이미 검은색이라 OK) ─── */
+.bl-rent-btn {
+  background: #18191c !important;
+  color: #c8a96e !important;
+  border: 1px solid #2e3138 !important;
+}
