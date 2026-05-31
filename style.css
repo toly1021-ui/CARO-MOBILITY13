@@ -4397,3 +4397,76 @@ video::-webkit-media-controls-panel{display:none !important;}
   border: 1px solid #b8bcc4 !important;
   color: #18191c !important;
 }
+
+/* ═══════════════════════════════════════════
+   검은색 버튼 → 메탈 색상 전체 변경
+   ※ 블랙라벨(Black Label) 관련은 제외
+═══════════════════════════════════════════ */
+
+/* 메인 제출 버튼 (submit-btn) */
+.submit-btn:not(.black-label):not([class*="black-label"]):not([class*="blackLabel"]):not(.btn-danger):not(.btn-cancel):not(.cancel-btn) {
+  background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
+  background-color: #5a6068 !important;
+  color: #ffffff !important;
+  border: 1px solid #2e3138 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2) !important;
+}
+
+.submit-btn:not(.black-label):not([class*="black-label"]):not(.btn-danger):hover {
+  background: linear-gradient(135deg, #7c828d 0%, #4a4f57 100%) !important;
+}
+
+/* 비활성화 상태 */
+.submit-btn:disabled {
+  background: rgba(0,0,0,.12) !important;
+  background-color: rgba(0,0,0,.12) !important;
+  color: rgba(255,255,255,.5) !important;
+  border-color: rgba(0,0,0,.15) !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+/* 고객센터 연락 버튼들 (이전엔 검은색) */
+#cs-screen .cs-contact-btn:not(.black-label),
+#cs-screen .cs-action-btn:not(.black-label) {
+  background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
+  background-color: #5a6068 !important;
+  color: #ffffff !important;
+  border: 1px solid #2e3138 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2) !important;
+}
+
+/* 일반 main-btn / primary-btn / confirm-btn 류 */
+.main-btn:not(.black-label):not([class*="black-label"]),
+.primary-btn:not(.black-label):not([class*="black-label"]),
+.btn-primary:not(.black-label):not([class*="black-label"]):not(#account-detail-screen .apd-btn-primary):not(.btn-danger),
+.confirm-btn:not(.black-label):not([class*="black-label"]),
+.action-btn:not(.black-label):not([class*="black-label"]),
+.complete-btn:not(.black-label):not([class*="black-label"]) {
+  background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
+  background-color: #5a6068 !important;
+  color: #ffffff !important;
+  border: 1px solid #2e3138 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2) !important;
+}
+
+/* 호버 효과 */
+.main-btn:not(.black-label):hover,
+.primary-btn:not(.black-label):hover,
+.btn-primary:not(.black-label):hover,
+.confirm-btn:not(.black-label):hover,
+.action-btn:not(.black-label):hover,
+.complete-btn:not(.black-label):hover {
+  background: linear-gradient(135deg, #7c828d 0%, #4a4f57 100%) !important;
+}
+
+/* 블랙라벨은 그대로 검은색 유지 (확실하게) */
+.black-label,
+[class*="black-label"],
+[class*="blackLabel"],
+.btn-black-label {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #c8a96e !important;
+  border: 1px solid #2e3138 !important;
+}
