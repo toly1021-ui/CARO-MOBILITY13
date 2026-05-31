@@ -3431,3 +3431,68 @@ video::-webkit-media-controls-panel{display:none !important;}
   border-radius: 24px !important;
   overflow: hidden !important;
 }
+
+/* ═══════════════════════════════════════════
+   채팅 상담 - 디자인 수정 (메탈 테마)
+═══════════════════════════════════════════ */
+
+/* ① 상단 상담원 아바타 (검은색 → 연한 회색) */
+#chat-screen .csd-agent-avatar {
+  background: #e8ecf0 !important;
+  background-color: #e8ecf0 !important;
+  color: #18191c !important;
+  border: 1.5px solid #d0d4dc !important;
+  font-weight: 700 !important;
+}
+
+#chat-screen .csd-agent-avatar .csd-status-dot {
+  background: #1d7a3a !important;
+}
+
+/* ② 하단 클립 버튼 중심 정렬 */
+#chat-screen .csd-attach-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  align-self: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 40px !important;
+  height: 40px !important;
+}
+
+#chat-screen .csd-input-bar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* ③ 전송 버튼 - 메탈 실버 그라데이션 + 좌측 화살표 */
+#chat-screen .csd-send-btn {
+  background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
+  background-color: #5a6068 !important;
+  color: #ffffff !important;
+  border: 1px solid #2e3138 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  font-size: 0 !important;
+  font-weight: 700 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25) !important;
+}
+
+/* 전송 버튼 아이콘 ➤ → ← 로 교체 */
+#chat-screen .csd-send-btn::before {
+  content: '←' !important;
+  font-size: 1.3rem !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* 호버 시 살짝 밝아짐 */
+#chat-screen .csd-send-btn:hover {
+  background: linear-gradient(135deg, #7c828d 0%, #4a4f57 100%) !important;
+}
