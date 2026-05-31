@@ -4500,3 +4500,45 @@ video::-webkit-media-controls-panel{display:none !important;}
   max-width: 90% !important;
   width: 480px !important;
 }
+
+/* ═══════════════════════════════════════════
+   전체 프로그램 스크롤바 숨기기 (전역)
+   ※ 스크롤 기능은 유지, 스크롤바만 보이지 않음
+═══════════════════════════════════════════ */
+
+/* Firefox + IE/Edge */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+html, body {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+/* Chrome / Safari / Edge / WebKit 기반 */
+*::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+div::-webkit-scrollbar,
+section::-webkit-scrollbar,
+main::-webkit-scrollbar,
+article::-webkit-scrollbar,
+aside::-webkit-scrollbar,
+nav::-webkit-scrollbar,
+ul::-webkit-scrollbar,
+ol::-webkit-scrollbar,
+textarea::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-corner {
+  display: none !important;
+  background: transparent !important;
+}
