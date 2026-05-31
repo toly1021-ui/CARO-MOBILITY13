@@ -4582,3 +4582,10 @@ textarea::-webkit-scrollbar {
 #res-detail-modal [class*="close"]:not(.submit-btn):not([class*="cancel"]) {
   display: none !important;
 }
+
+/* CARO THE BLACK 영문 강조 스타일 (선택) */
+.bl-rent-btn,
+[class*="black-label"],
+.menu-item:has(span:contains("CARO THE BLACK")) {
+  letter-spacing: 0.04em;
+}
