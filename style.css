@@ -4386,3 +4386,117 @@ video::-webkit-media-controls-panel{display:none !important;}
 .hmenu-close {
   display: none !important;
 }
+
+/* ═══════════════════════════════════════════
+   공지사항 모달 - 이벤트 모달 스타일로 통일
+═══════════════════════════════════════════ */
+
+/* 1. 제목 중앙 정렬 */
+#notice-modal #notice-title,
+#notice-modal .modal-title,
+#notice-modal .modal-header,
+#notice-modal .modal-box > h2,
+#notice-modal .modal-box > h3,
+#notice-modal .modal-box > div:first-child {
+  text-align: center !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  color: var(--text-1, #18191c) !important;
+  padding: 18px 20px 14px !important;
+  border-bottom: 1px solid var(--border, #e4e8ee) !important;
+  margin-bottom: 0 !important;
+}
+
+/* 2. 상단 X 닫기 버튼 숨기기 */
+#notice-modal .modal-close,
+#notice-modal .close-btn,
+#notice-modal .modal-header button:not(.submit-btn),
+#notice-modal button[onclick="closeNotice()"]:not(.submit-btn),
+#notice-modal [class*="close-x"],
+#notice-modal .modal-x,
+#notice-modal button.close {
+  display: none !important;
+}
+
+/* 3. 본문 영역 패딩 */
+#notice-modal #notice-body,
+#notice-modal .modal-body,
+#notice-modal .notice-content {
+  padding: 16px 20px !important;
+  font-size: .88rem !important;
+  line-height: 1.7 !important;
+  color: var(--text-1, #18191c) !important;
+}
+
+/* 4. 본문 안의 h4 (점검 개요, 점검 일정 등) 중앙 정렬 */
+#notice-modal #notice-body h4,
+#notice-modal #notice-body h3,
+#notice-modal .modal-body h4,
+#notice-modal .modal-body h3 {
+  text-align: center !important;
+  font-size: .92rem !important;
+  font-weight: 700 !important;
+  color: var(--text-1, #18191c) !important;
+  margin: 16px 0 10px !important;
+}
+
+/* 5. 본문 첫 h4 상단 여백 제거 */
+#notice-modal #notice-body > h4:first-child,
+#notice-modal #notice-body > h3:first-child {
+  margin-top: 0 !important;
+}
+
+/* 6. 본문 단락 */
+#notice-modal #notice-body p,
+#notice-modal .modal-body p {
+  margin: 8px 0 !important;
+  color: var(--text-2, #4a4f57) !important;
+}
+
+/* 7. 본문 목록 (ul/li) */
+#notice-modal #notice-body ul,
+#notice-modal .modal-body ul {
+  padding-left: 20px !important;
+  margin: 8px 0 !important;
+}
+
+#notice-modal #notice-body li,
+#notice-modal .modal-body li {
+  margin: 4px 0 !important;
+  color: var(--text-2, #4a4f57) !important;
+}
+
+/* 8. 확인 버튼 - 풀 와이드, 차콜 블랙 */
+#notice-modal .submit-btn,
+#notice-modal button[onclick*="closeNotice"]:not(.modal-close):not(.close-btn),
+#notice-modal .modal-footer button:last-child,
+#notice-modal .modal-box > button:last-child {
+  width: calc(100% - 40px) !important;
+  margin: 0 20px 20px !important;
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+  border-radius: var(--r, 12px) !important;
+  padding: 14px !important;
+  font-size: .92rem !important;
+  cursor: pointer !important;
+  display: block !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25) !important;
+}
+
+#notice-modal .submit-btn:hover,
+#notice-modal button[onclick*="closeNotice"]:not(.modal-close):hover {
+  background: #2e3138 !important;
+  background-color: #2e3138 !important;
+}
+
+/* 9. 모달 박스 자체 스타일 */
+#notice-modal .modal-box {
+  border-radius: var(--r, 12px) !important;
+  overflow: hidden !important;
+  max-width: 90% !important;
+  width: 480px !important;
+}
