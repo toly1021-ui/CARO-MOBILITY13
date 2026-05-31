@@ -4587,3 +4587,8 @@ textarea::-webkit-scrollbar {
 .bl-transition-logo {
   transform: translateX(8px) !important;
 }
+
+/* 로딩 마름모 제거 */
+.bl-transition-diamonds {
+  display: none !important;
+}
