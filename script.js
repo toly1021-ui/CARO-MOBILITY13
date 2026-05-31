@@ -9232,176 +9232,220 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] 휴대폰 번호 동기화 패치 v1 적용');
 })();
+
 /* ═══════════════════════════════════════════
-   결제 카드 통합 동기화 패치
-   계정관리 ↔ 차량 대여 결제 카드 양방향 연동
+   카드 동기화 강화 패치 v2
+   결제 화면을 직접 오버라이드해서 APD 카드 사용
 ═══════════════════════════════════════════ */
 (function(){
   'use strict';
 
   const APD_KEY = 'caro_apd_cards';
-  const FALLBACK_KEYS = ['caro_cards', 'caroCards', 'savedCards', 'userCards', 'paymentCards', 'cards'];
 
-  /* 카드 정규화 (다양한 형식을 통일) */
-  function normalizeCard(c){
-    if(!c || typeof c !== 'object') return null;
-    const numStr = String(c.cardNum || c.number || c.cardNumber || c.num || '').replace(/\D/g, '');
-    const last4 = c.last4 || numStr.slice(-4);
-    if(!last4 || last4.length !== 4) return null;
-
-    return {
-      id: c.id || Date.now() + Math.floor(Math.random() * 10000),
-      bank: c.bank || c.brand || c.issuer || c.company || '카드',
-      last4: last4,
-      alias: c.alias || c.name || c.nickname || `카드 ****${last4}`,
-      isDefault: !!(c.isDefault || c.default || c.primary),
-      // 원본 데이터 보존 (호환성)
-      number: c.number || c.cardNum,
-      exp: c.exp || c.expiry || c.expiration
-    };
-  }
-
-  /* 특정 키에서 카드 읽기 */
-  function getCardsFromKey(key){
+  function getCards(){
     try{
-      const raw = localStorage.getItem(key);
-      if(!raw) return [];
-      const parsed = JSON.parse(raw);
-      if(!Array.isArray(parsed)) return [];
-      return parsed.map(normalizeCard).filter(Boolean);
+      const raw = localStorage.getItem(APD_KEY);
+      return raw ? JSON.parse(raw) : [];
     }catch(e){
       return [];
     }
   }
 
-  /* 모든 위치에서 카드를 찾아 통합 */
-  function mergeAllCards(){
-    const all = [];
-    const seenLast4 = new Set();
-
-    function addCards(cards){
-      cards.forEach(c => {
-        if(c && !seenLast4.has(c.last4)){
-          seenLast4.add(c.last4);
-          all.push(c);
-        }
-      });
-    }
-
-    // 1. APD 저장소
-    addCards(getCardsFromKey(APD_KEY));
-
-    // 2. 알려진 폴백 키들
-    FALLBACK_KEYS.forEach(k => addCards(getCardsFromKey(k)));
-
-    // 3. localStorage 전체 스캔 (카드처럼 보이는 데이터)
-    for(let i = 0; i < localStorage.length; i++){
-      const key = localStorage.key(i);
-      if(!key || key === APD_KEY || FALLBACK_KEYS.includes(key)) continue;
-      try{
-        const raw = localStorage.getItem(key);
-        if(!raw) continue;
-        const val = JSON.parse(raw);
-        if(Array.isArray(val) && val.length > 0){
-          const first = val[0];
-          if(first && typeof first === 'object' &&
-             (first.last4 || first.cardNum || first.cardNumber || first.number)){
-            addCards(val.map(normalizeCard).filter(Boolean));
-          }
-        }
-      }catch(e){}
-    }
-
-    // 기본 카드 처리: isDefault가 없으면 첫 번째를 기본으로
-    if(all.length > 0 && !all.some(c => c.isDefault)){
-      all[0].isDefault = true;
-    }
-
-    return all;
+  function setCards(cards){
+    try{
+      localStorage.setItem(APD_KEY, JSON.stringify(cards));
+    }catch(e){}
   }
 
-  /* 통합된 카드 목록을 모든 위치에 저장 */
-  function setUnifiedCards(cards){
-    try{ localStorage.setItem(APD_KEY, JSON.stringify(cards)); }catch(e){}
-    FALLBACK_KEYS.forEach(k => {
-      try{ localStorage.setItem(k, JSON.stringify(cards)); }catch(e){}
+  /* ─── 1. 결제 수단 선택 시트 렌더링 (openPaySheet) ─── */
+  function renderPaySheetCards(){
+    const list = document.getElementById('pay-sheet-list');
+    if(!list) return;
+
+    const cards = getCards();
+    if(cards.length === 0){
+      list.innerHTML = `
+        <div style="padding:30px 0;text-align:center;color:var(--text-m);font-size:.86rem;">
+          등록된 카드가 없습니다
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = cards.map(c => `
+      <label style="display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);cursor:pointer;">
+        <input type="radio" name="pay-card" value="${c.id}" ${c.isDefault?'checked':''} style="width:18px;height:18px;accent-color:#c8a96e;">
+        <div style="width:40px;height:26px;border-radius:4px;background:linear-gradient(135deg,#3a3f47,#2e3138);display:flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:700;color:#c8a96e;flex-shrink:0;">${c.bank}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Oswald',sans-serif;font-size:.88rem;color:var(--text-1);letter-spacing:.04em;">**** ${c.last4}</div>
+          <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">${c.alias}</div>
+        </div>
+      </label>
+    `).join('');
+  }
+
+  /* openPaySheet 후킹 */
+  const origOpenPaySheet = window.openPaySheet;
+  window.openPaySheet = function(){
+    if(typeof origOpenPaySheet === 'function'){
+      try{ origOpenPaySheet.apply(this, arguments); }catch(e){}
+    } else {
+      const overlay = document.getElementById('pay-sheet-overlay');
+      if(overlay) overlay.classList.add('show');
+    }
+    setTimeout(renderPaySheetCards, 30);
+    setTimeout(renderPaySheetCards, 200);
+  };
+
+  /* confirmPaySheet 후킹 - 선택한 카드 표시 */
+  const origConfirmPaySheet = window.confirmPaySheet;
+  window.confirmPaySheet = function(){
+    const selected = document.querySelector('input[name="pay-card"]:checked');
+
+    if(selected){
+      const cards = getCards();
+      const card = cards.find(c => String(c.id) === String(selected.value));
+      if(card){
+        const label = document.getElementById('pay-selected-label');
+        if(label){
+          label.textContent = `**** ${card.last4} (${card.alias})`;
+          label.style.color = 'var(--text-1)';
+        }
+      }
+    }
+
+    // 오버레이 닫기
+    const overlay = document.getElementById('pay-sheet-overlay');
+    if(overlay) overlay.classList.remove('show');
+
+    if(typeof origConfirmPaySheet === 'function'){
+      try{ origConfirmPaySheet.apply(this, arguments); }catch(e){}
+    }
+  };
+
+  /* ─── 2. 결제 정보 화면 (pi-card-list) ─── */
+  function renderPICardList(){
+    const list = document.getElementById('pi-card-list');
+    if(!list) return;
+
+    const cards = getCards();
+    if(cards.length === 0){
+      list.innerHTML = `
+        <div style="padding:20px;text-align:center;color:var(--text-m);font-size:.86rem;background:rgba(255,255,255,.6);border:1px dashed var(--border);border-radius:var(--r);">
+          등록된 카드가 없습니다.<br>
+          <span style="font-size:.74rem;">아래 폼에서 카드를 추가해주세요</span>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = cards.map(c => `
+      <div style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(255,255,255,.7);border:1.5px solid ${c.isDefault?'#c8a96e':'var(--border)'};border-radius:var(--r);margin-bottom:8px;">
+        <div style="width:40px;height:26px;border-radius:4px;background:linear-gradient(135deg,#3a3f47,#2e3138);display:flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:700;color:#c8a96e;flex-shrink:0;">${c.bank}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Oswald',sans-serif;font-size:.88rem;color:var(--text-1);letter-spacing:.04em;">
+            **** ${c.last4}
+            ${c.isDefault?'<span style="font-family:Oswald,sans-serif;font-size:.6rem;letter-spacing:.1em;color:#c8a96e;font-weight:700;background:rgba(200,169,110,.12);padding:3px 8px;border-radius:4px;margin-left:6px;">DEFAULT</span>':''}
+          </div>
+          <div style="font-size:.74rem;color:var(--text-m);margin-top:2px;">${c.alias}</div>
+        </div>
+        <button onclick="caroSyncDeleteCard(${c.id})" style="padding:6px 12px;background:rgba(178,58,58,.08);border:1px solid rgba(178,58,58,.25);border-radius:6px;color:#b23a3a;font-family:var(--font);font-size:.74rem;font-weight:700;cursor:pointer;">삭제</button>
+      </div>
+    `).join('');
+  }
+
+  /* 카드 삭제 (전역 함수) */
+  window.caroSyncDeleteCard = function(id){
+    if(!confirm('이 카드를 삭제하시겠습니까?')) return;
+    let cards = getCards();
+    cards = cards.filter(c => String(c.id) !== String(id));
+
+    // 기본 카드가 삭제됐다면 첫 번째를 기본으로
+    if(cards.length > 0 && !cards.some(c => c.isDefault)){
+      cards[0].isDefault = true;
+    }
+
+    setCards(cards);
+    renderPICardList();
+
+    if(typeof showToast === 'function') showToast('카드가 삭제되었습니다');
+  };
+
+  /* ─── 3. saveCardFromPI 오버라이드 - APD에 저장 ─── */
+  const origSaveCardFromPI = window.saveCardFromPI;
+  window.saveCardFromPI = function(){
+    const numInput = document.getElementById('pi-card-num');
+    const expInput = document.getElementById('pi-card-exp');
+    const cvcInput = document.getElementById('pi-card-cvc');
+    const aliasInput = document.getElementById('pi-card-alias');
+
+    if(!numInput) {
+      if(typeof origSaveCardFromPI === 'function') return origSaveCardFromPI.apply(this, arguments);
+      return;
+    }
+
+    const num = numInput.value.replace(/\s/g, '');
+    if(num.length !== 16){
+      alert('카드 번호 16자리를 입력해주세요');
+      return;
+    }
+    if(!expInput.value || expInput.value.length < 5){
+      alert('유효기간을 입력해주세요 (MM/YY)');
+      return;
+    }
+    if(!cvcInput.value || cvcInput.value.length !== 3){
+      alert('CVC 3자리를 입력해주세요');
+      return;
+    }
+
+    const cards = getCards();
+    const last4 = num.slice(-4);
+
+    if(cards.some(c => c.last4 === last4)){
+      alert('이미 등록된 카드입니다');
+      return;
+    }
+
+    cards.push({
+      id: Date.now(),
+      bank: '카드',
+      last4: last4,
+      alias: (aliasInput && aliasInput.value) || `카드 ****${last4}`,
+      isDefault: cards.length === 0
     });
-  }
+    setCards(cards);
 
-  /* 동기화 실행 */
-  function syncCards(){
-    const all = mergeAllCards();
-    setUnifiedCards(all);
-    return all;
-  }
+    // 폼 초기화
+    numInput.value = '';
+    expInput.value = '';
+    cvcInput.value = '';
+    if(aliasInput) aliasInput.value = '';
 
-  /* 기존 저장 함수 후킹 (saveCard, saveCardFromPI) */
-  ['saveCard', 'saveCardFromPI'].forEach(fnName => {
-    if(typeof window[fnName] === 'function'){
-      const orig = window[fnName];
-      window[fnName] = function(){
-        const result = orig.apply(this, arguments);
-        setTimeout(syncCards, 100);
-        setTimeout(syncCards, 500);
-        setTimeout(syncCards, 1500);
-        return result;
-      };
-    }
-  });
+    renderPICardList();
 
-  /* APD에서 카드 추가/삭제 시 즉시 동기화 */
-  document.addEventListener('click', function(e){
-    const target = e.target;
-    if(!target) return;
+    if(typeof showToast === 'function') showToast('카드가 등록되었습니다');
+    else alert('카드가 등록되었습니다');
+  };
 
-    // 카드 추가 버튼
-    if(target.id === 'apd-card-add'){
-      setTimeout(syncCards, 200);
-      setTimeout(syncCards, 800);
-    }
-
-    // 카드 삭제 버튼
-    if(target.dataset && target.dataset.cardDel){
-      setTimeout(syncCards, 200);
-      setTimeout(syncCards, 800);
-    }
-  }, true);
-
-  /* 다양한 시점에 동기화 */
-  syncCards();
-  setTimeout(syncCards, 500);
-  setTimeout(syncCards, 2000);
-
-  /* Firebase 인증 시 재동기화 */
-  try{
-    if(typeof firebase !== 'undefined' && firebase.auth){
-      firebase.auth().onAuthStateChanged(() => {
-        setTimeout(syncCards, 300);
-        setTimeout(syncCards, 1500);
-      });
-    }
-  }catch(e){}
-
-  /* 페이지 전환 시 재동기화 */
-  if(typeof window.goTo === 'function'){
-    const origGoTo = window.goTo;
+  /* ─── 4. 페이지 전환 시 자동 갱신 ─── */
+  const origGoTo = window.goTo;
+  if(typeof origGoTo === 'function'){
     window.goTo = function(screen){
       const result = origGoTo.apply(this, arguments);
-      if(screen === 'account-detail-screen' || screen === 'payment-screen' || screen === 'payment-info-screen' || screen === 'reservation-screen'){
-        setTimeout(syncCards, 100);
+      if(screen === 'payment-info-screen'){
+        setTimeout(renderPICardList, 50);
+        setTimeout(renderPICardList, 300);
+      }
+      if(screen === 'payment-screen' || screen === 'reservation-screen'){
+        setTimeout(renderPaySheetCards, 50);
       }
       return result;
     };
   }
 
-  console.log('[CARO] 카드 통합 동기화 패치 v1 적용 — 계정관리 ↔ 차량 대여 결제 연동');
+  /* 초기 렌더링 */
+  setTimeout(() => {
+    renderPICardList();
+    renderPaySheetCards();
+  }, 1000);
+
+  console.log('[CARO] 카드 동기화 v2 — 결제화면 직접 렌더링 모드');
 })();
-// 1. 현재 카드 위치 찾기
-console.log('=== 카드 저장 위치 ===');
-for(let i = 0; i < localStorage.length; i++){
-  const k = localStorage.key(i);
-  const v = localStorage.getItem(k);
-  if(v && v.includes('last4') || (v && v.includes('cardNum'))){
-    console.log(k, '→', v.slice(0, 200));
-  }
-}
