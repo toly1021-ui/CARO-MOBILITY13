@@ -3559,3 +3559,31 @@ video::-webkit-media-controls-panel{display:none !important;}
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+
+/* ═══════════════════════════════════════════
+   고객센터 - 동의 체크박스 ✓ 표시 추가
+═══════════════════════════════════════════ */
+
+/* 체크박스 박스 - 가운데 정렬을 위한 설정 */
+.csd-agree-box {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+}
+
+/* 체크된 상태 - 흰색 ✓ 표시 추가 */
+.csd-agree-row input[type="checkbox"]:checked + .csd-agree-box::after,
+#inquiry-screen .csd-agree-row input[type="checkbox"]:checked + .csd-agree-box::after {
+  content: '✓' !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  display: block !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
