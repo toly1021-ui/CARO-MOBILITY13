@@ -9449,3 +9449,264 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] 카드 동기화 v2 — 결제화면 직접 렌더링 모드');
 })();
+
+/* ═══════════════════════════════════════════
+   카드 + 면허증 Firestore 영구 저장 패치
+   ※ 로그아웃/재접속 시에도 데이터 유지
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  /* Firestore + Auth 객체 가져오기 */
+  function getDb(){
+    try{
+      if(window.FB_DB) return window.FB_DB;
+      if(typeof firebase !== 'undefined' && firebase.firestore) return firebase.firestore();
+      if(window.db) return window.db;
+    }catch(e){}
+    return null;
+  }
+
+  function getAuth(){
+    try{
+      if(window.FB_AUTH) return window.FB_AUTH;
+      if(typeof firebase !== 'undefined' && firebase.auth) return firebase.auth();
+    }catch(e){}
+    return null;
+  }
+
+  function getCurrentUid(){
+    try{
+      const auth = getAuth();
+      if(auth && auth.currentUser) return auth.currentUser.uid;
+    }catch(e){}
+    return null;
+  }
+
+  /* ─── 1. 카드를 Firestore에 저장 ─── */
+  async function saveCardsToFirestore(cards){
+    const db = getDb();
+    const uid = getCurrentUid();
+    if(!db || !uid){
+      console.log('[CARO] Firestore 또는 사용자 없음 - 로컬 저장만');
+      return false;
+    }
+
+    try{
+      // Firestore v9 modular vs v8 compat
+      if(window.FB_FN && window.FB_FN.setDoc && window.FB_FN.doc){
+        await window.FB_FN.setDoc(
+          window.FB_FN.doc(db, 'users', uid),
+          {
+            cards: cards,
+            cardsUpdatedAt: new Date().toISOString()
+          },
+          { merge: true }
+        );
+      } else {
+        await db.collection('users').doc(uid).set({
+          cards: cards,
+          cardsUpdatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+      console.log('[CARO] ✅ 카드 Firestore 저장 완료:', cards.length, '개');
+      return true;
+    }catch(e){
+      console.error('[CARO] ❌ 카드 Firestore 저장 실패:', e.message);
+      return false;
+    }
+  }
+
+  /* ─── 2. Firestore에서 카드 불러오기 ─── */
+  async function loadCardsFromFirestore(){
+    const db = getDb();
+    const uid = getCurrentUid();
+    if(!db || !uid) return null;
+
+    try{
+      let docSnap;
+      if(window.FB_FN && window.FB_FN.getDoc && window.FB_FN.doc){
+        docSnap = await window.FB_FN.getDoc(window.FB_FN.doc(db, 'users', uid));
+      } else {
+        docSnap = await db.collection('users').doc(uid).get();
+      }
+
+      const exists = docSnap.exists ? (typeof docSnap.exists === 'function' ? docSnap.exists() : docSnap.exists) : false;
+      if(!exists) return null;
+
+      const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap.data;
+      if(Array.isArray(data.cards)){
+        localStorage.setItem('caro_apd_cards', JSON.stringify(data.cards));
+        console.log('[CARO] ✅ 카드 Firestore 불러오기:', data.cards.length, '개');
+
+        // UI 갱신
+        if(typeof renderPICardList === 'function') renderPICardList();
+        if(typeof renderPaySheetCards === 'function') renderPaySheetCards();
+
+        return data.cards;
+      }
+    }catch(e){
+      console.error('[CARO] ❌ 카드 Firestore 불러오기 실패:', e.message);
+    }
+    return null;
+  }
+
+  /* ─── 3. 면허증 정보 저장 ─── */
+  async function saveLicenseToFirestore(licenseData){
+    const db = getDb();
+    const uid = getCurrentUid();
+    if(!db || !uid) return false;
+
+    try{
+      if(window.FB_FN && window.FB_FN.setDoc && window.FB_FN.doc){
+        await window.FB_FN.setDoc(
+          window.FB_FN.doc(db, 'users', uid),
+          {
+            license: licenseData,
+            licenseRegisteredAt: new Date().toISOString()
+          },
+          { merge: true }
+        );
+      } else {
+        await db.collection('users').doc(uid).set({
+          license: licenseData,
+          licenseRegisteredAt: new Date().toISOString()
+        }, { merge: true });
+      }
+
+      // 로컬에도 저장
+      localStorage.setItem('caro_license', JSON.stringify(licenseData));
+      localStorage.setItem('caro_license_registered', 'true');
+      console.log('[CARO] ✅ 면허증 정보 저장 완료');
+      return true;
+    }catch(e){
+      console.error('[CARO] ❌ 면허증 저장 실패:', e.message);
+      return false;
+    }
+  }
+
+  /* ─── 4. 면허증 정보 불러오기 ─── */
+  async function loadLicenseFromFirestore(){
+    const db = getDb();
+    const uid = getCurrentUid();
+    if(!db || !uid) return null;
+
+    try{
+      let docSnap;
+      if(window.FB_FN && window.FB_FN.getDoc && window.FB_FN.doc){
+        docSnap = await window.FB_FN.getDoc(window.FB_FN.doc(db, 'users', uid));
+      } else {
+        docSnap = await db.collection('users').doc(uid).get();
+      }
+
+      const exists = docSnap.exists ? (typeof docSnap.exists === 'function' ? docSnap.exists() : docSnap.exists) : false;
+      if(!exists) return null;
+
+      const data = typeof docSnap.data === 'function' ? docSnap.data() : docSnap.data;
+      if(data.license){
+        localStorage.setItem('caro_license', JSON.stringify(data.license));
+        localStorage.setItem('caro_license_registered', 'true');
+        console.log('[CARO] ✅ 면허증 정보 불러오기 완료');
+        return data.license;
+      }
+    }catch(e){
+      console.error('[CARO] ❌ 면허증 불러오기 실패:', e.message);
+    }
+    return null;
+  }
+
+  /* ─── 5. 카드 변경 감지 → Firestore 자동 동기화 ─── */
+  let lastCardsJson = '';
+  setInterval(() => {
+    try{
+      const current = localStorage.getItem('caro_apd_cards') || '[]';
+      if(current !== lastCardsJson && current !== '[]'){
+        lastCardsJson = current;
+        const cards = JSON.parse(current);
+        saveCardsToFirestore(cards);
+      } else if(current === '[]' && lastCardsJson !== '' && lastCardsJson !== '[]'){
+        // 카드가 모두 삭제된 경우
+        lastCardsJson = current;
+        saveCardsToFirestore([]);
+      }
+    }catch(e){}
+  }, 2000);
+
+  /* ─── 6. 로그인 시 자동 데이터 불러오기 ─── */
+  function setupAuthListener(){
+    const auth = getAuth();
+    if(!auth) return;
+
+    auth.onAuthStateChanged(async (user) => {
+      if(user){
+        console.log('[CARO] 사용자 로그인 감지 - 데이터 불러오기 시작');
+        // 카드 불러오기
+        await loadCardsFromFirestore();
+        // 면허증 불러오기
+        await loadLicenseFromFirestore();
+      } else {
+        console.log('[CARO] 로그아웃 감지');
+        lastCardsJson = ''; // 동기화 리셋
+      }
+    });
+  }
+
+  /* ─── 7. handleSignup 후킹 - 면허증 자동 저장 ─── */
+  function setupSignupHook(){
+    if(typeof window.handleSignup === 'function'){
+      const origSignup = window.handleSignup;
+      window.handleSignup = async function(){
+        const result = origSignup.apply(this, arguments);
+
+        // 회원가입 폼에서 면허증 정보 수집
+        setTimeout(async () => {
+          try{
+            const licenseData = {
+              number: document.getElementById('su-license-num')?.value ||
+                     document.getElementById('license-num')?.value || '',
+              name: document.getElementById('su-name')?.value || '',
+              birth: document.getElementById('su-birth')?.value || '',
+              expiry: document.getElementById('su-license-exp')?.value || '',
+              type: document.getElementById('su-license-type')?.value || '2종 보통'
+            };
+
+            if(licenseData.number || licenseData.name){
+              await saveLicenseToFirestore(licenseData);
+            }
+          }catch(e){
+            console.error('[CARO] 면허증 저장 중 오류:', e);
+          }
+        }, 1000);
+
+        return result;
+      };
+    }
+  }
+
+  /* ─── 8. 면허증 이미 등록됨 확인 함수 (전역) ─── */
+  window.caroIsLicenseRegistered = function(){
+    return localStorage.getItem('caro_license_registered') === 'true';
+  };
+
+  window.caroGetLicense = function(){
+    try{
+      return JSON.parse(localStorage.getItem('caro_license') || 'null');
+    }catch(e){
+      return null;
+    }
+  };
+
+  /* ─── 9. 초기 실행 ─── */
+  setupAuthListener();
+  setupSignupHook();
+
+  // 즉시 시도 (이미 로그인된 상태인 경우)
+  setTimeout(async () => {
+    if(getCurrentUid()){
+      await loadCardsFromFirestore();
+      await loadLicenseFromFirestore();
+    }
+  }, 1500);
+
+  console.log('[CARO] 카드 + 면허증 영구 저장 패치 v1 적용');
+})();
