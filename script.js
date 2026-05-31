@@ -10421,3 +10421,91 @@ window.devUploadAllCars=function(){
   console.log('  - 24h+ → 100% / 12-24h → 70% / 3-12h → 30% / 1-3h → 10% / <1h → 0%');
   console.log('  - 대여 10분 전부터 차량 사용 가능');
 })();
+
+/* ═══════════════════════════════════════════
+   블랙라벨 → CARO THE BLACK 명칭 변경
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  const OLD = '블랙라벨';
+  const NEW = 'CARO THE BLACK';
+  const regex = /블랙라벨/g;
+
+  function replaceBlackLabel(){
+    // 1) 텍스트 노드 교체
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function(node){
+          const parent = node.parentNode;
+          if(!parent) return NodeFilter.FILTER_REJECT;
+          const tag = parent.tagName;
+          // SCRIPT, STYLE 태그는 제외
+          if(tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return node.nodeValue && node.nodeValue.includes(OLD)
+            ? NodeFilter.FILTER_ACCEPT
+            : NodeFilter.FILTER_REJECT;
+        }
+      },
+      false
+    );
+
+    const nodes = [];
+    let n;
+    while(n = walker.nextNode()) nodes.push(n);
+
+    nodes.forEach(node => {
+      node.nodeValue = node.nodeValue.replace(regex, NEW);
+    });
+
+    // 2) 속성 (placeholder, title, aria-label, alt) 교체
+    document.querySelectorAll(
+      '[placeholder*="블랙라벨"], [title*="블랙라벨"], [aria-label*="블랙라벨"], [alt*="블랙라벨"]'
+    ).forEach(el => {
+      ['placeholder', 'title', 'alt'].forEach(attr => {
+        const val = el.getAttribute(attr);
+        if(val && val.includes(OLD)) {
+          el.setAttribute(attr, val.replace(regex, NEW));
+        }
+      });
+      const aria = el.getAttribute('aria-label');
+      if(aria && aria.includes(OLD)) {
+        el.setAttribute('aria-label', aria.replace(regex, NEW));
+      }
+    });
+  }
+
+  // 초기 실행
+  setTimeout(replaceBlackLabel, 50);
+  setTimeout(replaceBlackLabel, 300);
+  setTimeout(replaceBlackLabel, 1000);
+  setTimeout(replaceBlackLabel, 3000);
+
+  // DOM 변경 감지로 자동 교체
+  const observer = new MutationObserver(() => {
+    replaceBlackLabel();
+  });
+
+  if(document.body){
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      replaceBlackLabel();
+    });
+  }
+
+  console.log('[CARO] 블랙라벨 → CARO THE BLACK 명칭 변경 완료');
+})();
