@@ -4399,12 +4399,21 @@ video::-webkit-media-controls-panel{display:none !important;}
 }
 
 /* ═══════════════════════════════════════════
-   검은색 버튼 → 메탈 색상 전체 변경
-   ※ 블랙라벨(Black Label) 관련은 제외
+   추가 검은 버튼 → 메탈 색상 변경
 ═══════════════════════════════════════════ */
 
-/* 메인 제출 버튼 (submit-btn) */
-.submit-btn:not(.black-label):not([class*="black-label"]):not([class*="blackLabel"]):not(.btn-danger):not(.btn-cancel):not(.cancel-btn) {
+/* ─── 차량 선택 화면 - 예약 버튼 ─── */
+#reservation-screen button[onclick*="reserve"],
+#reservation-screen button[onclick*="goReserve"],
+#reservation-screen button[onclick*="bookCar"],
+#reservation-screen .car-reserve-btn,
+#reservation-screen .vehicle-reserve-btn,
+#reservation-screen [class*="reserve-btn"],
+#reservation-screen .car-list-item button,
+#reservation-screen .vehicle-list button,
+#reservation-screen .car-item button,
+#car-list button,
+#vehicle-list button {
   background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
   background-color: #5a6068 !important;
   color: #ffffff !important;
@@ -4412,23 +4421,23 @@ video::-webkit-media-controls-panel{display:none !important;}
   box-shadow: 0 2px 6px rgba(0,0,0,.2) !important;
 }
 
-.submit-btn:not(.black-label):not([class*="black-label"]):not(.btn-danger):hover {
+#reservation-screen button[onclick*="reserve"]:hover,
+#reservation-screen .car-reserve-btn:hover,
+#car-list button:hover {
   background: linear-gradient(135deg, #7c828d 0%, #4a4f57 100%) !important;
 }
 
-/* 비활성화 상태 */
-.submit-btn:disabled {
-  background: rgba(0,0,0,.12) !important;
-  background-color: rgba(0,0,0,.12) !important;
-  color: rgba(255,255,255,.5) !important;
-  border-color: rgba(0,0,0,.15) !important;
-  cursor: not-allowed;
-  box-shadow: none !important;
-}
-
-/* 고객센터 연락 버튼들 (이전엔 검은색) */
-#cs-screen .cs-contact-btn:not(.black-label),
-#cs-screen .cs-action-btn:not(.black-label) {
+/* ─── 결제 화면 - 결제하기 / 적용 버튼 ─── */
+#payment-screen .submit-btn,
+#payment-screen button[onclick*="pay"],
+#payment-screen button[onclick*="completePay"],
+#payment-screen button[onclick*="confirmPay"],
+#payment-screen button[onclick*="applyCoupon"],
+#payment-screen .pay-btn,
+#payment-screen .apply-btn,
+#payment-screen .coupon-apply-btn,
+#payment-screen [class*="apply"],
+#payment-screen [class*="confirm"] {
   background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
   background-color: #5a6068 !important;
   color: #ffffff !important;
@@ -4436,37 +4445,18 @@ video::-webkit-media-controls-panel{display:none !important;}
   box-shadow: 0 2px 6px rgba(0,0,0,.2) !important;
 }
 
-/* 일반 main-btn / primary-btn / confirm-btn 류 */
-.main-btn:not(.black-label):not([class*="black-label"]),
-.primary-btn:not(.black-label):not([class*="black-label"]),
-.btn-primary:not(.black-label):not([class*="black-label"]):not(#account-detail-screen .apd-btn-primary):not(.btn-danger),
-.confirm-btn:not(.black-label):not([class*="black-label"]),
-.action-btn:not(.black-label):not([class*="black-label"]),
-.complete-btn:not(.black-label):not([class*="black-label"]) {
-  background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
-  background-color: #5a6068 !important;
-  color: #ffffff !important;
-  border: 1px solid #2e3138 !important;
-  box-shadow: 0 2px 6px rgba(0,0,0,.2) !important;
-}
-
-/* 호버 효과 */
-.main-btn:not(.black-label):hover,
-.primary-btn:not(.black-label):hover,
-.btn-primary:not(.black-label):hover,
-.confirm-btn:not(.black-label):hover,
-.action-btn:not(.black-label):hover,
-.complete-btn:not(.black-label):hover {
+#payment-screen .submit-btn:hover,
+#payment-screen button[onclick*="pay"]:hover,
+#payment-screen button[onclick*="applyCoupon"]:hover {
   background: linear-gradient(135deg, #7c828d 0%, #4a4f57 100%) !important;
 }
 
-/* 블랙라벨은 그대로 검은색 유지 (확실하게) */
-.black-label,
-[class*="black-label"],
-[class*="blackLabel"],
-.btn-black-label {
-  background: #18191c !important;
-  background-color: #18191c !important;
-  color: #c8a96e !important;
-  border: 1px solid #2e3138 !important;
+/* ─── 모든 검은 버튼 폴백 (#18191c 강제 오버라이드) ─── */
+button[style*="background: #18191c"]:not(.black-label):not([class*="black-label"]),
+button[style*="background:#18191c"]:not(.black-label):not([class*="black-label"]),
+button[style*="background-color: #18191c"]:not(.black-label),
+button[style*="background-color:#18191c"]:not(.black-label) {
+  background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
+  background-color: #5a6068 !important;
+  color: #ffffff !important;
 }
