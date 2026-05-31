@@ -238,7 +238,7 @@ var LANGS = {
     signup_complete_desc:'CARO 모빌리티 회원이 되신 것을 환영합니다.', go_login:'로그인 하러 가기',
     step1:'약관동의', step2:'본인인증', step3:'정보입력', step4:'완료',
     menu_reserve:'차량 예약', menu_my_reserve:'예약 확인',
-    menu_black:'BLACK LABEL', menu_mypage:'마이페이지',
+    menu_black:'CARO THE BLACK', menu_mypage:'마이페이지',
     event_banner_title:'🎉 진행 중인 이벤트', notice_title:'📢 공지사항',
     no_reservation:'예약 내역이 없습니다',
     res_detail_title:'예약 상세 내역',
@@ -294,14 +294,14 @@ var LANGS = {
     signup_complete_desc:'Welcome to CARO Mobility!', go_login:'Go to Login',
     step1:'Terms', step2:'Verify', step3:'Info', step4:'Done',
     menu_reserve:'Reserve', menu_my_reserve:'My Bookings',
-    menu_black:'BLACK LABEL', menu_mypage:'My Page',
+    menu_black:'CARO THE BLACK', menu_mypage:'My Page',
     event_banner_title:'🎉 Current Events', notice_title:'📢 Notice',
     no_reservation:'No reservations yet',
     res_detail_title:'Booking Details',
-    bl_desc:'CARO Black Label · Premium EV Rental\nSeoul · Incheon area only',
+    bl_desc:'CARO CARO THE BLACK · Premium EV Rental\nSeoul · Incheon area only',
     menu_event:'Events', ev_sub:'Discover CARO\'s special offers',
     ev1_title:'30% off first ride for new members', ev1_desc:'Auto-applied within 7 days of signup',
-    ev2_title:'CARO Black Label Launch', ev2_desc:'Premium vehicles · Dedicated concierge',
+    ev2_title:'CARO CARO THE BLACK Launch', ev2_desc:'Premium vehicles · Dedicated concierge',
     ev3_title:'Refer a friend – earn 5,000P', ev3_desc:'Both referrer and referee earn points',
     ev4_title:'Weekend special up to 30% off', ev4_desc:'EV only · Applied to eligible vehicles',
     always:'Always', weekend_period:'Every Sat–Sun',
@@ -350,7 +350,7 @@ var LANGS = {
     signup_complete_desc:'CAROモビリティへようこそ！', go_login:'ログインへ',
     step1:'規約', step2:'認証', step3:'情報', step4:'完了',
     menu_reserve:'車両予約', menu_my_reserve:'予約確認',
-    menu_black:'BLACK LABEL', menu_mypage:'マイページ',
+    menu_black:'CARO THE BLACK', menu_mypage:'マイページ',
     event_banner_title:'🎉 進行中イベント', notice_title:'📢 お知らせ',
     no_reservation:'予約内訳がありません',
     res_detail_title:'予約詳細',
@@ -406,7 +406,7 @@ var LANGS = {
     signup_complete_desc:'欢迎加入CARO出行！', go_login:'前往登录',
     step1:'条款', step2:'验证', step3:'信息', step4:'完成',
     menu_reserve:'预约车辆', menu_my_reserve:'预约确认',
-    menu_black:'BLACK LABEL', menu_mypage:'我的页面',
+    menu_black:'CARO THE BLACK', menu_mypage:'我的页面',
     event_banner_title:'🎉 进行中的活动', notice_title:'📢 公告',
     no_reservation:'暂无预约记录',
     res_detail_title:'预约详情',
@@ -900,7 +900,7 @@ function goTo(screenId, immediate){
   if(!next) return;
   if(allActive.length===1 && allActive[0]===next) return;
 
-  /* BL 전환 시 body 배경 — 블랙라벨 차량일 때만 검정, 그 외 항상 초기화 */
+  /* BL 전환 시 body 배경 — 카로 더 블랙 차량일 때만 검정, 그 외 항상 초기화 */
     var isbl=!!(selectedCar&&selectedCar.isBlackLabel);
     if(isbl){
       document.body.style.background='#111215';
@@ -1804,7 +1804,7 @@ function handleLogout(){
   function socialLogin(p){ showToast(p+' 로그인 준비 중입니다.'); }
 
 /* ─────────────────────────────────────────────
-   13-1. 블랙라벨 전환 모션 (4초 천천히)
+   13-1. 카로 더 블랙 전환 모션 (4초 천천히)
 ───────────────────────────────────────────── */
 function goBlackLabel(){
   var overlay=document.getElementById('bl-transition-overlay');
@@ -1915,7 +1915,7 @@ function updateCarSheetCount(){
         className:'',iconSize:[40,28],iconAnchor:[20,13]
       });
       var marker=L.marker([car.lat,car.lng],{icon:icon}).addTo(caroMap)
-        .bindPopup('<b>⭐ '+car.name+'</b><br>'+car.fuel+' · '+car.pricePerHour.toLocaleString()+'원/h<br><span style="color:#c8a96e;font-weight:700;">BLACK LABEL</span>');
+        .bindPopup('<b>⭐ '+car.name+'</b><br>'+car.fuel+' · '+car.pricePerHour.toLocaleString()+'원/h<br><span style="color:#c8a96e;font-weight:700;">CARO THE BLACK</span>');
       mapMarkers.push(marker);
     });
   }
@@ -2724,7 +2724,7 @@ function devRenderCarOverview(){
   });
 }
 
-/* 블랙라벨 차량 현황 */
+/* 카로 더 블랙 차량 현황 */
 function devRenderBlOverview(){
   var list=document.getElementById('dev-bl-overview'); if(!list) return;
   list.innerHTML='';
@@ -3011,7 +3011,7 @@ function devRenderCarDeleteList(){
   var nb=document.getElementById('dev-del-count-normal');
   if(nb) nb.textContent=delCheckedNormal.size?'('+delCheckedNormal.size+'개 선택)':'';
 
-  /* 블랙라벨 */
+  /* 카로 더 블랙 */
   var blList=document.getElementById('dev-bl-delete-list'); if(!blList) return;
   blList.innerHTML='';
   if(!BL_CARS.length){
@@ -3163,14 +3163,14 @@ function devRenderPriceList(){
   var blHdr=document.createElement('div');
   blHdr.className='dev-row';
   blHdr.style.cssText='background:rgba(200,169,110,.06);';
-  blHdr.innerHTML='<span style="flex:1;font-size:.68rem;color:rgba(200,169,110,.5);font-weight:700;">⭐ 블랙라벨 차량</span>';
+  blHdr.innerHTML='<span style="flex:1;font-size:.68rem;color:rgba(200,169,110,.5);font-weight:700;">⭐ 카로 더 블랙 차량</span>';
   list.appendChild(blHdr);
   BL_CARS.forEach(function(car,i){
     var row=document.createElement('div'); row.className='dev-row';
     row.innerHTML=
       '<div style="flex:1;min-width:0;">'+
         '<div style="font-size:.78rem;color:rgba(200,169,110,.85);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+car.name+'</div>'+
-        '<div style="font-size:.64rem;color:rgba(200,169,110,.4);">'+car.fuel+' · 블랙라벨</div>'+
+        '<div style="font-size:.64rem;color:rgba(200,169,110,.4);">'+car.fuel+' · 카로 더 블랙</div>'+
       '</div>'+
       '<input class="dev-input" id="dev-bl-price-'+i+'" type="number" value="'+car.pricePerHour+'" style="width:70px;flex:none;text-align:center;" placeholder="원/h"/>'+
       '<span style="width:58px;flex:none;text-align:center;font-size:.64rem;color:rgba(91,200,255,.3);">—</span>';
@@ -3350,7 +3350,7 @@ window.devSaveEvent=devSaveEvent;
 window.devDeleteEvent=devDeleteEvent;
 window.devAddEvent=devAddEvent;
 
-/* 블랙라벨 차량 관리 */
+/* 카로 더 블랙 차량 관리 */
 
 /* 개발자 권한 부여 */
 function devGrantAccess(){
@@ -4313,7 +4313,7 @@ var EVENT_DETAILS = [
   },
   {
     title:'CARO 블랙 라벨 출시 기념',
-    titleen:'CARO Black Label Launch Event',
+    titleen:'CARO CARO THE BLACK Launch Event',
     body:'<h4 style="text-align:center">이벤트 내용</h4><p>CARO 블랙 라벨 서비스 출시를 기념하여 <strong>블랙 라벨 첫 이용 고객</strong>께 전담 컨시어지 서비스를 <strong>무료</strong>로 제공합니다.</p><h4 style="text-align:center">블랙 라벨이란?</h4><ul><li>제네시스 GV80·G90, BMW iX, 메르세데스 EQS, 포르쉐 타이칸 등 프리미엄 차량</li><li>서울·인천 지역 한정 운영</li><li>전담 컨시어지 배차 및 반납 서비스</li><li>차량 내 프리미엄 어메니티 제공</li></ul><h4 style="text-align:center">이벤트 기간</h4><p style="text-align:center">2026년 3월 1일 ~ 2026년 6월 30일</p>',
     period:'2026.03.01 ~ 2026.06.30'
   },
@@ -7103,7 +7103,7 @@ window.devUploadAllCars=function(){
   function getBannerConfig(bannerText){
     if(bannerText.indexOf('블랙 라벨') >= 0){
       return {
-        text: 'BLACK LABEL',
+        text: 'CARO THE BLACK',
         cssText: 'font-size:1.1rem;font-weight:700;letter-spacing:0.2em;font-family:"Oswald",sans-serif;color:#c8a96e;'
       };
     }
@@ -8167,7 +8167,7 @@ window.devUploadAllCars=function(){
 
         ${plan('lite', 'CARO LITE', '무료', '기본 차량 이용 · 일반 회원가')}
         ${plan('standard', 'CARO STANDARD', '9,900원', '시간당 10% 할인 · 우선 예약 · 멤버십 포인트 1.5배')}
-        ${plan('premium', 'CARO PREMIUM', '29,900원', '전 차량 20% 할인 · 블랙라벨 이용 · 무료 면책 포함 · 24시간 컨시어지')}
+        ${plan('premium', 'CARO PREMIUM', '29,900원', '전 차량 20% 할인 · 카로 더 블랙 이용 · 무료 면책 포함 · 24시간 컨시어지')}
 
         <button class="apd-btn apd-btn-primary" id="apd-plan-submit" style="margin-top:14px;">요금제 변경 신청</button>
       </div>
@@ -10422,90 +10422,3 @@ window.devUploadAllCars=function(){
   console.log('  - 대여 10분 전부터 차량 사용 가능');
 })();
 
-/* ═══════════════════════════════════════════
-   블랙라벨 → CARO THE BLACK 명칭 변경
-═══════════════════════════════════════════ */
-(function(){
-  'use strict';
-
-  const OLD = '블랙라벨';
-  const NEW = 'CARO THE BLACK';
-  const regex = /블랙라벨/g;
-
-  function replaceBlackLabel(){
-    // 1) 텍스트 노드 교체
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode: function(node){
-          const parent = node.parentNode;
-          if(!parent) return NodeFilter.FILTER_REJECT;
-          const tag = parent.tagName;
-          // SCRIPT, STYLE 태그는 제외
-          if(tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') {
-            return NodeFilter.FILTER_REJECT;
-          }
-          return node.nodeValue && node.nodeValue.includes(OLD)
-            ? NodeFilter.FILTER_ACCEPT
-            : NodeFilter.FILTER_REJECT;
-        }
-      },
-      false
-    );
-
-    const nodes = [];
-    let n;
-    while(n = walker.nextNode()) nodes.push(n);
-
-    nodes.forEach(node => {
-      node.nodeValue = node.nodeValue.replace(regex, NEW);
-    });
-
-    // 2) 속성 (placeholder, title, aria-label, alt) 교체
-    document.querySelectorAll(
-      '[placeholder*="블랙라벨"], [title*="블랙라벨"], [aria-label*="블랙라벨"], [alt*="블랙라벨"]'
-    ).forEach(el => {
-      ['placeholder', 'title', 'alt'].forEach(attr => {
-        const val = el.getAttribute(attr);
-        if(val && val.includes(OLD)) {
-          el.setAttribute(attr, val.replace(regex, NEW));
-        }
-      });
-      const aria = el.getAttribute('aria-label');
-      if(aria && aria.includes(OLD)) {
-        el.setAttribute('aria-label', aria.replace(regex, NEW));
-      }
-    });
-  }
-
-  // 초기 실행
-  setTimeout(replaceBlackLabel, 50);
-  setTimeout(replaceBlackLabel, 300);
-  setTimeout(replaceBlackLabel, 1000);
-  setTimeout(replaceBlackLabel, 3000);
-
-  // DOM 변경 감지로 자동 교체
-  const observer = new MutationObserver(() => {
-    replaceBlackLabel();
-  });
-
-  if(document.body){
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      characterData: true
-    });
-  } else {
-    document.addEventListener('DOMContentLoaded', () => {
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true
-      });
-      replaceBlackLabel();
-    });
-  }
-
-  console.log('[CARO] 블랙라벨 → CARO THE BLACK 명칭 변경 완료');
-})();
