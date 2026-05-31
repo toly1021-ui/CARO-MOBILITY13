@@ -3498,20 +3498,13 @@ video::-webkit-media-controls-panel{display:none !important;}
 }
 
 /* ═══════════════════════════════════════════
-   간편 문의 - FAQ 답변 텍스트 가운데 정렬
+   간편 문의 - FAQ 답변 텍스트 간격 조정
 ═══════════════════════════════════════════ */
 
-/* 답변 영역 - 텍스트 수직 가운데 */
-#inquiry-screen .csd-faq-a {
-  display: flex !important;
-  align-items: center !important;
-  padding: 16px 20px !important;
-  min-height: auto !important;
-}
-
-/* 답변 내부 텍스트 */
+/* 답변 내부 텍스트 - 위아래 여백 균형 */
 #inquiry-screen .csd-faq-a-inner {
-  margin: 0 !important;
-  width: 100% !important;
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
   line-height: 1.7 !important;
+  margin: 0 !important;
 }
