@@ -4368,3 +4368,32 @@ video::-webkit-media-controls-panel{display:none !important;}
   background: linear-gradient(135deg, #3182f6, #1a5fd4) !important;
   color: #ffffff !important;
 }
+
+/* ═══════════════════════════════════════════
+   결제 수단 선택 시트 - 확인 버튼 메탈 색상
+═══════════════════════════════════════════ */
+
+/* 결제 수단 선택 시트 하단 확인 버튼 */
+#pay-sheet-overlay .submit-btn,
+#pay-sheet-overlay button[onclick*="confirmPaySheet"],
+#pay-sheet-overlay .modal-box > button:last-child {
+  background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
+  background-color: #5a6068 !important;
+  color: #ffffff !important;
+  border: 1px solid #2e3138 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2) !important;
+}
+
+#pay-sheet-overlay .submit-btn:hover,
+#pay-sheet-overlay button[onclick*="confirmPaySheet"]:hover {
+  background: linear-gradient(135deg, #7c828d 0%, #4a4f57 100%) !important;
+}
+
+/* 결제 수단 추가하러 가기 버튼 (보조) - 메탈 라이트 */
+#pay-sheet-overlay button[onclick*="addPayment"],
+#pay-sheet-overlay .modal-box a[href*="payment"],
+#pay-sheet-overlay [class*="add-pay"] {
+  background: linear-gradient(135deg, #e8ecf0 0%, #d0d4dc 100%) !important;
+  border: 1px solid #b8bcc4 !important;
+  color: #18191c !important;
+}
