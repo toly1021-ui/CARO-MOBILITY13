@@ -4290,3 +4290,81 @@ video::-webkit-media-controls-panel{display:none !important;}
   color: #b23a3a;
   border: 1px solid rgba(178,58,58,.2);
 }
+
+/* ═══════════════════════════════════════════
+   계정관리 - 메인 버튼 메탈 색상 통일
+═══════════════════════════════════════════ */
+
+/* 메인 버튼 - 메탈 그라데이션 */
+#account-detail-screen .apd-btn-primary {
+  background: linear-gradient(135deg, #6c727d 0%, #3a3f47 100%) !important;
+  background-color: #5a6068 !important;
+  color: #ffffff !important;
+  border: 1px solid #2e3138 !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.2) !important;
+}
+
+/* 호버 시 살짝 밝아짐 */
+#account-detail-screen .apd-btn-primary:hover {
+  background: linear-gradient(135deg, #7c828d 0%, #4a4f57 100%) !important;
+}
+
+/* 비활성화 상태 */
+#account-detail-screen .apd-btn-primary:disabled {
+  background: rgba(0,0,0,.12) !important;
+  background-color: rgba(0,0,0,.12) !important;
+  color: rgba(255,255,255,.5) !important;
+  border-color: rgba(0,0,0,.15) !important;
+  cursor: not-allowed;
+  box-shadow: none !important;
+}
+
+/* 보조 버튼 (메탈 라이트) */
+#account-detail-screen .apd-btn-secondary {
+  background: linear-gradient(135deg, #e8ecf0 0%, #d0d4dc 100%) !important;
+  background-color: #d8dce2 !important;
+  border: 1px solid #b8bcc4 !important;
+  color: #18191c !important;
+}
+
+#account-detail-screen .apd-btn-secondary:hover {
+  background: linear-gradient(135deg, #d8dce2 0%, #c0c4cc 100%) !important;
+}
+
+/* SNS 연결/해제 버튼도 메탈로 */
+#account-detail-screen .apd-sns-btn {
+  background: linear-gradient(135deg, #e8ecf0 0%, #d0d4dc 100%) !important;
+  border: 1px solid #b8bcc4 !important;
+  color: #18191c !important;
+}
+
+/* SNS 연결됨 (해제 가능) - 빨간색 유지 */
+#account-detail-screen .apd-sns-btn.connected {
+  background: rgba(178,58,58,.08) !important;
+  border-color: rgba(178,58,58,.25) !important;
+  color: #b23a3a !important;
+}
+
+/* 충전 금액 버튼들 (10k, 30k, 50k) */
+#account-detail-screen [data-charge] {
+  background: linear-gradient(135deg, #e8ecf0 0%, #d0d4dc 100%) !important;
+  border: 1px solid #b8bcc4 !important;
+  color: #18191c !important;
+}
+
+#account-detail-screen [data-charge]:hover {
+  background: linear-gradient(135deg, #d8dce2 0%, #c0c4cc 100%) !important;
+}
+
+/* 위험(해지) 버튼은 빨간색 유지 */
+#account-detail-screen .apd-btn-danger {
+  background: rgba(178,58,58,.08) !important;
+  border: 1.5px solid rgba(178,58,58,.25) !important;
+  color: #b23a3a !important;
+}
+
+/* PASS 인증 버튼은 파란색 유지 (브랜드 색상) */
+#account-detail-screen .apd-btn-pass {
+  background: linear-gradient(135deg, #3182f6, #1a5fd4) !important;
+  color: #ffffff !important;
+}
