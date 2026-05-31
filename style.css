@@ -3496,3 +3496,22 @@ video::-webkit-media-controls-panel{display:none !important;}
 #chat-screen .csd-send-btn:hover {
   background: linear-gradient(135deg, #7c828d 0%, #4a4f57 100%) !important;
 }
+
+/* ═══════════════════════════════════════════
+   간편 문의 - FAQ 답변 텍스트 가운데 정렬
+═══════════════════════════════════════════ */
+
+/* 답변 영역 - 텍스트 수직 가운데 */
+#inquiry-screen .csd-faq-a {
+  display: flex !important;
+  align-items: center !important;
+  padding: 16px 20px !important;
+  min-height: auto !important;
+}
+
+/* 답변 내부 텍스트 */
+#inquiry-screen .csd-faq-a-inner {
+  margin: 0 !important;
+  width: 100% !important;
+  line-height: 1.7 !important;
+}
