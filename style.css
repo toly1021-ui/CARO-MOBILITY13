@@ -4290,3 +4290,42 @@ video::-webkit-media-controls-panel{display:none !important;}
   color: #b23a3a;
   border: 1px solid rgba(178,58,58,.2);
 }
+
+/* ═══════════════════════════════════════════
+   결제 수단 선택 시트 - 확인 버튼 차콜 블랙으로
+═══════════════════════════════════════════ */
+
+/* 결제 수단 선택 시트의 확인 버튼 (강력 오버라이드) */
+#pay-sheet-overlay .modal-box > button:last-child,
+#pay-sheet-overlay button[onclick*="confirmPaySheet"],
+#pay-sheet-overlay button[onclick*="confirmPay"],
+#pay-sheet-overlay .submit-btn,
+#pay-sheet-overlay .modal-confirm-btn,
+#pay-sheet-overlay .pay-confirm-btn,
+.modal-overlay#pay-sheet-overlay button:last-of-type {
+  background: #18191c !important;
+  background-color: #18191c !important;
+  color: #e8ecf0 !important;
+  border: 1px solid #2e3138 !important;
+  font-weight: 700 !important;
+  letter-spacing: .02em !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25) !important;
+}
+
+#pay-sheet-overlay .modal-box > button:last-child:hover,
+#pay-sheet-overlay button[onclick*="confirmPaySheet"]:hover {
+  background: #2e3138 !important;
+  background-color: #2e3138 !important;
+}
+
+/* "결제 수단 추가하러 가기" 버튼은 라이트 유지 (보조 버튼) */
+#pay-sheet-overlay button[onclick*="addPayment"],
+#pay-sheet-overlay button[onclick*="goToAddCard"],
+#pay-sheet-overlay button[onclick*="payment-info"],
+#pay-sheet-overlay .modal-box > button:not(:last-child),
+#pay-sheet-overlay [class*="add-payment"] {
+  background: rgba(255,255,255,.8) !important;
+  color: var(--text-1, #18191c) !important;
+  border: 1px solid var(--border, #d0d4dc) !important;
+  font-weight: 600 !important;
+}
