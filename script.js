@@ -7886,3 +7886,886 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] 고객센터 패치 v1 적용 완료');
 })();
+/* ═══════════════════════════════════════════════════════════════
+   CARO MOBILITY — 계정관리 상세 화면 통합 JS 패치
+   범위: 9개 항목 (회원 탈퇴 제외)
+   - 비밀번호 재설정
+   - 휴대폰 번호 재설정
+   - 계정 연동 설정
+   - 요금제 해지/변경
+   - 결제 카드
+   - 크레딧
+   - 미결제 내역
+   - 할인 쿠폰
+   - 혜택 & 이벤트
+   - 약관 및 정책
+═══════════════════════════════════════════════════════════════ */
+
+(function(){
+  'use strict';
+
+  /* ─── localStorage 헬퍼 ─── */
+  const STORE = {
+    get(key, def){
+      try{ const v=localStorage.getItem('caro_apd_'+key); return v?JSON.parse(v):def; }
+      catch(e){ return def; }
+    },
+    set(key, val){
+      try{ localStorage.setItem('caro_apd_'+key, JSON.stringify(val)); }
+      catch(e){}
+    }
+  };
+
+  /* ─── 토스트 (기존 함수 활용) ─── */
+  function toast(msg, ok){
+    if(typeof showToast === 'function'){ showToast(msg, ok); return; }
+    const t = document.getElementById('toast');
+    if(!t){ alert(msg); return; }
+    t.textContent = msg;
+    t.classList.add('show');
+    if(ok===false) t.style.background='rgba(178,58,58,.92)';
+    setTimeout(()=>{ t.classList.remove('show'); t.style.background=''; }, 2000);
+  }
+
+  /* ═══════════════════════════════════════════
+     1. 비밀번호 재설정
+  ═══════════════════════════════════════════ */
+  function renderPassword(){
+    return `
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">🔒</span>비밀번호 변경</div>
+        <p class="apd-section-desc">계정 보안을 위해 정기적으로 비밀번호를 변경하는 것을 권장합니다.</p>
+
+        <div class="apd-input-group">
+          <label class="apd-input-label">현재 비밀번호 <span class="req">*</span></label>
+          <input type="password" id="apd-pw-cur" class="apd-input" placeholder="현재 비밀번호를 입력하세요" autocomplete="current-password">
+        </div>
+
+        <div class="apd-input-group">
+          <label class="apd-input-label">새 비밀번호 <span class="req">*</span></label>
+          <input type="password" id="apd-pw-new" class="apd-input" placeholder="영문+숫자+특수문자 8자 이상" autocomplete="new-password">
+          <div class="apd-pw-bar"><div class="apd-pw-bar-fill" id="apd-pw-strength"></div></div>
+          <span class="apd-input-hint" id="apd-pw-hint">8자 이상 영문·숫자·특수문자 조합 권장</span>
+        </div>
+
+        <div class="apd-input-group">
+          <label class="apd-input-label">새 비밀번호 확인 <span class="req">*</span></label>
+          <input type="password" id="apd-pw-new2" class="apd-input" placeholder="비밀번호를 다시 입력하세요" autocomplete="new-password">
+          <span class="apd-input-hint" id="apd-pw-match"></span>
+        </div>
+
+        <button class="apd-btn apd-btn-primary" id="apd-pw-submit">비밀번호 변경</button>
+        <div id="apd-pw-result"></div>
+      </div>
+
+      <div class="apd-info">
+        <strong>💡 안전한 비밀번호 설정 가이드</strong><br>
+        ▪ 8자 이상 영문·숫자·특수문자 혼합 또는 10자 이상<br>
+        ▪ 생일·전화번호·연속된 문자 사용 금지<br>
+        ▪ 다른 사이트와 동일한 비밀번호 사용 금지<br>
+        ▪ 비밀번호 유출 의심 시 즉시 변경<br>
+        <span class="apd-legal">근거 — 「개인정보보호법」 및 한국인터넷진흥원(KISA) 「패스워드 선택 및 이용 안내서」(2024)<br>※ 비밀번호 주기적 변경 의무는 2023년 폐지되었습니다.</span>
+      </div>
+    `;
+  }
+
+  function bindPassword(){
+    const cur = document.getElementById('apd-pw-cur');
+    const nw = document.getElementById('apd-pw-new');
+    const nw2 = document.getElementById('apd-pw-new2');
+    const strength = document.getElementById('apd-pw-strength');
+    const hint = document.getElementById('apd-pw-hint');
+    const match = document.getElementById('apd-pw-match');
+    const btn = document.getElementById('apd-pw-submit');
+    const result = document.getElementById('apd-pw-result');
+
+    function checkStrength(v){
+      let score = 0;
+      if(v.length >= 8) score++;
+      if(v.length >= 12) score++;
+      if(/[A-Z]/.test(v)) score++;
+      if(/[a-z]/.test(v)) score++;
+      if(/[0-9]/.test(v)) score++;
+      if(/[^A-Za-z0-9]/.test(v)) score++;
+      strength.className = 'apd-pw-bar-fill';
+      if(score <= 2){ strength.classList.add('weak'); hint.textContent='⚠ 매우 취약 — 8자 이상 + 영문·숫자·특수문자 조합 권장'; }
+      else if(score <= 4){ strength.classList.add('medium'); hint.textContent='보통 — 더 강력한 조합 권장'; }
+      else { strength.classList.add('strong'); hint.textContent='✅ 안전한 비밀번호입니다'; }
+    }
+
+    function checkMatch(){
+      if(!nw2.value){ match.textContent=''; return; }
+      if(nw.value === nw2.value){ match.textContent='✅ 일치'; match.style.color='#1d7a3a'; }
+      else { match.textContent='❌ 일치하지 않음'; match.style.color='#b23a3a'; }
+    }
+
+    nw.addEventListener('input', e => checkStrength(e.target.value));
+    nw2.addEventListener('input', checkMatch);
+    nw.addEventListener('input', checkMatch);
+
+    btn.addEventListener('click', () => {
+      if(!cur.value){ toast('현재 비밀번호를 입력해주세요', false); return; }
+      if(nw.value.length < 8){ toast('새 비밀번호는 8자 이상이어야 합니다', false); return; }
+      if(nw.value !== nw2.value){ toast('새 비밀번호가 일치하지 않습니다', false); return; }
+      if(cur.value === nw.value){ toast('현재 비밀번호와 동일합니다', false); return; }
+      result.innerHTML = '<div class="apd-result success">✅ 비밀번호가 성공적으로 변경되었습니다</div>';
+      cur.value = ''; nw.value = ''; nw2.value = '';
+      strength.className = 'apd-pw-bar-fill';
+      hint.textContent = '8자 이상 영문·숫자·특수문자 조합 권장';
+      match.textContent = '';
+      toast('비밀번호가 변경되었습니다');
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     2. 휴대폰 번호 재설정
+  ═══════════════════════════════════════════ */
+  function renderPhone(){
+    const phone = STORE.get('phone', '010-****-1234');
+    return `
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">📱</span>휴대폰 번호 변경</div>
+
+        <div class="apd-row">
+          <span class="apd-row-label">현재 번호</span>
+          <span class="apd-row-value">${phone}</span>
+        </div>
+
+        <div class="apd-input-group" style="margin-top:14px;">
+          <label class="apd-input-label">새 휴대폰 번호 <span class="req">*</span></label>
+          <input type="tel" id="apd-phone-new" class="apd-input" placeholder="01012345678" maxlength="11">
+        </div>
+
+        <div class="apd-input-group">
+          <label class="apd-input-label">통신사 <span class="req">*</span></label>
+          <div class="apd-carrier-row">
+            <button class="apd-carrier-btn" data-c="SKT">SKT</button>
+            <button class="apd-carrier-btn" data-c="KT">KT</button>
+            <button class="apd-carrier-btn" data-c="LGU+">LGU+</button>
+            <button class="apd-carrier-btn" data-c="알뜰폰">알뜰폰</button>
+          </div>
+        </div>
+
+        <button class="apd-btn apd-btn-pass" id="apd-phone-pass" disabled>📱 PASS 본인인증</button>
+        <div id="apd-phone-result"></div>
+      </div>
+
+      <div class="apd-info">
+        <strong>💡 본인인증 안내</strong><br>
+        본인 명의의 휴대폰 번호로만 변경 가능합니다.<br>
+        PASS 앱 인증 또는 SMS 인증을 통해 본인 확인이 진행됩니다.<br>
+        <span class="apd-legal">근거 — 「전기통신사업법」 제32조의4 (본인확인기관 지정)</span>
+      </div>
+    `;
+  }
+
+  function bindPhone(){
+    const phoneIn = document.getElementById('apd-phone-new');
+    const btn = document.getElementById('apd-phone-pass');
+    const result = document.getElementById('apd-phone-result');
+    let selectedCarrier = null;
+
+    phoneIn.addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 11);
+      checkReady();
+    });
+
+    document.querySelectorAll('.apd-carrier-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        document.querySelectorAll('.apd-carrier-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        selectedCarrier = b.dataset.c;
+        checkReady();
+      });
+    });
+
+    function checkReady(){
+      const ready = phoneIn.value.length >= 10 && selectedCarrier;
+      btn.disabled = !ready;
+    }
+
+    btn.addEventListener('click', () => {
+      const num = phoneIn.value;
+      const formatted = num.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+      result.innerHTML = '<div class="apd-result success">📱 PASS 본인인증이 완료되었습니다<br>휴대폰 번호가 ' + formatted + ' 으로 변경되었습니다</div>';
+      STORE.set('phone', formatted);
+      toast('휴대폰 번호가 변경되었습니다');
+      setTimeout(()=> { openMpDetail('휴대폰 번호 재설정'); }, 1500);
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     3. 계정 연동 설정
+  ═══════════════════════════════════════════ */
+  function renderSns(){
+    const sns = STORE.get('sns', { kakao:false, naver:false, google:false, apple:false });
+    function row(key, name, icon, iconClass){
+      const c = sns[key];
+      return `
+        <div class="apd-sns-item">
+          <div class="apd-sns-left">
+            <div class="apd-sns-icon ${iconClass}">${icon}</div>
+            <div>
+              <div class="apd-sns-name">${name}</div>
+              <div class="apd-sns-status ${c?'connected':''}">${c?'✅ 연결됨':'미연결'}</div>
+            </div>
+          </div>
+          <button class="apd-sns-btn ${c?'connected':''}" data-sns="${key}">${c?'해제':'연결'}</button>
+        </div>
+      `;
+    }
+    return `
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">🔗</span>SNS 간편 로그인 연동</div>
+        <p class="apd-section-desc">연동된 계정으로 간편하게 로그인할 수 있습니다.</p>
+        ${row('kakao', '카카오', 'K', 'kakao')}
+        ${row('naver', '네이버', 'N', 'naver')}
+        ${row('google', '구글', 'G', 'google')}
+        ${row('apple', '애플', '', 'apple')}
+      </div>
+      <div class="apd-info">
+        <strong>💡 SNS 연동 안내</strong><br>
+        ▪ 동일한 이메일을 사용하는 계정만 연동 가능<br>
+        ▪ 연동 해제 시 해당 SNS로 로그인할 수 없습니다<br>
+        ▪ 최소 1개의 로그인 수단은 유지해야 합니다<br>
+        <span class="apd-legal">근거 — 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 및 OAuth 2.0 표준</span>
+      </div>
+    `;
+  }
+
+  function bindSns(){
+    document.querySelectorAll('[data-sns]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.sns;
+        const sns = STORE.get('sns', { kakao:false, naver:false, google:false, apple:false });
+        sns[key] = !sns[key];
+        STORE.set('sns', sns);
+        toast(sns[key] ? '계정이 연결되었습니다' : '계정 연결이 해제되었습니다');
+        openMpDetail('계정 연동 설정'); // 재렌더링
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     4. 요금제 해지/변경
+  ═══════════════════════════════════════════ */
+  function renderPlan(){
+    const current = STORE.get('plan', 'lite');
+    function plan(id, name, price, desc){
+      return `
+        <div class="apd-plan ${current===id?'current':''}" data-plan="${id}">
+          <div class="apd-plan-name">${name}</div>
+          <div class="apd-plan-price">${price}<small>${price==='무료'?'':'/월'}</small></div>
+          <div class="apd-plan-desc">${desc}</div>
+        </div>
+      `;
+    }
+    return `
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">💎</span>요금제 선택</div>
+        <p class="apd-section-desc">언제든지 요금제를 변경하거나 해지할 수 있습니다.</p>
+
+        ${plan('lite', 'CARO LITE', '무료', '기본 차량 이용 · 일반 회원가')}
+        ${plan('standard', 'CARO STANDARD', '9,900원', '시간당 10% 할인 · 우선 예약 · 멤버십 포인트 1.5배')}
+        ${plan('premium', 'CARO PREMIUM', '29,900원', '전 차량 20% 할인 · 블랙라벨 이용 · 무료 면책 포함 · 24시간 컨시어지')}
+
+        <button class="apd-btn apd-btn-primary" id="apd-plan-submit" style="margin-top:14px;">요금제 변경 신청</button>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">⚠️</span>요금제 해지</div>
+        <p class="apd-section-desc">해지 시 다음 결제일부터 LITE(무료) 요금제로 전환됩니다.</p>
+        <button class="apd-btn apd-btn-danger" id="apd-plan-cancel">요금제 해지하기</button>
+      </div>
+
+      <div class="apd-info">
+        <strong>💡 결제 및 환불 안내</strong><br>
+        ▪ 매월 최초 결제일에 자동 결제됩니다<br>
+        ▪ 결제일 7일 이내 청약철회 가능 (서비스 미사용 시)<br>
+        ▪ 해지 시 잔여 기간은 일할 계산하여 환불됩니다<br>
+        ▪ 환불은 영업일 기준 3~5일 소요됩니다<br>
+        <span class="apd-legal">근거 — 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조(청약철회) 및 제18조(청약철회의 효과)</span>
+      </div>
+    `;
+  }
+
+  function bindPlan(){
+    let selected = STORE.get('plan', 'lite');
+    document.querySelectorAll('[data-plan]').forEach(el => {
+      el.addEventListener('click', () => {
+        document.querySelectorAll('.apd-plan').forEach(x => x.classList.remove('current'));
+        el.classList.add('current');
+        selected = el.dataset.plan;
+      });
+    });
+    document.getElementById('apd-plan-submit').addEventListener('click', () => {
+      const cur = STORE.get('plan', 'lite');
+      if(selected === cur){ toast('이미 사용 중인 요금제입니다', false); return; }
+      STORE.set('plan', selected);
+      const names = { lite:'CARO LITE', standard:'CARO STANDARD', premium:'CARO PREMIUM' };
+      toast(names[selected] + ' 으로 변경되었습니다');
+      openMpDetail('요금제 해지/변경');
+    });
+    document.getElementById('apd-plan-cancel').addEventListener('click', () => {
+      if(!confirm('정말 요금제를 해지하시겠습니까?\n해지 시 LITE(무료) 요금제로 전환됩니다.')) return;
+      STORE.set('plan', 'lite');
+      toast('요금제가 해지되었습니다');
+      openMpDetail('요금제 해지/변경');
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     5. 결제 카드
+  ═══════════════════════════════════════════ */
+  function renderCards(){
+    const cards = STORE.get('cards', [
+      { id:1, bank:'신한', last4:'1234', alias:'내 신한카드', isDefault:true },
+      { id:2, bank:'국민', last4:'5678', alias:'국민체크', isDefault:false }
+    ]);
+
+    let html = `
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">💳</span>등록된 카드</div>
+    `;
+    if(cards.length === 0){
+      html += `<div class="apd-empty"><div class="apd-empty-icon">💳</div><div class="apd-empty-text">등록된 카드가 없습니다</div></div>`;
+    } else {
+      cards.forEach(c => {
+        html += `
+          <div class="apd-card-item ${c.isDefault?'default':''}">
+            <div class="apd-card-left">
+              <div class="apd-card-icon">${c.bank}</div>
+              <div>
+                <div class="apd-card-num">**** **** **** ${c.last4} ${c.isDefault?'<span class="apd-card-default-badge">DEFAULT</span>':''}</div>
+                <div class="apd-card-alias">${c.alias}</div>
+              </div>
+            </div>
+            <button class="apd-sns-btn" data-card-del="${c.id}">삭제</button>
+          </div>
+        `;
+      });
+    }
+    html += `
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">➕</span>새 카드 추가</div>
+        <div class="apd-input-group">
+          <label class="apd-input-label">카드 번호 <span class="req">*</span></label>
+          <input type="tel" id="apd-card-num" class="apd-input" placeholder="0000 0000 0000 0000" maxlength="19">
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div class="apd-input-group" style="flex:1;">
+            <label class="apd-input-label">유효기간 <span class="req">*</span></label>
+            <input type="tel" id="apd-card-exp" class="apd-input" placeholder="MM/YY" maxlength="5">
+          </div>
+          <div class="apd-input-group" style="flex:1;">
+            <label class="apd-input-label">CVC <span class="req">*</span></label>
+            <input type="tel" id="apd-card-cvc" class="apd-input" placeholder="000" maxlength="3">
+          </div>
+        </div>
+        <div class="apd-input-group">
+          <label class="apd-input-label">카드 별칭 (선택)</label>
+          <input type="text" id="apd-card-alias" class="apd-input" placeholder="예: 내 신한카드">
+        </div>
+        <button class="apd-btn apd-btn-primary" id="apd-card-add">카드 등록</button>
+      </div>
+
+      <div class="apd-info">
+        <strong>🔒 카드 정보는 안전하게 암호화되어 저장됩니다</strong><br>
+        ▪ PCI-DSS 표준에 따라 카드번호는 토큰화 저장<br>
+        ▪ CVC는 어떠한 경우에도 저장되지 않습니다<br>
+        ▪ 결제대행사(PG): 토스페이먼츠<br>
+        <span class="apd-legal">근거 — 「여신전문금융업법」 및 「전자금융거래법」 제21조</span>
+      </div>
+    `;
+    return html;
+  }
+
+  function bindCards(){
+    const num = document.getElementById('apd-card-num');
+    const exp = document.getElementById('apd-card-exp');
+    const cvc = document.getElementById('apd-card-cvc');
+
+    if(num){
+      num.addEventListener('input', e => {
+        let v = e.target.value.replace(/\D/g, '').slice(0, 16);
+        e.target.value = v.replace(/(.{4})/g, '$1 ').trim();
+      });
+      exp.addEventListener('input', e => {
+        let v = e.target.value.replace(/\D/g, '').slice(0, 4);
+        if(v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+        e.target.value = v;
+      });
+      cvc.addEventListener('input', e => {
+        e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3);
+      });
+    }
+
+    document.querySelectorAll('[data-card-del]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        if(!confirm('이 카드를 삭제하시겠습니까?')) return;
+        const id = parseInt(btn.dataset.cardDel);
+        let cards = STORE.get('cards', []);
+        cards = cards.filter(c => c.id !== id);
+        STORE.set('cards', cards);
+        toast('카드가 삭제되었습니다');
+        openMpDetail('결제 카드');
+      });
+    });
+
+    const addBtn = document.getElementById('apd-card-add');
+    if(addBtn){
+      addBtn.addEventListener('click', () => {
+        const nv = num.value.replace(/\s/g, '');
+        if(nv.length !== 16){ toast('카드 번호 16자리를 입력해주세요', false); return; }
+        if(exp.value.length !== 5){ toast('유효기간을 입력해주세요 (MM/YY)', false); return; }
+        if(cvc.value.length !== 3){ toast('CVC 3자리를 입력해주세요', false); return; }
+        const cards = STORE.get('cards', []);
+        const last4 = nv.slice(-4);
+        cards.push({
+          id: Date.now(),
+          bank: '카드',
+          last4: last4,
+          alias: document.getElementById('apd-card-alias').value || ('카드 ****' + last4),
+          isDefault: cards.length === 0
+        });
+        STORE.set('cards', cards);
+        toast('카드가 등록되었습니다');
+        openMpDetail('결제 카드');
+      });
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     6. 크레딧
+  ═══════════════════════════════════════════ */
+  function renderCredit(){
+    const balance = STORE.get('credit', 15000);
+    const history = STORE.get('credit_history', [
+      { date:'2026.05.20', desc:'예약 결제 사용', amount:-5000 },
+      { date:'2026.05.10', desc:'친구 추천 적립', amount:+5000 },
+      { date:'2026.04.15', desc:'신규 가입 적립', amount:+10000 }
+    ]);
+
+    let histHtml = '';
+    history.forEach(h => {
+      const sign = h.amount > 0 ? '+' : '';
+      const color = h.amount > 0 ? '#1d7a3a' : '#b23a3a';
+      histHtml += `
+        <div class="apd-row">
+          <div>
+            <div style="font-size:.86rem;font-weight:600;color:var(--text-1);">${h.desc}</div>
+            <div style="font-size:.72rem;color:var(--text-m);margin-top:2px;">${h.date}</div>
+          </div>
+          <div style="font-family:'Oswald',sans-serif;font-size:.96rem;font-weight:700;color:${color};">${sign}${h.amount.toLocaleString()}원</div>
+        </div>
+      `;
+    });
+
+    return `
+      <div class="apd-credit-box">
+        <div class="apd-credit-label">CARO CREDIT</div>
+        <div class="apd-credit-amount">${balance.toLocaleString()}<small>원</small></div>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">💰</span>크레딧 충전</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
+          <button class="apd-btn apd-btn-secondary" data-charge="10000" style="padding:10px;">+10,000원</button>
+          <button class="apd-btn apd-btn-secondary" data-charge="30000" style="padding:10px;">+30,000원</button>
+          <button class="apd-btn apd-btn-secondary" data-charge="50000" style="padding:10px;">+50,000원</button>
+        </div>
+        <button class="apd-btn apd-btn-primary" id="apd-credit-custom">직접 입력 충전</button>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">📋</span>사용 내역</div>
+        ${history.length ? histHtml : '<div class="apd-empty"><div class="apd-empty-text">내역이 없습니다</div></div>'}
+      </div>
+
+      <div class="apd-info">
+        <strong>💡 크레딧 사용 안내</strong><br>
+        ▪ 1원 = 1크레딧으로 사용 가능<br>
+        ▪ 충전 후 환불 가능 (충전일로부터 7일 이내, 미사용 시)<br>
+        ▪ 적립 크레딧은 적립일로부터 1년간 유효<br>
+        ▪ 출금이 아닌 서비스 내 사용만 가능<br>
+        <span class="apd-legal">근거 — 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조</span>
+      </div>
+    `;
+  }
+
+  function bindCredit(){
+    document.querySelectorAll('[data-charge]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const amount = parseInt(btn.dataset.charge);
+        if(!confirm(amount.toLocaleString() + '원을 충전하시겠습니까?\n기본 결제 카드로 결제됩니다.')) return;
+        const cur = STORE.get('credit', 0);
+        STORE.set('credit', cur + amount);
+        const hist = STORE.get('credit_history', []);
+        const today = new Date();
+        const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+        hist.unshift({ date:dateStr, desc:'크레딧 충전', amount:+amount });
+        STORE.set('credit_history', hist);
+        toast(amount.toLocaleString() + '원이 충전되었습니다');
+        openMpDetail('크레딧');
+      });
+    });
+    document.getElementById('apd-credit-custom').addEventListener('click', () => {
+      const v = prompt('충전할 금액을 입력해주세요 (1,000원 이상)');
+      if(!v) return;
+      const amt = parseInt(v.replace(/[^0-9]/g, ''));
+      if(!amt || amt < 1000){ toast('1,000원 이상 입력해주세요', false); return; }
+      if(!confirm(amt.toLocaleString() + '원을 충전하시겠습니까?')) return;
+      const cur = STORE.get('credit', 0);
+      STORE.set('credit', cur + amt);
+      const hist = STORE.get('credit_history', []);
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')}`;
+      hist.unshift({ date:dateStr, desc:'크레딧 충전', amount:+amt });
+      STORE.set('credit_history', hist);
+      toast(amt.toLocaleString() + '원이 충전되었습니다');
+      openMpDetail('크레딧');
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     7. 미결제 내역
+  ═══════════════════════════════════════════ */
+  function renderUnpaid(){
+    const items = STORE.get('unpaid', []);
+    let html = `
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">⚠️</span>미결제 내역</div>
+    `;
+    if(items.length === 0){
+      html += `
+        <div class="apd-empty">
+          <div class="apd-empty-icon">✅</div>
+          <div class="apd-empty-text">미결제 내역이 없습니다</div>
+          <div class="apd-empty-sub">정상적으로 모든 결제가 완료되었습니다</div>
+        </div>
+      `;
+    } else {
+      items.forEach(it => {
+        html += `
+          <div class="apd-unpaid-item">
+            <div class="apd-unpaid-title">${it.title}</div>
+            <div class="apd-unpaid-date">${it.date}</div>
+            <div class="apd-unpaid-amount">${it.amount.toLocaleString()}원</div>
+            <button class="apd-btn apd-btn-primary" data-pay="${it.id}">지금 결제</button>
+          </div>
+        `;
+      });
+    }
+    html += `</div>`;
+
+    html += `
+      <div class="apd-info ${items.length?'apd-warn':''}">
+        <strong>💡 미결제 안내</strong><br>
+        ▪ 결제 실패 또는 지연 결제 항목이 표시됩니다<br>
+        ▪ 미결제 항목이 있을 경우 신규 예약이 제한될 수 있습니다<br>
+        ▪ 3일 이상 미결제 시 연체 이자 및 신용정보 등록 대상이 됩니다<br>
+        <span class="apd-legal">근거 — 「신용정보의 이용 및 보호에 관한 법률」 및 「전자상거래법」</span>
+      </div>
+    `;
+    return html;
+  }
+
+  function bindUnpaid(){
+    document.querySelectorAll('[data-pay]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.pay;
+        if(!confirm('이 항목을 결제하시겠습니까?')) return;
+        let items = STORE.get('unpaid', []);
+        items = items.filter(x => String(x.id) !== String(id));
+        STORE.set('unpaid', items);
+        toast('결제가 완료되었습니다');
+        openMpDetail('미결제 내역');
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     8. 할인 쿠폰
+  ═══════════════════════════════════════════ */
+  function renderCoupons(){
+    const tab = window._apdCouponTab || 'available';
+    const coupons = STORE.get('coupons', [
+      { id:1, name:'신규 가입 30% 할인', discount:'-30%', expires:'2026.12.31', status:'available' },
+      { id:2, name:'주말 특별 할인', discount:'-5,000원', expires:'2026.06.30', status:'available' },
+      { id:3, name:'친구 추천 쿠폰', discount:'-3,000원', expires:'2026.05.01', status:'expired' },
+      { id:4, name:'이벤트 할인', discount:'-10%', expires:'2026.04.15', status:'used' }
+    ]);
+
+    const filtered = coupons.filter(c => c.status === tab);
+    let html = `
+      <div class="apd-tabs">
+        <button class="apd-tab ${tab==='available'?'active':''}" data-tab="available">사용 가능</button>
+        <button class="apd-tab ${tab==='used'?'active':''}" data-tab="used">사용 완료</button>
+        <button class="apd-tab ${tab==='expired'?'active':''}" data-tab="expired">만료됨</button>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">🎟️</span>쿠폰 코드 등록</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="apd-coupon-code" class="apd-input" placeholder="쿠폰 코드를 입력하세요" style="flex:1;">
+          <button class="apd-btn apd-btn-primary" id="apd-coupon-apply" style="width:auto;padding:13px 20px;">등록</button>
+        </div>
+      </div>
+    `;
+
+    if(filtered.length === 0){
+      html += `<div class="apd-empty"><div class="apd-empty-icon">🎟️</div><div class="apd-empty-text">${tab==='available'?'사용 가능한 쿠폰이 없습니다':tab==='used'?'사용한 쿠폰이 없습니다':'만료된 쿠폰이 없습니다'}</div></div>`;
+    } else {
+      filtered.forEach(c => {
+        const badgeText = c.status === 'available' ? 'AVAILABLE' : c.status === 'used' ? 'USED' : 'EXPIRED';
+        html += `
+          <div class="apd-coupon ${c.status}">
+            <div class="apd-coupon-badge ${c.status}">${badgeText}</div>
+            <div class="apd-coupon-name">${c.name}</div>
+            <div class="apd-coupon-discount">${c.discount}</div>
+            <div class="apd-coupon-meta">유효기간: ~${c.expires}</div>
+          </div>
+        `;
+      });
+    }
+
+    html += `
+      <div class="apd-info">
+        <strong>💡 쿠폰 사용 안내</strong><br>
+        ▪ 쿠폰은 1회 사용 후 자동 소멸됩니다<br>
+        ▪ 만료일 이후에는 사용 불가합니다<br>
+        ▪ 일부 쿠폰은 중복 사용이 제한될 수 있습니다<br>
+        ▪ 양도·환불·현금화 불가<br>
+        <span class="apd-legal">근거 — 「표시·광고의 공정화에 관한 법률」 및 자체 이용약관</span>
+      </div>
+    `;
+    return html;
+  }
+
+  function bindCoupons(){
+    document.querySelectorAll('.apd-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        window._apdCouponTab = t.dataset.tab;
+        openMpDetail('할인 쿠폰');
+      });
+    });
+    const applyBtn = document.getElementById('apd-coupon-apply');
+    if(applyBtn){
+      applyBtn.addEventListener('click', () => {
+        const v = document.getElementById('apd-coupon-code').value.trim();
+        if(!v){ toast('쿠폰 코드를 입력해주세요', false); return; }
+        if(v.length < 6){ toast('유효하지 않은 쿠폰 코드입니다', false); return; }
+        toast('쿠폰이 등록되었습니다');
+        document.getElementById('apd-coupon-code').value = '';
+      });
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     9. 혜택 & 이벤트 (알림 설정)
+  ═══════════════════════════════════════════ */
+  function renderBenefits(){
+    const n = STORE.get('notif', {
+      push: true,
+      email: true,
+      sms: false,
+      marketing: false,
+      night: false
+    });
+
+    function tog(key, title, desc){
+      return `
+        <div class="apd-toggle-row">
+          <div class="apd-toggle-info">
+            <div class="apd-toggle-title">${title}</div>
+            <div class="apd-toggle-desc">${desc}</div>
+          </div>
+          <div class="apd-toggle ${n[key]?'on':''}" data-notif="${key}"></div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">🔔</span>알림 설정</div>
+        ${tog('push', '앱 푸시 알림', '예약 알림, 차량 상태, 결제 등')}
+        ${tog('email', '이메일 알림', '영수증 및 중요 안내사항')}
+        ${tog('sms', 'SMS 알림', '본인인증 및 긴급 알림')}
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">🎁</span>마케팅 정보 수신 동의</div>
+        ${tog('marketing', '혜택 · 이벤트 정보', '할인 쿠폰, 신규 이벤트, 프로모션')}
+        ${tog('night', '야간 광고성 정보 (21:00 ~ 익일 08:00)', '야간 시간대 광고 정보 별도 동의')}
+      </div>
+
+      <div class="apd-info apd-warn">
+        <strong>📜 정보통신망법 제50조 안내</strong><br>
+        ▪ 광고성 정보는 수신자의 명시적 동의가 있는 경우에만 전송됩니다<br>
+        ▪ 21시부터 익일 8시 사이의 광고성 정보는 별도 동의가 필요합니다 (제50조 제3항)<br>
+        ▪ 언제든지 수신 거부할 수 있으며, 거부 시 광고가 즉시 중단됩니다<br>
+        ▪ 위반 시 3천만원 이하 과태료 부과<br>
+        <span class="apd-legal">근거 — 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 제50조 (영리목적의 광고성 정보 전송 제한)</span>
+      </div>
+    `;
+  }
+
+  function bindBenefits(){
+    document.querySelectorAll('[data-notif]').forEach(tg => {
+      tg.addEventListener('click', () => {
+        const key = tg.dataset.notif;
+        const n = STORE.get('notif', { push:true, email:true, sms:false, marketing:false, night:false });
+        n[key] = !n[key];
+        STORE.set('notif', n);
+        tg.classList.toggle('on');
+        if(key === 'marketing' || key === 'night'){
+          const today = new Date().toISOString().slice(0,10);
+          toast((n[key]?'동의':'거부') + ' 처리되었습니다 (' + today + ')');
+        } else {
+          toast(n[key] ? '알림이 활성화되었습니다' : '알림이 비활성화되었습니다');
+        }
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     10. 약관 및 정책
+  ═══════════════════════════════════════════ */
+  function renderTerms(){
+    return `
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">📜</span>이용약관 및 정책</div>
+
+        <div class="apd-terms-item" data-terms="service">
+          <span class="apd-terms-name">서비스 이용약관</span>
+          <span class="apd-terms-arrow">›</span>
+        </div>
+        <div class="apd-terms-item" data-terms="privacy">
+          <span class="apd-terms-name">개인정보 처리방침</span>
+          <span class="apd-terms-arrow">›</span>
+        </div>
+        <div class="apd-terms-item" data-terms="location">
+          <span class="apd-terms-name">위치정보 이용약관</span>
+          <span class="apd-terms-arrow">›</span>
+        </div>
+        <div class="apd-terms-item" data-terms="third">
+          <span class="apd-terms-name">제3자 정보제공 동의</span>
+          <span class="apd-terms-arrow">›</span>
+        </div>
+        <div class="apd-terms-item" data-terms="marketing">
+          <span class="apd-terms-name">마케팅 정보 수신 동의</span>
+          <span class="apd-terms-arrow">›</span>
+        </div>
+        <div class="apd-terms-item" data-terms="youth">
+          <span class="apd-terms-name">청소년 보호정책</span>
+          <span class="apd-terms-arrow">›</span>
+        </div>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">ℹ️</span>사업자 정보</div>
+        <div class="apd-row"><span class="apd-row-label">상호</span><span class="apd-row-value">(주)카로 모빌리티</span></div>
+        <div class="apd-row"><span class="apd-row-label">대표자</span><span class="apd-row-value">홍길동</span></div>
+        <div class="apd-row"><span class="apd-row-label">사업자등록번호</span><span class="apd-row-value">123-45-67890</span></div>
+        <div class="apd-row"><span class="apd-row-label">통신판매업신고</span><span class="apd-row-value">2026-서울강남-0000</span></div>
+        <div class="apd-row"><span class="apd-row-label">주소</span><span class="apd-row-value">서울특별시 강남구 테헤란로</span></div>
+        <div class="apd-row"><span class="apd-row-label">고객센터</span><span class="apd-row-value">1588-0000</span></div>
+      </div>
+
+      <div class="apd-section">
+        <div class="apd-section-title"><span class="apd-section-title-icon">📌</span>버전 정보</div>
+        <div class="apd-row"><span class="apd-row-label">앱 버전</span><span class="apd-row-value">v3.0.0</span></div>
+        <div class="apd-row"><span class="apd-row-label">최종 업데이트</span><span class="apd-row-value">2026.05.20</span></div>
+        <div class="apd-row"><span class="apd-row-label">서비스 약관 버전</span><span class="apd-row-value">v2.1 (2026.01.01)</span></div>
+      </div>
+
+      <div class="apd-info">
+        <strong>📜 관련 법령</strong><br>
+        ▪ 「개인정보보호법」<br>
+        ▪ 「위치정보의 보호 및 이용 등에 관한 법률」<br>
+        ▪ 「전자상거래 등에서의 소비자보호에 관한 법률」<br>
+        ▪ 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」<br>
+        ▪ 「여객자동차 운수사업법」<br>
+        ▪ 「자동차대여 표준약관」 (공정거래위원회 제10064호)<br>
+      </div>
+    `;
+  }
+
+  function bindTerms(){
+    const TERMS_CONTENT = {
+      service: { title:'서비스 이용약관', body: `<h3>제1조 (목적)</h3><p>본 약관은 (주)카로 모빌리티(이하 "회사")가 제공하는 차량 공유 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자의 권리·의무 및 책임사항을 규정함을 목적으로 합니다.</p><h3>제2조 (이용 자격)</h3><p>① 만 21세 이상이며, 운전면허 취득 후 1년 이상 경과한 자<br>② 본인 명의의 결제수단을 보유한 자<br>③ 「여객자동차 운수사업법」 제34조의2에 따른 운전자격 확인을 통과한 자</p><h3>제3조 (서비스 이용 계약)</h3><p>회원가입 신청에 대한 회사의 승낙으로 이용계약이 성립됩니다.</p>` },
+      privacy: { title:'개인정보 처리방침', body:`<h3>1. 수집하는 개인정보</h3><p>이메일, 휴대폰 번호, 운전면허번호, 결제정보, 위치정보</p><h3>2. 수집 목적</h3><p>회원관리, 서비스 제공, 차량 대여 계약 이행, 본인확인</p><h3>3. 보유 기간</h3><p>회원 탈퇴 시까지 (관계 법령에 따라 일정 기간 보관)</p><p>▪ 계약 또는 청약철회 기록: 5년 (전자상거래법)<br>▪ 대금결제 및 재화공급 기록: 5년<br>▪ 소비자 불만 및 분쟁처리 기록: 3년</p>` },
+      location: { title:'위치정보 이용약관', body:`<h3>제1조 (목적)</h3><p>본 약관은 「위치정보의 보호 및 이용 등에 관한 법률」에 따라 회사가 제공하는 위치기반 서비스 이용에 관한 권리·의무를 규정합니다.</p><h3>제2조 (위치정보 수집)</h3><p>차량 위치 파악 및 가까운 카로존 안내를 위해 GPS 위치정보를 수집합니다. 위치정보 수집을 거부할 권리가 있으며, 거부 시 일부 서비스 이용이 제한될 수 있습니다.</p><h3>제3조 (보유 기간)</h3><p>위치정보 수집·이용·제공 사실 확인자료는 6개월간 자동 저장됩니다.</p>` },
+      third: { title:'제3자 정보제공 동의', body:`<h3>제공받는 자</h3><p>▪ 토스페이먼츠 (결제 처리)<br>▪ 보험사 (대인·대물 사고 처리)<br>▪ 경찰청 (교통사고 발생 시)</p><h3>제공 항목</h3><p>이름, 연락처, 결제 정보, 사고 관련 정보</p><h3>이용 목적</h3><p>결제 처리, 보험 청구, 법적 의무 이행</p><h3>보유 기간</h3><p>법령에 따른 보관 기간 (통상 5년)</p>` },
+      marketing: { title:'마케팅 정보 수신 동의', body:`<h3>수집 목적</h3><p>이벤트, 할인 쿠폰, 신규 서비스 안내</p><h3>제공 항목</h3><p>이메일, 휴대폰 번호</p><h3>수신 채널</h3><p>이메일, SMS, 앱 푸시</p><h3>철회 안내</h3><p>언제든지 수신 거부 가능하며 정보통신망법 제50조에 따라 즉시 처리됩니다.</p>` },
+      youth: { title:'청소년 보호정책', body:`<h3>1. 청소년 보호 책임자</h3><p>회사는 청소년 보호를 위해 보호책임자를 지정 운영합니다.</p><h3>2. 가입 제한</h3><p>본 서비스는 만 21세 이상만 가입 가능합니다.</p><h3>3. 청소년 보호 활동</h3><p>유해 정보 차단 및 청소년 관련 법령 준수</p>` }
+    };
+
+    document.querySelectorAll('[data-terms]').forEach(el => {
+      el.addEventListener('click', () => {
+        const key = el.dataset.terms;
+        const t = TERMS_CONTENT[key];
+        if(!t) return;
+        const m = document.getElementById('terms-modal');
+        document.getElementById('modal-title').textContent = t.title;
+        document.getElementById('modal-body').innerHTML = t.body;
+        if(m) m.classList.add('show');
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     메인 디스패처
+  ═══════════════════════════════════════════ */
+  const RENDERERS = {
+    '비밀번호 재설정': { render:renderPassword, bind:bindPassword },
+    '휴대폰 번호 재설정': { render:renderPhone, bind:bindPhone },
+    '계정 연동 설정': { render:renderSns, bind:bindSns },
+    '요금제 해지/변경': { render:renderPlan, bind:bindPlan },
+    '결제 카드': { render:renderCards, bind:bindCards },
+    '크레딧': { render:renderCredit, bind:bindCredit },
+    '미결제 내역': { render:renderUnpaid, bind:bindUnpaid },
+    '할인 쿠폰': { render:renderCoupons, bind:bindCoupons },
+    '혜택 & 이벤트': { render:renderBenefits, bind:bindBenefits },
+    '약관 및 정책': { render:renderTerms, bind:bindTerms }
+  };
+
+  /* ─── openMpDetail 오버라이드 ─── */
+  const originalOpenMpDetail = window.openMpDetail;
+  window.openMpDetail = function(title){
+    // 회원 탈퇴는 기존 함수 호출 (건들지 않기)
+    if(title === '회원 탈퇴'){
+      if(typeof originalOpenMpDetail === 'function') return originalOpenMpDetail(title);
+      return;
+    }
+
+    // 화면 전환
+    if(typeof goTo === 'function') goTo('account-detail-screen');
+
+    // 타이틀 설정
+    const titleEl = document.getElementById('mpd-title');
+    if(titleEl) titleEl.textContent = title;
+
+    // 콘텐츠 렌더링
+    const content = document.querySelector('#account-detail-screen .mpd-content');
+    if(!content) return;
+
+    const r = RENDERERS[title];
+    if(r){
+      content.innerHTML = r.render();
+      setTimeout(() => { if(r.bind) r.bind(); }, 0);
+    } else {
+      // 알 수 없는 타이틀 - 기존 함수 호출
+      if(typeof originalOpenMpDetail === 'function') return originalOpenMpDetail(title);
+    }
+
+    // 콘텐츠 스크롤 맨 위로
+    setTimeout(() => { content.scrollTop = 0; }, 10);
+  };
+
+  console.log('[CARO] 계정관리 패치 v1 적용 완료 — 9개 화면 + 회원 탈퇴 보존');
+
+})();
