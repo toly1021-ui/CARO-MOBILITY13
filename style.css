@@ -4542,20 +4542,15 @@ textarea::-webkit-scrollbar {
   display: none !important;
   background: transparent !important;
 }
-
 /* ═══════════════════════════════════════════
-   예약 상세 모달 - 확인 버튼 풀 와이드 대칭
+   예약 상세 모달 - 하단 확인 버튼만 풀 와이드
+   ※ 상단 X 닫기 버튼 제외
 ═══════════════════════════════════════════ */
 
-/* 예약 상세 모달의 확인 버튼 - 풀 와이드 */
-#res-detail-modal .submit-btn,
-#res-detail-modal button[onclick*="closeModal"]:not([onclick*="cancel"]),
-#res-detail-modal button[onclick*="closeResDetail"],
-#res-detail-modal .modal-box > button:last-child,
-#res-detail-modal .modal-footer button,
-#res-detail-modal button:last-of-type:not([onclick*="cancel"]):not([onclick*="Cancel"]) {
+/* 하단 확인 버튼 (submit-btn 클래스만) */
+#res-detail-modal .submit-btn {
   width: calc(100% - 40px) !important;
-  margin: 0 20px 20px !important;
+  margin: 12px 20px 20px !important;
   display: block !important;
   background: #18191c !important;
   background-color: #18191c !important;
@@ -4572,16 +4567,18 @@ textarea::-webkit-scrollbar {
   text-align: center !important;
 }
 
-/* 호버 효과 */
-#res-detail-modal .submit-btn:hover,
-#res-detail-modal button[onclick*="closeModal"]:not([onclick*="cancel"]):hover,
-#res-detail-modal button[onclick*="closeResDetail"]:hover {
+#res-detail-modal .submit-btn:hover {
   background: #2e3138 !important;
   background-color: #2e3138 !important;
 }
 
-/* 모달 자체 정렬 */
-#res-detail-modal .modal-box {
-  display: flex !important;
-  flex-direction: column !important;
+/* ═══════════════════════════════════════════
+   예약 상세 모달 - 상단 X 닫기 버튼 숨기기
+═══════════════════════════════════════════ */
+#res-detail-modal .modal-close,
+#res-detail-modal .close-btn,
+#res-detail-modal button.close,
+#res-detail-modal .modal-x,
+#res-detail-modal [class*="close"]:not(.submit-btn):not([class*="cancel"]) {
+  display: none !important;
 }
