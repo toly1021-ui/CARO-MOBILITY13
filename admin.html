@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CARO MOBILITY · 통합 관제 대시보드</title>
+<link rel="manifest" href="admin-manifest.json" />
+<meta name="theme-color" content="#141518" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="CARO 관제" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Saira:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#141518; --panel:#1b1d21; --panel2:#1f2228; --row:#212429;
+    --border:#2b2e34; --border2:#34383f;
+    --gold:#c8a96e; --gold-soft:#dcc28f; --gold-dim:#7e6c49;
+    --txt:#e9eaed; --muted:#868b94; --muted2:#5e636b;
+    --ok:#7bb89a; --use:#74a0d4; --warn:#e0a86c; --bad:#d57a68;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:'Noto Sans KR',sans-serif; color:var(--txt);
+    background:
+      radial-gradient(1400px 700px at 80% -10%, rgba(200,169,110,.05), transparent 60%),
+      var(--bg);
+    min-height:100vh; font-size:14px;
+  }
+  .wrap{max-width:1480px;margin:0 auto;padding:18px;}
+
+  /* ── top bar ── */
+  .topbar{display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;background:linear-gradient(180deg,#1d1f24,#191b1f);
+    border:1px solid var(--border);border-radius:16px;}
+  .brand{display:flex;align-items:center;gap:14px;}
+  .logo{font-family:'Saira',sans-serif;letter-spacing:.3em;font-weight:600;
+    color:var(--gold);font-size:15px;}
+  .brand .div{width:1px;height:26px;background:var(--border2);}
+  .brand .ttl{font-size:13px;color:var(--muted);letter-spacing:.02em;}
+  .brand .ttl b{color:var(--txt);font-weight:500;}
+  .topright{display:flex;align-items:center;gap:18px;}
+  .clock{font-family:'Saira',sans-serif;font-size:15px;color:var(--gold-soft);
+    letter-spacing:.06em;font-variant-numeric:tabular-nums;}
+  .conn{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);
+    font-family:'Saira',sans-serif;letter-spacing:.06em;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);
+    box-shadow:0 0 8px var(--ok);animation:pulse 1.6s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .admin{display:flex;align-items:center;gap:9px;padding:6px 12px;border-radius:10px;
+    background:var(--panel2);border:1px solid var(--border);}
+  .admin .av{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#3a3320,#2a2516);
+    display:flex;align-items:center;justify-content:center;color:var(--gold);font-weight:700;font-size:13px;}
+  .admin .nm{font-size:12px;}.admin .nm small{display:block;color:var(--muted2);font-size:10px;}
+
+  /* ── tabs ── */
+  .tabs{display:flex;gap:6px;margin:16px 0;flex-wrap:wrap;}
+  .tab{padding:9px 16px;border-radius:10px;background:transparent;border:1px solid transparent;
+    color:var(--muted);font-family:'Noto Sans KR';font-size:13.5px;font-weight:500;cursor:pointer;transition:.15s;}
+  .tab:hover{color:var(--txt);background:var(--panel);}
+  .tab.active{color:var(--gold-soft);background:var(--panel2);border-color:var(--border2);}
+
+  .demo-note{margin:0 0 16px;padding:9px 14px;border-radius:10px;font-size:12px;color:var(--muted);
+    background:rgba(200,169,110,.05);border:1px solid rgba(200,169,110,.15);}
+  .demo-note b{color:var(--gold-dim);font-weight:500;}
+
+  /* ── KPI ── */
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px;}
+  .kpi{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px 16px;}
+  .kpi .lab{font-size:11.5px;color:var(--muted);letter-spacing:.02em;margin-bottom:6px;}
+  .kpi .num{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:34px;line-height:1;
+    color:var(--txt);font-variant-numeric:tabular-nums;}
+  .kpi .num small{font-size:14px;color:var(--muted);font-weight:600;margin-left:3px;}
+  .kpi.accent .num{color:var(--gold-soft);}
+  .kpi .num.ok{color:var(--ok)} .kpi .num.use{color:var(--use)} .kpi .num.bad{color:var(--bad)}
+
+  /* ── main grid ── */
+  .grid{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+  .card-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;
+    border-bottom:1px solid var(--border);}
+  .card-hd h3{font-size:14px;font-weight:600;letter-spacing:.01em;}
+  .card-hd .sub{font-size:11.5px;color:var(--muted);}
+  .btn{border:1px solid var(--border2);background:var(--panel2);color:var(--txt);border-radius:9px;
+    padding:8px 13px;font-family:'Noto Sans KR';font-size:12.5px;font-weight:500;cursor:pointer;transition:.13s;}
+  .btn:hover{border-color:var(--gold-dim);}
+  .btn.gold{background:linear-gradient(180deg,#2f2a1d,#241f15);border-color:var(--gold-dim);color:var(--gold-soft);}
+  .btn.sm{padding:5px 9px;font-size:11.5px;border-radius:7px;}
+
+  /* ── fleet table ── */
+  .tbl-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px;}
+  thead th{text-align:left;padding:11px 14px;color:var(--muted);font-weight:500;font-size:11.5px;
+    letter-spacing:.03em;border-bottom:1px solid var(--border);background:var(--panel2);}
+  tbody td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.035);}
+  tbody tr{cursor:pointer;transition:.1s;}
+  tbody tr:hover{background:var(--row);}
+  tbody tr.sel{background:rgba(200,169,110,.08);box-shadow:inset 3px 0 0 var(--gold);}
+  .vn{display:flex;flex-direction:column;gap:2px;}
+  .vn b{font-weight:500;}
+  .vn small{color:var(--muted2);font-size:11px;}
+  .grade{font-size:10.5px;padding:2px 7px;border-radius:5px;letter-spacing:.02em;border:1px solid var(--border2);color:var(--muted);}
+  .grade.black{color:var(--gold-soft);border-color:var(--gold-dim);background:rgba(200,169,110,.07);}
+  .st{display:inline-flex;align-items:center;gap:6px;font-size:12px;}
+  .st i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+  .st.ok i{background:var(--ok)} .st.use i{background:var(--use)} .st.warn i{background:var(--warn)}
+  .st.ok{color:var(--ok)} .st.use{color:var(--use)} .st.warn{color:var(--warn)}
+  /* 예약 상태 색상 */
+  .st.red i{background:#d57a68} .st.red{color:#d57a68}
+  .st.orange i{background:#e0a86c} .st.orange{color:#e0a86c}
+  .st.green i{background:#7bb89a} .st.green{color:#7bb89a}
+  .st.yellow i{background:#d9c24a} .st.yellow{color:#d9c24a}
+  .st.neutral i{background:#868b94} .st.neutral{color:#9298a1}
+  /* 정렬 버튼 */
+  .sortbtns{display:inline-flex;border:1px solid var(--border2);border-radius:9px;overflow:hidden;}
+  .sortb{background:transparent;border:none;color:var(--muted);font-family:'Noto Sans KR';font-size:12px;padding:6px 13px;cursor:pointer;transition:.12s;}
+  .sortb:hover{color:var(--txt);}
+  .sortb.active{background:var(--panel2);color:var(--gold-soft);}
+  .bat{display:flex;align-items:center;gap:8px;}
+  .bat .track{width:54px;height:6px;border-radius:4px;background:#2a2d33;overflow:hidden;}
+  .bat .fill{height:100%;border-radius:4px;}
+  .bat span{font-family:'Saira',sans-serif;font-size:12px;font-variant-numeric:tabular-nums;width:34px;}
+  .floor-badge{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:15px;color:var(--gold-soft);}
+
+  /* ── live panel ── */
+  .live .card-hd .pill{font-size:11px;color:var(--ok);border:1px solid rgba(123,184,154,.4);
+    padding:3px 9px;border-radius:999px;}
+  .lv-body{padding:16px 18px;}
+  .lv-veh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .lv-veh .nm{font-size:15px;font-weight:600;}
+  .lv-veh .nm small{display:block;color:var(--muted);font-size:11.5px;font-weight:400;}
+  .lv-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:11px 13px;}
+  .stat .l{font-size:11px;color:var(--muted);margin-bottom:5px;}
+  .stat .v{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:24px;color:var(--txt);}
+  .stat .v.gold{color:var(--gold-soft);}
+  .chartwrap{position:relative;height:170px;border:1px solid var(--border);border-radius:12px;
+    background:linear-gradient(180deg,#191b1e,#161719);overflow:hidden;}
+  .chartwrap .ytag{position:absolute;top:7px;left:9px;font-family:'Saira',sans-serif;font-size:9.5px;
+    letter-spacing:.13em;color:var(--gold-dim);text-transform:uppercase;}
+  #liveChart{display:block;width:100%;height:100%;}
+  .lv-loc{margin-top:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px;}
+  .lv-loc b{color:var(--txt);font-weight:500;}
+
+  /* ── generic panels ── */
+  .panel-body{padding:18px;}
+  .ptable{width:100%;border-collapse:collapse;font-size:13px;}
+  .ptable th{text-align:left;padding:10px 12px;color:var(--muted);font-weight:500;font-size:11.5px;border-bottom:1px solid var(--border);}
+  .ptable td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.035);}
+  .pin{width:90px;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);
+    border-radius:7px;padding:6px 9px;font-family:'Saira';font-size:13px;text-align:right;}
+  .list-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;
+    border:1px solid var(--border);border-radius:11px;margin-bottom:10px;background:var(--panel2);}
+  .list-item .meta{font-size:11.5px;color:var(--muted);margin-top:3px;}
+  .addrow{display:flex;gap:9px;margin-top:6px;}
+  .addrow input{flex:1;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);
+    border-radius:9px;padding:10px 12px;font-family:'Noto Sans KR';font-size:13px;}
+  .acct{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--border);
+    border-radius:11px;margin-bottom:9px;background:var(--panel2);}
+  .acct .av{width:30px;height:30px;border-radius:8px;background:#2a2516;color:var(--gold);
+    display:flex;align-items:center;justify-content:center;font-weight:700;}
+
+  .hide{display:none!important;}
+
+  /* toast */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:#23262c;border:1px solid var(--gold-dim);color:var(--gold-soft);padding:11px 20px;
+    border-radius:11px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:960px){
+    .kpis{grid-template-columns:repeat(3,1fr);}
+    .grid{grid-template-columns:1fr;}
+  }
+  /* login gate */
+  #loginGate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(1000px 600px at 50% -10%, rgba(200,169,110,.08), transparent 60%), #141518;}
+  .login-card{width:340px;max-width:90vw;background:linear-gradient(180deg,#1d1f24,#191b1f);
+    border:1px solid var(--border);border-radius:18px;padding:30px 28px;box-shadow:0 24px 60px rgba(0,0,0,.55);}
+  .login-card .lg{font-family:'Saira',sans-serif;letter-spacing:.3em;color:var(--gold);font-size:15px;font-weight:600;text-align:center;}
+  .login-card .lt{text-align:center;color:var(--muted);font-size:12.5px;margin:6px 0 22px;}
+  .login-card label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px 2px;}
+  .login-card input{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);
+    border-radius:10px;padding:12px 13px;font-family:'Noto Sans KR';font-size:14px;margin-bottom:14px;}
+  .login-card input:focus{outline:none;border-color:var(--gold-dim);}
+  .login-card .lbtn{width:100%;background:linear-gradient(180deg,#2f2a1d,#241f15);border:1px solid var(--gold-dim);
+    color:var(--gold-soft);border-radius:10px;padding:13px 0;font-family:'Noto Sans KR';font-size:14.5px;font-weight:600;cursor:pointer;transition:.13s;}
+  .login-card .lbtn:hover{background:linear-gradient(180deg,#3a3320,#2c2718);}
+  .login-card .lerr{color:#d57a68;font-size:12.5px;min-height:18px;margin-top:10px;text-align:center;}
+  .logout-btn{border:1px solid var(--border2);background:var(--panel2);color:var(--muted);border-radius:8px;
+    padding:6px 11px;font-size:12px;cursor:pointer;margin-left:4px;}
+  .logout-btn:hover{border-color:var(--gold-dim);color:var(--txt);}
+  .carname{cursor:pointer;}
+  .btn.sm.stbtn{min-width:72px;text-align:center;}
+  .carname:hover{color:var(--gold-soft);}
+  tr.rowbad{box-shadow:inset 3px 0 0 #d9c24a;background:rgba(217,194,74,.05);}
+  /* 차량 수정 모달 */
+  .emodal{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:rgba(8,9,11,.72);}
+  .emodal.show{display:flex;}
+  .ebox{width:430px;max-width:92vw;max-height:90vh;overflow:auto;background:linear-gradient(180deg,#1d1f24,#191b1f);
+    border:1px solid var(--border);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,.6);}
+  .ehd{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
+  .ehd h3{font-size:15px;}
+  .eclose{background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1;}
+  .eclose:hover{color:var(--txt);}
+  .ebody{padding:16px 20px;}
+  .ebody label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px 2px;}
+  .ebody input,.ebody select{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);
+    border-radius:9px;padding:11px 12px;font-family:'Noto Sans KR';font-size:13.5px;}
+  .ebody input:focus,.ebody select:focus{outline:none;border-color:var(--gold-dim);}
+  .erow{display:flex;gap:12px;}
+  .ephoto{width:100%;height:150px;border:1px solid var(--border2);border-radius:12px;overflow:hidden;
+    background:var(--panel2);display:flex;align-items:center;justify-content:center;}
+  .ephoto img{width:100%;height:100%;object-fit:cover;}
+  #em-noimg{color:var(--muted2);font-size:13px;}
+  .efoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border);}
+</style>
+<script type="module" src="firebase-config.js"></script>
+</head>
+<body>
+<!-- 관리자 로그인 -->
+<div id="loginGate">
+  <div class="login-card">
+    <div class="lg">CARO MOBILITY</div>
+    <div class="lt">관제 대시보드 · 관리자 로그인</div>
+    <label>관리자 이메일</label>
+    <input id="lg-email" type="email" value="caro.mobility.official@gmail.com" autocomplete="username" />
+    <label>비밀번호</label>
+    <input id="lg-pw" type="password" placeholder="비밀번호 입력" autocomplete="current-password" />
+    <button class="lbtn" id="lg-btn">로그인</button>
+    <div class="lerr" id="lg-err"></div>
+  </div>
+</div>
+<div class="wrap">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <span class="logo">CARO MOBILITY</span>
+      <span class="div"></span>
+      <span class="ttl"><b>통합 관제 대시보드</b> · Fleet Control</span>
+    </div>
+    <div class="topright">
+      <span class="conn"><span class="dot"></span>실시간 연결</span>
+      <span class="clock" id="clock">--:--:--</span>
+      <div class="admin">
+        <span class="av">C</span>
+        <span class="nm" id="adminNm">관리자<small id="adminEmail">—</small></span>
+      </div>
+      <button class="logout-btn" id="logoutBtn">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" data-tab="dash">관제 대시보드</button>
+    <button class="tab" data-tab="price">요금 관리</button>
+    <button class="tab" data-tab="resv">예약 관리</button>
+    <button class="tab" data-tab="notice">공지·이벤트</button>
+    <button class="tab" data-tab="set">설정</button>
+  </div>
+
+  <div class="demo-note">🔗 <b>Firestore 실시간 연결</b> — 차량(<b>cars · bl_cars</b>)·예약을 폰 앱(안드로이드·iOS)과 같은 데이터로 실시간 공유합니다. <b>연료량·층수</b>는 IoT 기기가 설치·전송하면 자동으로 채워집니다.</div>
+
+  <!-- ===================== TAB: DASHBOARD ===================== -->
+  <section id="tab-dash">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid">
+      <!-- fleet -->
+      <div class="card">
+        <div class="card-hd">
+          <div><h3>차량 현황</h3></div>
+          <button class="btn gold" onclick="toast('차량 등록 폼은 다음 단계에서 연결됩니다')">+ 차량 등록</button>
+        </div>
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr>
+              <th>차량</th><th>등급</th><th>상태</th><th>연료량</th><th>위치</th><th>층수</th><th>최근</th><th></th>
+            </tr></thead>
+            <tbody id="fleetBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- live monitor -->
+      <aside class="card live">
+        <div class="card-hd">
+          <h3>실시간 관제</h3><span class="pill" id="livePill">● LIVE</span>
+        </div>
+        <div class="lv-body">
+          <div class="lv-veh">
+            <div class="nm" id="lvName">—<small id="lvPlate"></small></div>
+            <span class="st" id="lvStatus"></span>
+          </div>
+          <div class="lv-stats">
+            <div class="stat"><div class="l">현재 층수</div><div class="v gold" id="lvFloor">—</div></div>
+            <div class="stat"><div class="l">고도(입구 대비)</div><div class="v" id="lvAlt">—</div></div>
+            <div class="stat"><div class="l">연료량</div><div class="v" id="lvBat">—</div></div>
+            <div class="stat"><div class="l">상태</div><div class="v" id="lvMove" style="font-size:18px">—</div></div>
+          </div>
+          <div class="chartwrap">
+            <span class="ytag">높이 (m) · 최근 변화</span>
+            <canvas id="liveChart"></canvas>
+          </div>
+          <div class="lv-loc">📍 <b id="lvLoc">—</b></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: PRICE ===================== -->
+  <section id="tab-price" class="hide">
+    <div class="card">
+      <div class="card-hd"><h3>요금 관리</h3><button class="btn gold" onclick="toast('요금이 저장되었습니다 (데모)')">저장</button></div>
+      <div class="panel-body">
+        <table class="ptable">
+          <thead><tr><th>등급</th><th>시간당</th><th>주중 1일</th><th>주말 1일</th><th>km당</th></tr></thead>
+          <tbody id="priceBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: RESV ===================== -->
+  <section id="tab-resv" class="hide">
+    <div class="card">
+      <div class="card-hd"><h3>예약 관리</h3>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="sortbtns">
+            <button class="sortb active" id="sortNew" onclick="setResvSort('new')">최신순</button>
+            <button class="sortb" id="sortOld" onclick="setResvSort('old')">오래된순</button>
+          </div>
+          <span class="sub" id="resvCount"></span>
+        </div>
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr><th>예약번호</th><th>차량</th><th>이용자</th><th>기간</th><th>상태</th><th>동작</th></tr></thead>
+          <tbody id="resvBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: NOTICE ===================== -->
+  <section id="tab-notice" class="hide">
+    <div class="card">
+      <div class="card-hd"><h3>공지·이벤트 배너</h3></div>
+      <div class="panel-body">
+        <div id="noticeList"></div>
+        <div class="addrow">
+          <input id="noticeInput" placeholder="새 공지/이벤트 제목 입력..." />
+          <button class="btn gold" onclick="addNotice()">추가</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: SETTINGS ===================== -->
+  <section id="tab-set" class="hide">
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="card">
+        <div class="card-hd"><h3>관리자 계정</h3><button class="btn sm gold" onclick="toast('계정 추가는 다음 단계에서 연결됩니다')">+ 계정</button></div>
+        <div class="panel-body" id="acctList"></div>
+      </div>
+      <div class="card">
+        <div class="card-hd"><h3>시스템</h3></div>
+        <div class="panel-body">
+          <table class="ptable">
+            <tbody>
+              <tr><td>앱 버전</td><td style="text-align:right;color:var(--gold-soft);font-family:'Saira'">v3.0.0</td></tr>
+              <tr><td>등록 차량</td><td style="text-align:right" id="setCars">—</td></tr>
+              <tr><td>연결 기기(IoT)</td><td style="text-align:right" id="setDev">—</td></tr>
+              <tr><td>데이터 소스</td><td style="text-align:right;color:var(--muted)">localStorage → Firestore 전환 예정</td></tr>
+              <tr><td>지도 중심</td><td style="text-align:right;font-family:'Saira'">37.4563, 126.7052 (인천)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div id="toast"></div>
+<!-- 차량 수정 모달 -->
+<div id="editModal" class="emodal">
+  <div class="ebox">
+    <div class="ehd"><h3 id="em-title">차량 수정</h3><button class="eclose" onclick="closeEdit()">✕</button></div>
+    <div class="ebody">
+      <div class="ephoto"><img id="em-img" src="" alt="" onerror="this.style.display='none';document.getElementById('em-noimg').style.display='flex'" /><span id="em-noimg">사진 없음</span></div>
+      <label>사진 URL</label>
+      <input id="em-image" placeholder="https://... 이미지 주소 붙여넣기" oninput="emPreview()" />
+      <label>차량명</label>
+      <input id="em-name" />
+      <label>번호판</label>
+      <input id="em-plate" />
+      <div class="erow">
+        <div style="flex:1"><label>시간당 요금 (원)</label><input id="em-price" type="number" /></div>
+        <div style="flex:1"><label>상태</label>
+          <select id="em-status">
+            <option value="available">이용가능</option>
+            <option value="busy">이용중</option>
+            <option value="unavailable">사용불가</option>
+          </select></div>
+      </div>
+      <label>위치</label>
+      <input id="em-place" />
+    </div>
+    <div class="efoot">
+      <button class="btn" onclick="closeEdit()">취소</button>
+      <button class="btn gold" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var FLOOR_H = 3.3;
+
+  // ── fleet (Firestore 실시간 연동) ──
+  var FLEET = [];          // cars + bl_cars 컬렉션에서 실시간 수신
+  var selectedId = null;
+
+  // ── helpers ──
+  function floorOf(a){ var fl=1+Math.round(a/FLOOR_H);
+    return fl>=1 ? {code:fl+'F', ko:'지상 '+fl+'층'} : {code:'B'+(1-fl), ko:'지하 '+(1-fl)+'층'}; }
+  function batColor(b){ if(b==null) return '#3a3d44'; return b>50?'#c8a96e':(b>20?'#e0a86c':'#d57a68'); }
+  function batText(b){ return (b==null)?'—':b+'%'; }
+  function batWidth(b){ return (b==null)?0:b; }
+  function stClass(s){ return s==='이용가능'?'ok':(s==='이용중'?'use':'yellow'); }
+
+  // ── KPIs ──
+  function renderKPIs(){
+    var total=FLEET.length;
+    var avail=FLEET.filter(function(v){return v.status==='이용가능';}).length;
+    var inuse=FLEET.filter(function(v){return v.status==='이용중';}).length;
+    var bad=FLEET.filter(function(v){return v.status==='점검';}).length;
+    var bats=FLEET.filter(function(v){return typeof v.battery==='number';});
+    var avgBat=bats.length?Math.round(bats.reduce(function(s,v){return s+v.battery;},0)/bats.length):0;
+    var cards=[
+      {l:'전체 차량', n:total, c:''},
+      {l:'이용 가능', n:avail, c:'ok'},
+      {l:'이용 중', n:inuse, c:'use'},
+      {l:'점검·불가', n:bad, c:'bad'},
+      {l:'평균 연료량', n:avgBat, u:'%', c:'accent'},
+      {l:'오늘 예약', n:resv.length, c:'accent'}
+    ];
+    document.getElementById('kpis').innerHTML = cards.map(function(k){
+      return '<div class="kpi '+(k.c==='accent'?'accent':'')+'"><div class="lab">'+k.l+'</div>'+
+        '<div class="num '+(k.c&&k.c!=='accent'?k.c:'')+'">'+k.n+(k.u?'<small>'+k.u+'</small>':'')+'</div></div>';
+    }).join('');
+    var sc=document.getElementById('setCars'), sd=document.getElementById('setDev');
+    if(sc) sc.textContent=total+'대'; if(sd) sd.textContent=total+'대 연결됨';
+  }
+
+  // ── fleet table ──
+  function carNum(v){ var n=parseInt((''+(v.docId||'')).replace(/\D/g,''),10); return isNaN(n)?999999:n; }
+  function renderFleet(){
+    var list = FLEET.slice().sort(function(a,b){ return carNum(a)-carNum(b); });
+    var rows = list.map(function(v){
+      var hasAlt=(typeof v.alt==='number'), f=hasAlt?floorOf(v.alt):null, st=stClass(v.status);
+      var unavail=(v.status==='점검');
+      return '<tr class="'+(v.id===selectedId?'sel':'')+(unavail?' rowbad':'')+'" data-id="'+v.id+'">'+
+        '<td><div class="vn"><b class="carname" onclick="event.stopPropagation();openEdit(\''+v.id+'\')">'+v.name+'</b><small>'+(v.plate||'번호판 미등록')+'</small></div></td>'+
+        '<td><span class="grade '+(v.grade==='THE BLACK'?'black':'')+'">'+v.grade+'</span></td>'+
+        '<td><span class="st '+st+'"><i></i>'+v.status+'</span></td>'+
+        '<td><div class="bat"><div class="track"><div class="fill" style="width:'+batWidth(v.battery)+'%;background:'+batColor(v.battery)+'"></div></div><span>'+batText(v.battery)+'</span></div></td>'+
+        '<td style="color:var(--muted)">'+v.place+'</td>'+
+        '<td><span class="floor-badge">'+((v.status==='점검'||!f)?'—':f.code)+'</span></td>'+
+        '<td style="color:var(--muted2);font-family:Saira;font-size:12px">방금</td>'+
+        '<td><button class="btn sm stbtn" onclick="event.stopPropagation();toggleStatus(\''+v.id+'\')">'+(unavail?'복구':'사용불가')+'</button></td>'+
+      '</tr>';
+    }).join('');
+    document.getElementById('fleetBody').innerHTML = rows ||
+      '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:26px">Firestore 연결 중… 등록된 차량이 여기에 실시간으로 표시됩니다.</td></tr>';
+    document.querySelectorAll('#fleetBody tr[data-id]').forEach(function(tr){
+      tr.addEventListener('click', function(){ selectedId=tr.getAttribute('data-id'); renderFleet(); renderLive(); });
+    });
+  }
+
+  window.toggleStatus = function(id){
+    var v=FLEET.find(function(x){return x.id===id;}); if(!v) return;
+    var db=window.FB_DB, FN=window.FB_FN;
+    var makeUnavail=(v.status!=='점검');
+    var newStatus=makeUnavail?'unavailable':'available';
+    v.status=makeUnavail?'점검':'이용가능';   // 즉시 반영(낙관적)
+    renderFleet(); renderKPIs(); if(id===selectedId) renderLive();
+    if(!db||!FN){ toast('연결 대기 중'); return; }
+    FN.setDoc(FN.doc(db, v.col, v.docId), { status:newStatus }, { merge:true })
+      .then(function(){ toast(v.name+(makeUnavail?' → 사용불가 (앱에도 반영)':' → 복구됨')); })
+      .catch(function(e){ toast('저장 실패: 관리자 권한 확인'); console.error(e); });
+  };
+
+  // ── 차량 수정 모달 ──
+  var editId=null;
+  window.openEdit=function(id){
+    var v=FLEET.find(function(x){return x.id===id;}); if(!v) return;
+    editId=id; var r=v.raw||{};
+    document.getElementById('em-title').textContent=v.name+' · 차량 수정';
+    document.getElementById('em-name').value=v.name||'';
+    document.getElementById('em-plate').value=v.plate||'';
+    document.getElementById('em-price').value=(r.pricePerHour||r.price||r.hourPrice||'');
+    document.getElementById('em-place').value=(r.place||r.location||v.place||'');
+    document.getElementById('em-image').value=(r.image||r.img||r.photo||r.imageUrl||r.imgUrl||r.thumbnail||'');
+    var s=(''+(r.status||'available')).toLowerCase();
+    document.getElementById('em-status').value=
+      (/busy|use|rent|이용중/.test(s))?'busy':
+      (/unavail|maint|점검|off|disable|사고|고장/.test(s))?'unavailable':'available';
+    emPreview();
+    document.getElementById('editModal').classList.add('show');
+  };
+  window.closeEdit=function(){ document.getElementById('editModal').classList.remove('show'); editId=null; };
+  window.emPreview=function(){ var u=document.getElementById('em-image').value.trim();
+    var img=document.getElementById('em-img'), no=document.getElementById('em-noimg');
+    if(u){ img.src=u; img.style.display='block'; no.style.display='none'; }
+    else { img.style.display='none'; no.style.display='flex'; } };
+  window.saveEdit=function(){
+    var v=FLEET.find(function(x){return x.id===editId;}); if(!v) return;
+    var db=window.FB_DB, FN=window.FB_FN;
+    if(!db||!FN){ toast('연결 대기 중'); return; }
+    var data={
+      name: document.getElementById('em-name').value.trim(),
+      plate: document.getElementById('em-plate').value.trim(),
+      status: document.getElementById('em-status').value,
+      pricePerHour: Number(document.getElementById('em-price').value)||0,
+      place: document.getElementById('em-place').value.trim(),
+      image: document.getElementById('em-image').value.trim()
+    };
+    FN.setDoc(FN.doc(db, v.col, v.docId), data, { merge:true })
+      .then(function(){ toast(data.name+' 저장 완료 (앱에도 반영)'); closeEdit(); })
+      .catch(function(e){ toast('저장 실패: 관리자 권한 확인'); console.error(e); });
+  };
+
+  // ── live panel ──
+  var cv=document.getElementById('liveChart'), ctx=cv.getContext('2d'), CW=0,CH=0,DPR=1;
+  function resizeChart(){ var r=cv.getBoundingClientRect(); DPR=window.devicePixelRatio||1;
+    CW=r.width; CH=r.height; cv.width=CW*DPR; cv.height=CH*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+  window.addEventListener('resize', resizeChart);
+
+  function renderLive(){
+    var v=FLEET.find(function(x){return x.id===selectedId;});
+    if(!v){
+      document.getElementById('lvName').innerHTML='차량 없음<small>Firestore 연결 대기</small>';
+      document.getElementById('lvStatus').className='st'; document.getElementById('lvStatus').innerHTML='';
+      document.getElementById('lvFloor').textContent='—'; document.getElementById('lvAlt').textContent='—';
+      document.getElementById('lvBat').textContent='—'; document.getElementById('lvMove').textContent='—';
+      document.getElementById('lvLoc').textContent='—'; drawChart(null); return;
+    }
+    var hasAlt=(typeof v.alt==='number'), f=hasAlt?floorOf(v.alt):null, st=stClass(v.status);
+    document.getElementById('lvName').innerHTML = v.name+'<small>'+(v.plate||'번호판 미등록')+' · '+v.grade+'</small>';
+    document.getElementById('lvStatus').className='st '+st;
+    document.getElementById('lvStatus').innerHTML='<i></i>'+v.status;
+    document.getElementById('lvFloor').textContent = (v.status==='점검'||!f)?'—':f.code;
+    document.getElementById('lvAlt').textContent = hasAlt?((v.alt>=0?'+':'')+v.alt.toFixed(1)+'m'):'기기 미연결';
+    document.getElementById('lvBat').textContent = batText(v.battery);
+    document.getElementById('lvMove').textContent = hasAlt?(v.status==='점검'?'점검중':'수신중'):'—';
+    document.getElementById('lvLoc').textContent = v.place + (f?('  ·  '+f.ko):'');
+    drawChart(v);
+  }
+
+  function drawChart(v){
+    if(CW===0) resizeChart();
+    ctx.clearRect(0,0,CW,CH);
+    if(!v || !v.hist || v.hist.length<2){
+      ctx.fillStyle='rgba(134,139,148,.6)'; ctx.font="500 12px 'Noto Sans KR', sans-serif";
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(v?'IoT 기기 데이터 수신 대기…':'차량을 선택하세요', CW/2, CH/2);
+      return;
+    }
+    var h=v.hist, amin=Infinity,amax=-Infinity,i;
+    for(i=0;i<h.length;i++){ if(h[i]<amin)amin=h[i]; if(h[i]>amax)amax=h[i]; }
+    if(amin>0)amin=0; if(amax<0)amax=0;
+    var span=Math.max(amax-amin, FLOOR_H*2.2), pad=span*0.22, lo=amin-pad, hi=amax+pad;
+    if(hi-lo<1){hi+=1;lo-=1;}
+    function Y(a){ return CH-((a-lo)/(hi-lo))*CH; }
+    function X(idx){ return 30 + (idx/(h.length-1))*(CW-34); }
+    // floor lines
+    ctx.font="600 9px Saira, sans-serif"; ctx.textBaseline='middle';
+    var fS=Math.floor(lo/FLOOR_H)-1, fE=Math.ceil(hi/FLOOR_H)+1;
+    for(var fl=fS; fl<=fE; fl++){ var ay=fl*FLOOR_H, y=Y(ay); if(y<-2||y>CH+2)continue;
+      var base=(fl===0);
+      ctx.strokeStyle=base?'rgba(200,169,110,.30)':'rgba(255,255,255,.045)'; ctx.lineWidth=1;
+      ctx.setLineDash(base?[5,4]:[]); ctx.beginPath(); ctx.moveTo(30,y); ctx.lineTo(CW,y); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle=base?'rgba(200,169,110,.7)':'rgba(134,139,148,.55)'; ctx.textAlign='left';
+      ctx.fillText(floorOf(ay).code, 4, y);
+    }
+    // area + line
+    var grad=ctx.createLinearGradient(0,0,0,CH);
+    grad.addColorStop(0,'rgba(200,169,110,.15)'); grad.addColorStop(1,'rgba(200,169,110,0)');
+    ctx.beginPath(); ctx.moveTo(X(0),CH);
+    for(i=0;i<h.length;i++) ctx.lineTo(X(i),Y(h[i]));
+    ctx.lineTo(X(h.length-1),CH); ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+    ctx.beginPath();
+    for(i=0;i<h.length;i++){ var px=X(i),py=Y(h[i]); if(i===0)ctx.moveTo(px,py); else ctx.lineTo(px,py); }
+    ctx.strokeStyle='#dcc28f'; ctx.lineWidth=2.4; ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.shadowColor='rgba(200,169,110,.5)'; ctx.shadowBlur=9; ctx.stroke(); ctx.shadowBlur=0;
+    var hx=X(h.length-1), hy=Y(h[h.length-1]);
+    ctx.beginPath(); ctx.arc(hx,hy,3.4,0,Math.PI*2); ctx.fillStyle='#f0dca6';
+    ctx.shadowColor='rgba(200,169,110,.9)'; ctx.shadowBlur=10; ctx.fill(); ctx.shadowBlur=0;
+  }
+
+  // ── pricing ──
+  var prices=[
+    {g:'일반', hour:9900, wd:69000, we:89000, km:180},
+    {g:'THE BLACK', hour:24000, wd:178000, we:228000, km:320}
+  ];
+  function renderPrice(){
+    document.getElementById('priceBody').innerHTML = prices.map(function(p,i){
+      function inp(k){ return '<input class="pin" value="'+p[k]+'" onchange="prices['+i+'].'+k+'=+this.value">'; }
+      return '<tr><td><span class="grade '+(p.g==='THE BLACK'?'black':'')+'">'+p.g+'</span></td>'+
+        '<td>'+inp('hour')+' 원</td><td>'+inp('wd')+' 원</td><td>'+inp('we')+' 원</td><td>'+inp('km')+' 원</td></tr>';
+    }).join('');
+  }
+  window.prices = prices;
+
+  // ── reservations (Firestore 실시간) ──
+  var resv=[];   // reservations 컬렉션에서 실시간 수신
+  var resvSort = 'new';
+  window.setResvSort = function(mode){
+    resvSort = mode;
+    document.getElementById('sortNew').classList.toggle('active', mode==='new');
+    document.getElementById('sortOld').classList.toggle('active', mode==='old');
+    renderResv();
+  };
+  function stColor(status){
+    if(status==='취소') return 'red';
+    if(status==='반납완료') return 'orange';
+    if(status==='대여중') return 'green';
+    if(status==='사고·고장') return 'yellow';
+    return 'neutral';
+  }
+  function renderResv(){
+    var list = resv.slice().sort(function(a,b){
+      return resvSort==='new' ? (b.sortMs-a.sortMs) : (a.sortMs-b.sortMs);
+    });
+    document.getElementById('resvCount').textContent='전체 '+list.length+'건';
+    document.getElementById('resvBody').innerHTML = list.map(function(r){
+      var cls=stColor(r.status);
+      return '<tr><td style="font-family:Saira;color:var(--muted)">'+r.no+'</td><td>'+r.car+'</td>'+
+        '<td>'+r.user+'</td><td style="color:var(--muted)">'+r.period+'</td>'+
+        '<td><span class="st '+cls+'"><i></i>'+r.status+'</span></td>'+
+        '<td><button class="btn sm" onclick="toast(\''+r.no+' 강제변경/취소는 다음 단계에서 연결\')">관리</button></td></tr>';
+    }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">예약이 없습니다.</td></tr>';
+  }
+
+  // ── notices ──
+  var notices=[
+    {t:'[이벤트] 신규 가입 1시간 무료 이용권 지급', d:'2026-06-01 · 게시중'},
+    {t:'[공지] 6월 정기 차량 점검 안내', d:'2026-06-05 · 게시중'},
+    {t:'[이벤트] CARO THE BLACK 출시 기념 20% 할인', d:'2026-06-08 · 게시중'}
+  ];
+  function renderNotice(){
+    document.getElementById('noticeList').innerHTML = notices.map(function(n,i){
+      return '<div class="list-item"><div><div>'+n.t+'</div><div class="meta">'+n.d+'</div></div>'+
+        '<button class="btn sm" onclick="delNotice('+i+')">삭제</button></div>';
+    }).join('') || '<div style="color:var(--muted);padding:8px">등록된 공지가 없습니다.</div>';
+  }
+  window.addNotice=function(){ var el=document.getElementById('noticeInput'); var t=el.value.trim();
+    if(!t){ toast('제목을 입력하세요'); return; }
+    notices.unshift({t:t, d:new Date().toISOString().slice(0,10)+' · 게시중'}); el.value='';
+    renderNotice(); toast('공지가 추가되었습니다'); };
+  window.delNotice=function(i){ notices.splice(i,1); renderNotice(); toast('삭제되었습니다'); };
+
+  // ── accounts ──
+  var accts=[{n:'CAROMOBILITY', r:'최고관리자'},{n:'operator_song', r:'운영 매니저'},{n:'operator_kim', r:'차량 관리'}];
+  function renderAccts(){
+    document.getElementById('acctList').innerHTML = accts.map(function(a){
+      return '<div class="acct"><span class="av">'+a.n[0].toUpperCase()+'</span>'+
+        '<div><div>'+a.n+'</div><div class="meta" style="color:var(--muted);font-size:11.5px">'+a.r+'</div></div></div>';
+    }).join('');
+  }
+
+  // ── tabs ──
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+      t.classList.add('active');
+      ['dash','price','resv','notice','set'].forEach(function(id){
+        document.getElementById('tab-'+id).classList.toggle('hide', id!==t.dataset.tab);
+      });
+      if(t.dataset.tab==='dash') resizeChart();
+    });
+  });
+
+  // ── toast ──
+  var toastT;
+  window.toast=function(msg){ var el=document.getElementById('toast'); el.textContent=msg;
+    el.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(function(){el.classList.remove('show');},2200); };
+
+  // ── clock ──
+  function tickClock(){ var d=new Date();
+    document.getElementById('clock').textContent =
+      d.toTimeString().slice(0,8); }
+  setInterval(tickClock,1000); tickClock();
+
+  // ── Firestore 실시간 연동 ──
+  function num(x){ return (typeof x==='number' && !isNaN(x))?x:null; }
+  function mapStatus(s){
+    if(!s) return '이용가능'; s=(''+s).toLowerCase();
+    if(s.indexOf('busy')>=0||s.indexOf('use')>=0||s.indexOf('rent')>=0||s.indexOf('이용중')>=0) return '이용중';
+    if(s.indexOf('maint')>=0||s.indexOf('unavail')>=0||s.indexOf('점검')>=0||s.indexOf('off')>=0||s.indexOf('disable')>=0) return '점검';
+    return '이용가능';
+  }
+  function mapCar(col, docId, d, grade){
+    var place = d.place || d.location || d.parkingName ||
+      (num(d.lat)!=null ? (Number(d.lat).toFixed(4)+', '+Number(d.lng||0).toFixed(4)) : '위치 정보 없음');
+    var alt = num(d.altitude); if(alt==null) alt=num(d.alt);
+    return { id:(grade==='THE BLACK'?'bl_':'c_')+docId, col:col, docId:docId, raw:d,
+      name: d.name || d.carName || d.title || '(이름 없음)',
+      plate: d.plate || d.carNumber || d.number || '',
+      grade: grade, status: mapStatus(d.status),
+      battery: num(d.battery), place: place, alt: alt, hist: [] };
+  }
+  function upsert(o){
+    var i=FLEET.findIndex(function(x){return x.id===o.id;});
+    if(i>=0){ o.hist=FLEET[i].hist||[];
+      if(o.alt!=null){ o.hist.push(o.alt); if(o.hist.length>80)o.hist.shift(); }
+      FLEET[i]=o;
+    } else { if(o.alt!=null){ o.hist.push(o.alt); o.hist.push(o.alt); } FLEET.push(o); }
+  }
+  function applyCars(snap, grade){
+    var col=(grade==='THE BLACK')?'bl_cars':'cars', seen={};
+    snap.forEach(function(doc){ var key=(grade==='THE BLACK'?'bl_':'c_')+doc.id;
+      seen[key]=1; upsert(mapCar(col, doc.id, doc.data(), grade)); });
+    FLEET=FLEET.filter(function(v){ return v.grade!==grade || seen[v.id]; });
+    afterData();
+  }
+  function fmtTs(t){ try{ var d=t&&t.toDate?t.toDate():(t?new Date(t):null);
+    return d?((d.getMonth()+1)+'/'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)):''; }catch(e){return '';} }
+  function carName(d){
+    if(typeof d.carName==='string') return d.carName;
+    if(typeof d.carTitle==='string') return d.carTitle;
+    var c=d.car;
+    if(typeof c==='string') return c;
+    if(c && typeof c==='object') return c.name||c.carName||c.title||c.model||'-';
+    return d.name || '-';
+  }
+  function toMs(t){ try{ if(!t) return 0; if(t.toDate) return t.toDate().getTime();
+    if(typeof t==='number') return t; var d=new Date(t); return isNaN(d.getTime())?0:d.getTime(); }catch(e){return 0;} }
+  function resvStatus(d, sMs, eMs){
+    if(d.cancelled) return '취소';
+    if(d.returned) return '반납완료';
+    var raw=(''+(d.status||'')).toLowerCase();
+    if(raw.indexOf('사고')>=0||raw.indexOf('고장')>=0||raw.indexOf('accident')>=0||raw.indexOf('break')>=0||raw.indexOf('repair')>=0||raw.indexOf('점검')>=0) return '사고·고장';
+    var now=Date.now();
+    if(sMs && eMs && now>=sMs && now<=eMs) return '대여중';
+    return '예약확정';
+  }
+  function applyResv(snap){
+    resv=[];
+    snap.forEach(function(doc){ var d=doc.data();
+      var sMs=toMs(d.startAt||d.startTime||d.start), eMs=toMs(d.endAt||d.endTime||d.end);
+      var s=fmtTs(d.startAt||d.startTime||d.start), e=fmtTs(d.endAt||d.endTime||d.end);
+      resv.push({ no:doc.id, car:carName(d),
+        user:d.userName||d.name||(d.userEmail?(''+d.userEmail).split('@')[0]:(d.uid?(''+d.uid).slice(0,6)+'…':'-')),
+        period:(d.period||(s+(e?(' ~ '+e):'')))||'-',
+        status:resvStatus(d, sMs, eMs), sortMs:(sMs||toMs(d.createdAt)||0) }); });
+    renderResv(); renderKPIs();
+  }
+  function setConn(ok){ var el=document.querySelector('.conn'); if(!el) return;
+    var c=ok?'#7bb89a':'#e0a86c';
+    el.innerHTML='<span class="dot" style="background:'+c+';box-shadow:0 0 8px '+c+'"></span>'+(ok?'Firestore 실시간':'연결 대기'); }
+  function afterData(){
+    if(!selectedId || !FLEET.find(function(x){return x.id===selectedId;}))
+      selectedId = FLEET.length?FLEET[0].id:null;
+    renderKPIs(); renderFleet(); renderLive();
+  }
+  function startFirestore(tries){
+    tries=tries||0; var db=window.FB_DB, FN=window.FB_FN;
+    if(!window.FB_READY || !db || !FN){
+      if(tries>60){ setConn(false); console.warn('[CARO 관제] Firebase 미연결 — firebase-config.js 확인 필요'); return; }
+      return setTimeout(function(){ startFirestore(tries+1); }, 200);
+    }
+    try{
+      FN.onSnapshot(FN.collection(db,'cars'),         function(s){ applyCars(s,'일반'); },     function(e){ console.warn('cars',e); });
+      FN.onSnapshot(FN.collection(db,'bl_cars'),      function(s){ applyCars(s,'THE BLACK'); }, function(e){ console.warn('bl_cars',e); });
+      FN.onSnapshot(FN.collection(db,'reservations'), function(s){ applyResv(s); },             function(e){ console.warn('resv',e); });
+      setConn(true);
+      console.log('[CARO 관제] ✅ Firestore 실시간 연결됨');
+    }catch(e){ setConn(false); console.error('[CARO 관제] 연결 오류', e); }
+  }
+
+  function animate(){
+    var sv=FLEET.find(function(x){return x.id===selectedId;});
+    if(sv && !document.getElementById('tab-dash').classList.contains('hide')){
+      if(typeof sv.alt!=='number'){
+        document.getElementById('lvFloor').textContent='—';
+        document.getElementById('lvAlt').textContent='기기 미연결';
+        document.getElementById('lvMove').textContent='—';
+      } else {
+        var f=floorOf(sv.alt);
+        document.getElementById('lvFloor').textContent = sv.status==='점검'?'—':f.code;
+        document.getElementById('lvAlt').textContent = (sv.alt>=0?'+':'')+sv.alt.toFixed(1)+'m';
+        var prev=sv.hist.length>1?sv.hist[sv.hist.length-2]:sv.alt;
+        var mv=Math.abs(sv.alt-prev)>0.03;
+        document.getElementById('lvMove').textContent = sv.status==='점검'?'점검중':(mv?(sv.alt<prev?'하강중 ▼':'상승중 ▲'):'정지');
+        document.getElementById('lvLoc').textContent = sv.place+'  ·  '+f.ko;
+      }
+      drawChart(sv);
+    }
+    requestAnimationFrame(animate);
+  }
+
+  // ── 관리자 로그인 게이트 ──
+  var ADMIN_EMAIL = 'caro.mobility.official@gmail.com';
+  var fsStarted = false;
+  function startOnce(){ if(fsStarted) return; fsStarted = true; startFirestore(); }
+  function showGate(msg){ var g=document.getElementById('loginGate'); if(g) g.style.display='flex';
+    var e=document.getElementById('lg-err'); if(e) e.textContent = msg||''; }
+  function hideGate(){ var g=document.getElementById('loginGate'); if(g) g.style.display='none'; }
+  function doLogin(){
+    var A=window.FB_AUTH, FN=window.FB_FN;
+    var em=document.getElementById('lg-email').value.trim();
+    var pw=document.getElementById('lg-pw').value;
+    if(!em||!pw){ document.getElementById('lg-err').textContent='이메일과 비밀번호를 입력하세요'; return; }
+    document.getElementById('lg-btn').textContent='로그인 중…';
+    FN.signInWithEmailAndPassword(A, em, pw)
+      .then(function(){ /* onAuthStateChanged 가 처리 */ })
+      .catch(function(e){
+        document.getElementById('lg-btn').textContent='로그인';
+        var m=(e&&e.code)||'';
+        document.getElementById('lg-err').textContent =
+          (m.indexOf('wrong-password')>=0||m.indexOf('invalid-cred')>=0)?'비밀번호가 올바르지 않습니다':
+          (m.indexOf('user-not-found')>=0)?'존재하지 않는 계정입니다 (Firebase 인증에 추가 필요)':
+          '로그인 실패: 이메일/비밀번호를 확인하세요';
+      });
+  }
+  function waitAuth(tries){
+    tries=tries||0; var A=window.FB_AUTH, FN=window.FB_FN;
+    if(!window.FB_READY || !A || !FN){
+      if(tries>60){ showGate('Firebase 미연결 — firebase-config.js 확인'); return; }
+      return setTimeout(function(){ waitAuth(tries+1); }, 200);
+    }
+    FN.onAuthStateChanged(A, function(u){
+      if(u && u.email === ADMIN_EMAIL){
+        hideGate(); document.getElementById('adminEmail').textContent=u.email; startOnce();
+      } else if(u){
+        FN.signOut(A); showGate('관리자 계정이 아닙니다 — '+ADMIN_EMAIL+' 로 로그인하세요');
+      } else { showGate(''); }
+    });
+    document.getElementById('lg-btn').addEventListener('click', doLogin);
+    document.getElementById('lg-pw').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+    document.getElementById('logoutBtn').addEventListener('click', function(){ FN.signOut(A); location.reload(); });
+  }
+
+  // ── init ──
+  renderKPIs(); renderFleet(); resizeChart(); renderLive();
+  renderPrice(); renderResv(); renderNotice(); renderAccts();
+  setConn(false);
+  waitAuth();
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>
