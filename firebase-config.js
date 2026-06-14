@@ -1,6 +1,9 @@
 /* ════════════════════════════════════════════════════════
    CARO MOBILITY — Firebase Config (caro-mobility-prod)
    Auth + Firestore (실시간 동기화)
+   ────────────────────────────────────────────────────────
+   ★ 관리자 페이지(admin.html)는 로그인 세션을 따로 쓰도록 분리.
+     → 고객 앱 로그인과 서로 로그아웃되지 않음.
    ──────────────────────────────────────────────────────── */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
@@ -41,12 +44,21 @@ const firebaseConfig = {
   measurementId: "G-W4WTTHK7L3"
 };
 
-/* 초기화 */
-const app = initializeApp(firebaseConfig);
+/* 초기화
+   ─ admin.html(주소에 'admin' 포함)은 'caroAdmin'이라는 별도 앱으로 시작
+     → 로그인 저장 자리가 고객 앱과 분리됨 (서로 로그아웃 안 됨).
+   ─ 고객 앱(index.html)은 기존과 100% 동일하게 기본 앱 사용. */
+const __isAdminPage = (typeof location !== 'undefined') &&
+  location.pathname.indexOf('admin') !== -1;
+
+const app = __isAdminPage
+  ? initializeApp(firebaseConfig, 'caroAdmin')
+  : initializeApp(firebaseConfig);
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-/* 전역 등록 (script.js에서 사용) */
+/* 전역 등록 (script.js / admin.html 에서 사용) */
 window.FB_AUTH = auth;
 window.FB_DB = db;
 window.FB_FN = {
@@ -74,4 +86,5 @@ window.FB_FN = {
 };
 
 window.FB_READY = true;
-console.log('🔥 Firebase 초기화 완료 (caro-mobility-prod)');
+console.log('🔥 Firebase 초기화 완료 (caro-mobility-prod)' +
+  (__isAdminPage ? ' — 관리자 세션(caroAdmin) 분리 적용' : ''));
