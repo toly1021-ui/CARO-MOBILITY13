@@ -5624,7 +5624,7 @@ function syncReservationToFirestore(res, isCancelled){
     cancelledAt:res.cancelledAt instanceof Date?res.cancelledAt.toISOString():(res.cancelledAt||null),
     refundPct:res.refundPct||0, refundAmt:res.refundAmt||0
   };
-  return fn.setDoc(fn.doc(db,FS_RES_COL,res.bookNo),data).catch(function(e){console.error('🔴 예약 동기화 실패:',res.bookNo,e);});
+  return fn.setDoc(fn.doc(db,FS_RES_COL,res.bookNo),data,{merge:true}).catch(function(e){console.error('🔴 예약 동기화 실패:',res.bookNo,e);});
 }
 
 function syncAllReservationsToFirestore(){
