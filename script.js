@@ -3445,8 +3445,8 @@ function openHomeCtrl(){
   var resInfo=document.getElementById('home-ctrl-res-info');
 
   if(activeRes){
-    /* 대여 시작 시각이 지났을 때만 버튼 활성화 */
-    var isStarted=now>=activeRes.start;
+    /* 대여 시작 10분 전부터 버튼 활성화 (사진 촬영 시간 확보) */
+    var isStarted=(activeRes.start-now)<=10*60*1000;
   setCtrlButtonsActive(isStarted);
     if(isStarted){var pb=document.getElementById('ctrl-photo-toggle');if(pb){pb.disabled=false;pb.style.opacity='';pb.style.pointerEvents='';}}
 
@@ -3465,7 +3465,7 @@ function openHomeCtrl(){
     var pkText=floors[hash]+' · '+spots[hash]+' 구역';
     if(park) park.textContent=pkText;
     /* 시작 전이면 안내 문구 표시 */
-    if(notice) notice.textContent=isStarted?'':'대여 시작 시각 이후 버튼이 활성화됩니다';
+    if(notice) notice.textContent=isStarted?'':'대여 시작 10분 전부터 버튼이 활성화됩니다';
     if(notice) notice.style.display='block';
     var dur=document.getElementById('home-ctrl-duration');
     if(dur){
