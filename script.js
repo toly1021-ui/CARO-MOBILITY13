@@ -10475,3 +10475,108 @@ window.devUploadAllCars=function(){
 
   console.log('[CARO] ✅ 로딩 마름모 → 라인 교체 완료');
 })();
+
+/* ═══════════════════════════════════════════════════════════════
+   CARO MOBILITY — 점검중(주황) 표시 패치 v1
+   ───────────────────────────────────────────────────────────────
+   ✅ 적용 방법: script.js 파일의 "맨 아래"에 이 블록 전체를 붙여넣기
+   (기존 코드는 한 줄도 건드리지 않습니다 — 추가만 하면 됩니다)
+
+   하는 일:
+   - 관리자가 차량을 "사용 불가/점검" 처리하면 (devDisabled=true 또는
+     status='unavailable') 고객 화면 차량 목록 + 지도 마커에
+     주황색 "점검중" 으로 표시됩니다.
+   - 점검중 차량은 예약 버튼이 자동 비활성화됩니다.
+═══════════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  /* 1) "점검중" 배지 색상(주황) 주입 */
+  if(!document.getElementById('caro-maint-status-style')){
+    var st = document.createElement('style');
+    st.id = 'caro-maint-status-style';
+    st.textContent =
+      '.car-status.maint{background:rgba(224,123,0,.14) !important;color:#e07b00 !important;}';
+    document.head.appendChild(st);
+  }
+
+  /* 점검 상태 판별 — devDisabled(앱 콘솔) 또는 unavailable(관제 대시보드) */
+  function isMaint(car){
+    return !!(car && (car.devDisabled || car.status === 'unavailable'));
+  }
+  window.caroIsMaint = isMaint;
+
+  /* 2) 차량 목록 — 점검중 표시 보정 (기존 renderCars 결과를 덧칠) */
+  if(typeof window.renderCars === 'function'){
+    var _origRenderCars = window.renderCars;
+    window.renderCars = function(){
+      var ret = _origRenderCars.apply(this, arguments);
+      try{
+        var list = document.getElementById('car-list');
+        if(list && typeof CARS_DATA !== 'undefined' && typeof isCarInMapBounds === 'function'){
+          /* 렌더 순서 = CARS_DATA.filter(isCarInMapBounds) 와 동일하므로 인덱스로 매칭 */
+          var visible = CARS_DATA.filter(isCarInMapBounds);
+          var items = list.querySelectorAll('.car-item');
+          items.forEach(function(item, i){
+            var car = visible[i];
+            if(!car || !isMaint(car)) return;
+            var badge = item.querySelector('.car-status');
+            if(badge){ badge.textContent = '점검중'; badge.className = 'car-status maint'; }
+            var btn = item.querySelector('.car-rent-btn');
+            if(btn){ btn.disabled = true; btn.removeAttribute('onclick'); btn.textContent = '점검중'; }
+          });
+        }
+      }catch(e){ console.warn('[CARO] 점검중 목록 보정 오류:', e); }
+      return ret;
+    };
+    window.renderCars._maintPatched = true;
+  }
+
+  /* 3) 지도 마커 — 점검중(주황) 지원 (원본 로직 + 점검중 분기) */
+  window.updateMapMarkers = function(){
+    if(typeof caroMap === 'undefined' || !caroMap) return;
+    if(typeof L === 'undefined') return;
+    mapMarkers.forEach(function(m){ caroMap.removeLayer(m); });
+    mapMarkers = [];
+    var now = new Date();
+    var reservedMap = {};
+    myReservations.forEach(function(r){
+      if(r.start && r.end){
+        if(!r.returned){
+          var releaseTime = new Date(r.end.getTime() + 10*60000);
+          if(now < releaseTime) reservedMap[r.car.id] = { until: releaseTime };
+        } else if(r.returnedAt){
+          var releaseTimeR = new Date(r.returnedAt.getTime() + 10*60000);
+          if(now < releaseTimeR && !reservedMap[r.car.id])
+            reservedMap[r.car.id] = { until: releaseTimeR };
+        }
+      }
+    });
+    CARS_DATA.forEach(function(car){
+      var res = reservedMap[car.id];
+      var maint = isMaint(car);
+      var available = car.status === 'available' && !maint && !res;
+      var col = available ? '#1d7a3a' : (maint ? '#e07b00' : '#b23a3a');
+      var label = available ? '이용가능' : (maint ? '점검중' : '대여중');
+      var icon = L.divIcon({
+        html: '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
+          '<div style="width:13px;height:13px;border-radius:50%;background:' + col + ';border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>' +
+          '<div style="font-size:9px;font-weight:700;color:' + col + ';background:rgba(255,255,255,.85);padding:1px 3px;border-radius:14px;white-space:nowrap;">' + label + '</div>' +
+          '</div>',
+        className: '', iconSize: [40,28], iconAnchor: [20,13]
+      });
+      var marker = L.marker([car.lat, car.lng], { icon: icon }).addTo(caroMap)
+        .bindPopup('<b>' + getCarName(car) + '</b><br>' + car.fuel + ' · ' + car.pricePerHour.toLocaleString() + '원/h<br><span style="color:' + col + ';font-weight:700;">' + label + '</span>');
+      mapMarkers.push(marker);
+    });
+  };
+  window.updateMapMarkers._maintPatched = true;
+
+  /* 4) 적용 직후 한 번 다시 그려서 즉시 반영 */
+  try{
+    if(typeof renderCars === 'function') renderCars();
+    if(typeof updateMapMarkers === 'function') updateMapMarkers();
+  }catch(e){}
+
+  console.log('[CARO] ✅ 점검중(주황) 표시 패치 v1 적용 완료');
+})();
