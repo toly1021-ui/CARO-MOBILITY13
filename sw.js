@@ -4,7 +4,7 @@
    - Firebase / ES Module 캐시 제외
    - CDN 네트워크 우선
 ══════════════════════════════════════════ */
-const CACHE_NAME = 'caro-v3';
+const CACHE_NAME = 'caro-v4';
 
 /* 캐시할 앱 정적 파일 (firebase-config.js 제외 — ES Module) */
 const CACHE_ASSETS = [
