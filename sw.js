@@ -1,12 +1,12 @@
 /* ══════════════════════════════════════════
-   CARO MOBILITY — Service Worker v3
-   - 앱 파일 캐시 우선 (offline 지원)
+   CARO MOBILITY — Service Worker v6
+   - 앱 파일: 네트워크 우선 (항상 최신, 오프라인 시 캐시)
    - Firebase / ES Module 캐시 제외
-   - CDN 네트워크 우선
+   - 이제 캐시 번호 안 올려도 수정이 바로 반영됨
 ══════════════════════════════════════════ */
-const CACHE_NAME = 'caro-v5';
+const CACHE_NAME = 'caro-v6';
 
-/* 캐시할 앱 정적 파일 (firebase-config.js 제외 — ES Module) */
+/* 오프라인 대비용 기본 캐시 */
 const CACHE_ASSETS = [
   './index.html',
   './style.css',
@@ -26,7 +26,7 @@ const BYPASS_DOMAINS = [
   'identitytoolkit.googleapis.com'
 ];
 
-/* 설치 */
+/* 설치 — 기본 파일 캐시 후 즉시 활성화 */
 self.addEventListener('install', function(e){
   e.waitUntil(
     caches.open(CACHE_NAME)
@@ -36,7 +36,7 @@ self.addEventListener('install', function(e){
   );
 });
 
-/* 활성화 — 구 캐시 삭제 */
+/* 활성화 — 구 캐시 전부 삭제 */
 self.addEventListener('activate', function(e){
   e.waitUntil(
     caches.keys().then(function(keys){
@@ -52,7 +52,6 @@ self.addEventListener('activate', function(e){
 self.addEventListener('fetch', function(e){
   var url = e.request.url;
 
-  /* GET 아닌 요청은 무시 */
   if(e.request.method !== 'GET') return;
 
   /* Firebase / Google API — 캐시 완전 제외 */
@@ -71,7 +70,7 @@ self.addEventListener('fetch', function(e){
     return;
   }
 
-  /* CDN (leaflet, 지도 타일, 폰트) — 네트워크 우선 */
+  /* CDN — 네트워크 우선 */
   if(url.includes('unpkg.com') ||
      url.includes('openstreetmap.org') ||
      url.includes('googleapis.com/css') ||
@@ -81,9 +80,7 @@ self.addEventListener('fetch', function(e){
       fetch(e.request)
         .then(function(res){
           var clone = res.clone();
-          if(res.ok){
-            caches.open(CACHE_NAME).then(function(c){ c.put(e.request, clone); });
-          }
+          if(res.ok){ caches.open(CACHE_NAME).then(function(c){ c.put(e.request, clone); }); }
           return res;
         })
         .catch(function(){ return caches.match(e.request); })
@@ -91,19 +88,20 @@ self.addEventListener('fetch', function(e){
     return;
   }
 
-  /* 앱 파일 — 캐시 우선, 없으면 네트워크 */
+  /* 앱 파일 — 네트워크 우선(항상 최신), 실패하면 캐시 */
   e.respondWith(
-    caches.match(e.request).then(function(cached){
-      if(cached) return cached;
-      return fetch(e.request).then(function(res){
-        if(res.ok){
+    fetch(e.request)
+      .then(function(res){
+        if(res && res.ok){
           var clone = res.clone();
           caches.open(CACHE_NAME).then(function(c){ c.put(e.request, clone); });
         }
         return res;
-      });
-    }).catch(function(){
-      return caches.match('./index.html');
-    })
+      })
+      .catch(function(){
+        return caches.match(e.request).then(function(cached){
+          return cached || caches.match('./index.html');
+        });
+      })
   );
 });
