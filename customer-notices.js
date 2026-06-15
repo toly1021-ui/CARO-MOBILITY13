@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 홈 공지·이벤트 (Firestore 연동) v1
+   CARO MOBILITY — 고객 홈 공지·이벤트 (Firestore 연동) v3
    ───────────────────────────────────────────────────────────
-   관리자(admin-notices.js)가 등록한 공지를 고객 홈 화면에 실시간 표시.
-   클릭하면 기존 공지 모달(#notice-modal)로 상세 표시.
-   공지가 하나도 없으면 기존 기본 공지를 그대로 유지.
-   적용: index.html 의 <script src="script.js"></script> 다음 줄에
-     <script src="customer-notices.js?v=1"></script>
+   · 시작 즉시 index.html의 "가짜 기본 공지"를 숨김
+   · Firestore에 진짜 공지가 있을 때만 표시 (없으면 영역 숨김)
+   · 클릭 시 제목 + 내용(body) 상세 모달
+   적용: index.html 의 script.js 줄 다음에
+     <script src="customer-notices.js?v=3"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -15,10 +15,19 @@
   function fmtDate(iso){ try{ var d=new Date(iso); if(isNaN(d.getTime())) return ''; var p=function(n){return n<10?'0'+n:n;}; return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate()); }catch(e){ return ''; } }
   function tagOf(title){ if(/이벤트|할인|혜택|event|sale/i.test(title)) return {label:'이벤트',cls:'notice-tag new-tag'}; return {label:'공지',cls:'notice-tag'}; }
 
+  function setSection(show){
+    var nl=document.querySelector('.home-notice-list'); if(!nl) return;
+    nl.style.display = show ? '' : 'none';
+    var title=nl.previousElementSibling;
+    if(title && title.classList && title.classList.contains('home-section-title')){
+      title.style.display = show ? '' : 'none';
+    }
+  }
+
   function render(notices){
     var nl=document.querySelector('.home-notice-list'); if(!nl) return;
-    if(!notices.length) return;   /* 공지 없으면 기존 기본 공지 유지 */
     cache={};
+    if(!notices.length){ nl.innerHTML=''; setSection(false); return; }   /* 공지 0개 → 숨김 */
     nl.innerHTML=notices.map(function(n){
       cache[n.id]=n;
       var tg=tagOf(n.title);
@@ -28,9 +37,9 @@
         '<span class="notice-date">'+fmtDate(n.createdAt)+'</span>'+
         '</div>';
     }).join('');
+    setSection(true);
   }
 
-  /* 공지 클릭 → 기존 모달 재사용 */
   window.openFsNotice=function(id){
     var n=cache[id]; if(!n) return;
     var t=document.getElementById('notice-title'), b=document.getElementById('notice-body');
@@ -51,6 +60,10 @@
     }catch(e){ console.warn('[공지] 고객 시작 실패', e); return true; }
     return true;
   }
-  if(!start()){ var t=setInterval(function(){ if(start()) clearInterval(t); },500); setTimeout(function(){clearInterval(t);},20000); }
-  console.log('[공지] ✅ 고객 홈 Firestore 공지 패치 v1');
+
+  /* ★ 시작 즉시: 가짜 기본 공지 숨김 (Firestore 응답 전부터) */
+  setSection(false);
+
+  if(!start()){ var t=setInterval(function(){ if(start()) clearInterval(t); },400); setTimeout(function(){clearInterval(t);},20000); }
+  console.log('[공지] ✅ 고객 홈 Firestore 공지 패치 v3 (가짜 기본공지 제거)');
 })();
