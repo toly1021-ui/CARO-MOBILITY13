@@ -4,11 +4,15 @@
    ────────────────────────────────────────────────────────
    ★ 관리자 페이지(admin.html)는 로그인 세션을 따로 쓰도록 분리.
      → 고객 앱 로그인과 서로 로그아웃되지 않음.
+   ★ 관리자 페이지는 보안상 '세션 지속성' 사용
+     → 브라우저/앱을 완전히 닫으면 로그아웃 (자동 로그인 방지).
    ──────────────────────────────────────────────────────── */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import {
   getAuth,
+  setPersistence,
+  browserSessionPersistence,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
@@ -58,6 +62,20 @@ const app = __isAdminPage
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+/* ★ 보안: 관리자 페이지는 '세션 지속성(SESSION)' 사용
+   ─ 작업 중 새로고침은 로그인 유지
+   ─ 브라우저/앱을 완전히 닫으면 로그아웃 → 다시 켜면 로그인 필요(자동 로그인 방지)
+   ─ 고객 앱(index.html)은 손대지 않음 = 기존처럼 로그인 유지 */
+if (__isAdminPage) {
+  setPersistence(auth, browserSessionPersistence)
+    .then(function () {
+      console.log('🔒 관리자 세션 지속성: SESSION — 닫으면 로그아웃(자동 로그인 방지)');
+    })
+    .catch(function (e) {
+      console.warn('관리자 세션 지속성 설정 실패:', e);
+    });
+}
+
 /* 전역 등록 (script.js / admin.html 에서 사용) */
 window.FB_AUTH = auth;
 window.FB_DB = db;
@@ -70,6 +88,8 @@ window.FB_FN = {
   updateProfile: updateProfile,
   signOut: signOut,
   onAuthStateChanged: onAuthStateChanged,
+  setPersistence: setPersistence,
+  browserSessionPersistence: browserSessionPersistence,
   /* === Firestore === */
   doc: doc,
   setDoc: setDoc,
