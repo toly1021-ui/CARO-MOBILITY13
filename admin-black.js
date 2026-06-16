@@ -28,8 +28,8 @@
   var st=document.createElement('style');
   st.textContent=
     /* 탭 버튼 (프리미엄 표시) */
-    '.tab.tab-black{color:#b89a5e;}'
-    +'.tab.tab-black::before{content:"◆";font-size:8px;margin-right:7px;color:var(--gold);vertical-align:middle;}'
+    '.tab.tab-black{color:#b89a5e;display:inline-flex;align-items:center;gap:7px;}'
+    +'.tab.tab-black::before{content:"◆";font-size:8px;color:var(--gold);line-height:1;}'
     +'.tab.tab-black:hover{color:var(--gold-soft);}'
     /* 페이지 헤더 */
     +'.blk-page-hd{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:12px;}'
