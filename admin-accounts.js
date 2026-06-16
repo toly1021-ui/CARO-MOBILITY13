@@ -62,6 +62,12 @@
     +'.abody input.txt{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);'
     +'border-radius:9px;padding:10px 12px;font-size:13px;box-sizing:border-box;}'
     +'.abody input.txt:focus{outline:none;border-color:var(--border2);}'
+    +'.role-row{display:flex;gap:8px;align-items:stretch;}'
+    +'.role-row .txt{flex:1;min-width:0;}'
+    +'.role-row select.sel{flex:0 0 118px;width:118px;cursor:pointer;background:var(--panel2);'
+    +'border:1px solid var(--border2);color:var(--txt);border-radius:9px;padding:10px 9px;'
+    +'font-size:13px;box-sizing:border-box;}'
+    +'.role-row select.sel:focus{outline:none;}'
     +'.aperms{display:flex;flex-direction:column;gap:8px;margin-top:2px;margin-bottom:6px;}'
     +'.aperm{display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--border);'
     +'border-radius:10px;background:var(--panel2);cursor:pointer;}'
@@ -83,7 +89,14 @@
       +'<label class="fld">이메일 (선택)</label>'
       +'<input class="txt" id="acctEmail" placeholder="예: lee@caro.app" maxlength="60" />'
       +'<label class="fld">역할 / 직책 (선택)</label>'
-      +'<input class="txt" id="acctRole" placeholder="예: 운영 매니저" maxlength="30" />'
+      +'<div class="role-row">'
+        +'<input class="txt" id="acctRole" placeholder="예: 운영 담당" maxlength="30" />'
+        +'<select class="sel" id="acctPosition">'
+          +'<option value="">직책</option>'
+          +'<option>매니저</option><option>슈퍼바이저</option><option>어드바이저</option>'
+          +'<option>사원</option><option>계약직</option>'
+        +'</select>'
+      +'</div>'
       +'<label class="fld">접근 권한 (체크한 메뉴만 사용 가능)</label>'
       +'<div class="aperms">'
         +PERMS.map(function(p){
@@ -101,6 +114,7 @@
     modal.querySelector('#acctName').value='';
     modal.querySelector('#acctEmail').value='';
     modal.querySelector('#acctRole').value='';
+    modal.querySelector('#acctPosition').value='';
     modal.querySelectorAll('.aperm input').forEach(function(c){ c.checked=false; });
     modal.classList.add('show');
     setTimeout(function(){ modal.querySelector('#acctName').focus(); },50);
@@ -116,14 +130,15 @@
     var name=modal.querySelector('#acctName').value.trim();
     if(!name){ T('계정 이름을 입력하세요'); return; }
     var email=modal.querySelector('#acctEmail').value.trim();
-    var role=modal.querySelector('#acctRole').value.trim() || '운영 담당';
+    var role=modal.querySelector('#acctRole').value.trim();
+    var position=modal.querySelector('#acctPosition').value;
     var perms={};
     modal.querySelectorAll('.aperm input').forEach(function(c){ perms[c.dataset.perm]=c.checked; });
     var FN=window.FB_FN, db=window.FB_DB;
     var refDoc;
     try{ refDoc=FN.doc(FN.collection(db,'admin_accounts')); }
     catch(e){ T('저장 오류'); return; }
-    var data={ name:name, email:email, role:role, perms:perms,
+    var data={ name:name, email:email, role:role, position:position, perms:perms,
       createdAt:(FN.serverTimestamp?FN.serverTimestamp():new Date().toISOString()) };
     FN.setDoc(refDoc, data).then(function(){
       T('계정이 추가되었습니다'); closeModal();
@@ -153,6 +168,10 @@
     return out || '<span class="apill none">권한 없음</span>';
   }
   function esc(s){ return (s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function roleLine(a){
+    var p=[]; if(a.position) p.push(a.position); if(a.role) p.push(a.role);
+    return p.length ? p.join(' · ') : '운영 담당';
+  }
 
   /* ── 목록 그리기 (최고관리자 본인 + 추가된 계정들) ── */
   function superEmail(){
@@ -170,7 +189,7 @@
       var initial=(a.name&&a.name[0]?a.name[0]:'?').toUpperCase();
       html+='<div class="acct2"><span class="av">'+esc(initial)+'</span>'
         +'<div class="acct2-info"><div class="acct2-name">'+esc(a.name)+'</div>'
-        +'<div class="acct2-role">'+esc(a.role||'운영 담당')+(a.email?' · '+esc(a.email):'')+'</div>'
+        +'<div class="acct2-role">'+esc(roleLine(a))+(a.email?' · '+esc(a.email):'')+'</div>'
         +'<div class="acct2-perms">'+badges(a.perms)+'</div></div>'
         +'<button class="acct2-del" onclick="delAcct(\''+a.id+'\')">삭제</button></div>';
     });
