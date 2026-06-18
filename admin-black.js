@@ -84,7 +84,7 @@
       +'<div class="blk-kpi"><div class="n" id="blkMaint">0</div><div class="l">점검·불가</div></div>'
     +'</div>'
     +'<div class="tbl-scroll"><table class="blk-tbl">'
-      +'<thead><tr><th>차량</th><th>번호판</th><th>상태</th><th>연료량</th><th>위치</th><th></th></tr></thead>'
+      +'<thead><tr><th>차량</th><th>번호판</th><th>상태</th><th>월 요금</th><th>연료량</th><th>위치</th><th></th></tr></thead>'
       +'<tbody id="blkBody"></tbody></table></div>';
 
   /* ── 탭 전환 ── */
@@ -146,10 +146,11 @@
       +'<div class="bfield"><label>번호판</label><input id="blkPlate" placeholder="예: 12가 3456" maxlength="20" /></div>'
       +'<div class="bfield bbrow">'
         +'<div><label>시간당 요금 (원)</label><input id="blkPrice" type="number" placeholder="예: 30000" /></div>'
-        +'<div><label>상태</label><select id="blkStatus">'
-          +'<option value="available">이용가능</option><option value="busy">이용중</option>'
-          +'<option value="unavailable">점검·불가</option></select></div>'
+        +'<div><label>월 요금 (원)</label><input id="blkMonthly" type="number" placeholder="예: 1500000" /></div>'
       +'</div>'
+      +'<div class="bfield"><label>상태</label><select id="blkStatus">'
+        +'<option value="available">이용가능</option><option value="busy">이용중</option>'
+        +'<option value="unavailable">점검·불가</option></select></div>'
       +'<div class="bfield"><label>위치</label><input id="blkPlace" placeholder="예: 인천공항 제1터미널 주차장" maxlength="60" /></div>'
       +'<div class="bfield"><label>사진 URL (선택)</label><input id="blkImage" placeholder="https://... 이미지 주소" maxlength="300" /></div>'
     +'</div>'
@@ -159,7 +160,7 @@
   document.body.appendChild(modal);
 
   function openModal(){
-    ['blkName','blkPlate','blkPrice','blkPlace','blkImage'].forEach(function(id){ modal.querySelector('#'+id).value=''; });
+    ['blkName','blkPlate','blkPrice','blkMonthly','blkPlace','blkImage'].forEach(function(id){ modal.querySelector('#'+id).value=''; });
     modal.querySelector('#blkStatus').value='available';
     modal.classList.add('show'); setTimeout(function(){ modal.querySelector('#blkName').focus(); },50);
   }
@@ -174,8 +175,10 @@
     var FN=window.FB_FN, db=window.FB_DB, refDoc;
     try{ refDoc=FN.doc(FN.collection(db,'bl_cars')); }catch(e){ T('저장 오류'); return; }
     var priceV=parseInt(modal.querySelector('#blkPrice').value,10);
+    var monthlyV=parseInt(modal.querySelector('#blkMonthly').value,10);
     var data={ name:name, plate:modal.querySelector('#blkPlate').value.trim(),
-      price:(isNaN(priceV)?null:priceV), status:modal.querySelector('#blkStatus').value,
+      price:(isNaN(priceV)?null:priceV), monthlyPrice:(isNaN(monthlyV)?null:monthlyV),
+      status:modal.querySelector('#blkStatus').value,
       place:modal.querySelector('#blkPlace').value.trim(), image:modal.querySelector('#blkImage').value.trim(),
       grade:'THE BLACK', createdAt:(FN.serverTimestamp?FN.serverTimestamp():new Date().toISOString()) };
     FN.setDoc(refDoc,data).then(function(){ T('블랙 차량이 추가되었습니다'); closeModal(); })
@@ -200,18 +203,20 @@
       var name=d.name||d.carName||d.title||'(이름 없음)';
       var plate=d.plate||d.carNumber||d.number||'—';
       var stt=mapStatus(d.status), bat=num(d.battery);
+      var mp=num(d.monthlyPrice);
       var place=d.place||d.location||d.parkingName||'위치 정보 없음';
       t++; if(stt==='이용중')bu++; else if(stt==='점검')m++; else a++;
       return '<tr>'
         +'<td style="color:var(--txt)">'+esc(name)+'</td>'
         +'<td style="color:var(--muted);font-family:\'Saira\',sans-serif">'+esc(plate)+'</td>'
         +'<td><span class="bdot '+stCls(stt)+'"><i></i>'+stLabel(stt)+'</span></td>'
+        +'<td style="color:var(--gold-soft);font-family:\'Saira\',sans-serif">'+(mp==null?'<span style="color:var(--muted)">미설정</span>':mp.toLocaleString()+'원')+'</td>'
         +'<td>'+(bat==null?'<span style="color:var(--muted)">—</span>':bat+'%')+'</td>'
         +'<td style="color:var(--muted)">'+esc(place)+'</td>'
         +'<td style="text-align:right"><button class="blk-del" onclick="delBlack(\''+c.id+'\')">삭제</button></td>'
       +'</tr>';
     }).join('');
-    body.innerHTML = rows || '<tr><td colspan="6" class="blk-empty">아직 등록된 CARO THE BLACK 차량이 없습니다. <b>+ 블랙 차량 등록</b>으로 추가하세요.</td></tr>';
+    body.innerHTML = rows || '<tr><td colspan="7" class="blk-empty">아직 등록된 CARO THE BLACK 차량이 없습니다. <b>+ 블랙 차량 등록</b>으로 추가하세요.</td></tr>';
     var set=function(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; };
     set('blkTotal',t); set('blkAvail',a); set('blkBusy',bu); set('blkMaint',m);
   }

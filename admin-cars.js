@@ -43,10 +43,11 @@
       +'<div class="cfield"><label>번호판</label><input id="carPlate" placeholder="예: 12가 3456" maxlength="20" /></div>'
       +'<div class="cfield crow">'
         +'<div><label>시간당 요금 (원)</label><input id="carPrice" type="number" placeholder="예: 10000" /></div>'
-        +'<div><label>상태</label><select id="carStatus">'
-          +'<option value="available">이용가능</option><option value="busy">이용중</option>'
-          +'<option value="unavailable">점검·불가</option></select></div>'
+        +'<div><label>월 요금 (원)</label><input id="carMonthly" type="number" placeholder="예: 600000" /></div>'
       +'</div>'
+      +'<div class="cfield"><label>상태</label><select id="carStatus">'
+        +'<option value="available">이용가능</option><option value="busy">이용중</option>'
+        +'<option value="unavailable">점검·불가</option></select></div>'
       +'<div class="cfield"><label>위치</label><input id="carPlace" placeholder="예: 인천 부평구 부평대로 ..." maxlength="60" /></div>'
       +'<div class="cfield"><label>사진 URL (선택)</label><input id="carImage" placeholder="https://... 이미지 주소" maxlength="300" /></div>'
     +'</div>'
@@ -56,7 +57,7 @@
   document.body.appendChild(modal);
 
   function openModal(){
-    ['carName','carPlate','carPrice','carPlace','carImage'].forEach(function(id){ modal.querySelector('#'+id).value=''; });
+    ['carName','carPlate','carPrice','carMonthly','carPlace','carImage'].forEach(function(id){ modal.querySelector('#'+id).value=''; });
     modal.querySelector('#carStatus').value='available';
     modal.classList.add('show'); setTimeout(function(){ modal.querySelector('#carName').focus(); },50);
   }
@@ -71,8 +72,10 @@
     var FN=window.FB_FN, db=window.FB_DB, refDoc;
     try{ refDoc=FN.doc(FN.collection(db,'cars')); }catch(e){ T('저장 오류'); return; }
     var priceV=parseInt(modal.querySelector('#carPrice').value,10);
+    var monthlyV=parseInt(modal.querySelector('#carMonthly').value,10);
     var data={ name:name, plate:modal.querySelector('#carPlate').value.trim(),
-      price:(isNaN(priceV)?null:priceV), status:modal.querySelector('#carStatus').value,
+      price:(isNaN(priceV)?null:priceV), monthlyPrice:(isNaN(monthlyV)?null:monthlyV),
+      status:modal.querySelector('#carStatus').value,
       place:modal.querySelector('#carPlace').value.trim(), image:modal.querySelector('#carImage').value.trim(),
       grade:'일반', createdAt:(FN.serverTimestamp?FN.serverTimestamp():new Date().toISOString()) };
     FN.setDoc(refDoc,data).then(function(){ T('차량이 등록되었습니다'); closeModal(); })
