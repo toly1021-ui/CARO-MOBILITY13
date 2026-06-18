@@ -1,10 +1,11 @@
 /* ══════════════════════════════════════════
-   CARO MOBILITY — Service Worker v6
+   CARO MOBILITY — Service Worker v7
    - 앱 파일: 네트워크 우선 (항상 최신, 오프라인 시 캐시)
-   - Firebase / ES Module 캐시 제외
-   - 이제 캐시 번호 안 올려도 수정이 바로 반영됨
+   - Firebase/Firestore: 서비스워커 개입 안 함(브라우저 직접 처리)
+   - chrome-extension 등 비-HTTP 요청: 완전 무시
+   - 캐시 번호 안 올려도 수정이 바로 반영됨
 ══════════════════════════════════════════ */
-const CACHE_NAME = 'caro-v6';
+const CACHE_NAME = 'caro-v7';
 
 /* 오프라인 대비용 기본 캐시 */
 const CACHE_ASSETS = [
@@ -16,14 +17,16 @@ const CACHE_ASSETS = [
   './icon-512.png'
 ];
 
-/* 캐시 제외 도메인 */
+/* 캐시 제외(서비스워커가 손대지 않을) 도메인 */
 const BYPASS_DOMAINS = [
   'firebaseapp.com',
   'googleapis.com',
   'gstatic.com',
   'firebase.google.com',
   'firestore.googleapis.com',
-  'identitytoolkit.googleapis.com'
+  'identitytoolkit.googleapis.com',
+  'firebaseinstallations.googleapis.com',
+  'firebasestorage.googleapis.com'
 ];
 
 /* 설치 — 기본 파일 캐시 후 즉시 활성화 */
@@ -48,20 +51,34 @@ self.addEventListener('activate', function(e){
   );
 });
 
+/* 안전한 캐시 저장 (실패해도 조용히 무시) */
+function safePut(req, res){
+  try{
+    caches.open(CACHE_NAME).then(function(c){
+      c.put(req, res).catch(function(){});
+    }).catch(function(){});
+  }catch(e){}
+}
+
 /* 요청 처리 */
 self.addEventListener('fetch', function(e){
   var url = e.request.url;
 
+  /* GET 외 무시 */
   if(e.request.method !== 'GET') return;
 
-  /* Firebase / Google API — 캐시 완전 제외 */
-  if(BYPASS_DOMAINS.some(function(d){ return url.includes(d); })){
-    e.respondWith(fetch(e.request));
+  /* http(s)가 아닌 요청(chrome-extension:// 등) — 완전 무시 */
+  if(url.indexOf('http') !== 0) return;
+
+  /* Firebase / Firestore / Google API — 서비스워커 개입 안 함
+     (respondWith 호출하지 않고 그냥 return → 브라우저가 직접 처리.
+      Firestore 실시간 스트리밍이 끊기지 않음) */
+  if(BYPASS_DOMAINS.some(function(d){ return url.indexOf(d) !== -1; })){
     return;
   }
 
   /* firebase-config.js — ES Module, 캐시 제외 */
-  if(url.includes('firebase-config.js')){
+  if(url.indexOf('firebase-config.js') !== -1){
     e.respondWith(fetch(e.request).catch(function(){
       return new Response('/* offline */', {
         headers:{'Content-Type':'application/javascript'}
@@ -71,16 +88,15 @@ self.addEventListener('fetch', function(e){
   }
 
   /* CDN — 네트워크 우선 */
-  if(url.includes('unpkg.com') ||
-     url.includes('openstreetmap.org') ||
-     url.includes('googleapis.com/css') ||
-     url.includes('jsdelivr.net') ||
-     url.includes('gstatic.com/firebasejs')){
+  if(url.indexOf('unpkg.com') !== -1 ||
+     url.indexOf('openstreetmap.org') !== -1 ||
+     url.indexOf('googleapis.com/css') !== -1 ||
+     url.indexOf('jsdelivr.net') !== -1 ||
+     url.indexOf('gstatic.com/firebasejs') !== -1){
     e.respondWith(
       fetch(e.request)
         .then(function(res){
-          var clone = res.clone();
-          if(res.ok){ caches.open(CACHE_NAME).then(function(c){ c.put(e.request, clone); }); }
+          if(res && res.ok){ safePut(e.request, res.clone()); }
           return res;
         })
         .catch(function(){ return caches.match(e.request); })
@@ -92,10 +108,7 @@ self.addEventListener('fetch', function(e){
   e.respondWith(
     fetch(e.request)
       .then(function(res){
-        if(res && res.ok){
-          var clone = res.clone();
-          caches.open(CACHE_NAME).then(function(c){ c.put(e.request, clone); });
-        }
+        if(res && res.ok){ safePut(e.request, res.clone()); }
         return res;
       })
       .catch(function(){
