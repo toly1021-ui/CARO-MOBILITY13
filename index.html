@@ -1,74 +1,74 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
-<!-- 안드로이드 가상 키보드 뷰포트 처리 -->
-<meta name="interactive-widget" content="resizes-content"/>
-<title>CARO MOBILITY</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
+  <!-- 안드로이드 가상 키보드 뷰포트 처리 -->
+  <meta name="interactive-widget" content="resizes-content"/>
+  <title>CARO MOBILITY</title>
 
-<!-- PWA 공통 -->
-<link rel="manifest" href="manifest.json"/>
-<meta name="theme-color" content="#18191c" media="(prefers-color-scheme: light)"/>
-<meta name="theme-color" content="#18191c" media="(prefers-color-scheme: dark)"/>
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="format-detection" content="telephone=no"/>
-<meta name="description" content="CARO MOBILITY — 스마트한 무인 차량 대여 서비스"/>
+  <!-- PWA 공통 -->
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#18191c" media="(prefers-color-scheme: light)"/>
+  <meta name="theme-color" content="#18191c" media="(prefers-color-scheme: dark)"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="description" content="CARO MOBILITY — 스마트한 무인 차량 대여 서비스"/>
 
-<!-- 안드로이드 Chrome PWA -->
-<meta name="application-name" content="CARO MOBILITY"/>
+  <!-- 안드로이드 Chrome PWA -->
+  <meta name="application-name" content="CARO MOBILITY"/>
 
-<!-- iOS 호환 (병행 유지) -->
-<meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-<meta name="apple-mobile-web-app-title" content="CARO"/>
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png"/>
-<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png"/>
+  <!-- iOS 호환 (병행 유지) -->
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="CARO"/>
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png"/>
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png"/>
 
-<!-- 아이콘 -->
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
+  <!-- 아이콘 -->
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
 
-<link rel="stylesheet" href="style.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-/* ── Android WebView + PWA 호환 초기화 ── */
+  <script>
+    /* ── Android WebView + PWA 호환 초기화 ── */
 
-/* 1. file:// 환경 감지 */
-window._isFileProtocol = (location.protocol === 'file:');
+    /* 1. file:// 환경 감지 */
+    window._isFileProtocol = (location.protocol === 'file:');
 
-/* 2. localStorage 사용 불가 시 메모리 fallback */
-(function(){
-  try{ localStorage.setItem('_test','1'); localStorage.removeItem('_test'); }
-  catch(e){
-    var _mem = {};
-    window.localStorage = {
-      getItem:function(k){ return _mem.hasOwnProperty(k)?_mem[k]:null; },
-      setItem:function(k,v){ _mem[k]=String(v); },
-      removeItem:function(k){ delete _mem[k]; },
-      clear:function(){ _mem={}; },
-      key:function(i){ return Object.keys(_mem)[i]||null; },
-      get length(){ return Object.keys(_mem).length; }
-    };
-  }
-})();
+    /* 2. localStorage 사용 불가 시 메모리 fallback */
+    (function(){
+      try{ localStorage.setItem('_test','1'); localStorage.removeItem('_test'); }
+      catch(e){
+        var _mem = {};
+        window.localStorage = {
+          getItem:function(k){ return _mem.hasOwnProperty(k)?_mem[k]:null; },
+          setItem:function(k,v){ _mem[k]=String(v); },
+          removeItem:function(k){ delete _mem[k]; },
+          clear:function(){ _mem={}; },
+          key:function(i){ return Object.keys(_mem)[i]||null; },
+          get length(){ return Object.keys(_mem).length; }
+        };
+      }
+    })();
 
-/* 3. 서비스 워커 등록 (file:// 에서는 스킵) */
-if('serviceWorker' in navigator && location.protocol !== 'file:'){
-  window.addEventListener('load',function(){
-    navigator.serviceWorker.register('./sw.js').catch(function(){});
-  });
-}
+    /* 3. 서비스 워커 등록 (file:// 에서는 스킵) */
+    if('serviceWorker' in navigator && location.protocol !== 'file:'){
+      window.addEventListener('load',function(){
+        navigator.serviceWorker.register('./sw.js').catch(function(){});
+      });
+    }
 
-/* 4. iOS standalone 감지 */
-if(window.navigator.standalone){
-  document.documentElement.classList.add('ios-standalone');
-}
+    /* 4. iOS standalone 감지 */
+    if(window.navigator.standalone){
+      document.documentElement.classList.add('ios-standalone');
+    }
 
-/* 5. 안드로이드/PWA standalone 감지 — DOMContentLoaded에서 처리 */
-</script>
+    /* 5. 안드로이드/PWA standalone 감지 — DOMContentLoaded에서 처리 */
+  </script>
   <script src="https://js.tosspayments.com/v1/payment"></script>
 </head>
 <body>
@@ -828,98 +828,98 @@ if(window.navigator.standalone){
     <button class="submit-btn" style="margin-top:20px;" onclick="goToDoneHome()" data-i18n="back_main">홈으로 돌아가기</button>
   </div>
 </div>
-  <!-- ══ FIND ══ -->
-  <div id="find-screen" class="screen">
-    <div class="metal-bg"></div>
-    <div class="find-title-bar">
-      <span class="page-title" data-i18n="btn_find">아이디 / 비밀번호 찾기</span>
+<!-- ══ FIND ══ -->
+<div id="find-screen" class="screen">
+  <div class="metal-bg"></div>
+  <div class="find-title-bar">
+    <span class="page-title" data-i18n="btn_find">아이디 / 비밀번호 찾기</span>
+  </div>
+  <div class="form-container">
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-id" onclick="switchTab('id')" data-i18n="find_id">아이디 찾기</button>
+      <button class="tab-btn" id="tab-pw" onclick="switchTab('pw')" data-i18n="find_pw">비밀번호 찾기</button>
     </div>
-    <div class="form-container">
-      <div class="tab-bar">
-        <button class="tab-btn active" id="tab-id" onclick="switchTab('id')" data-i18n="find_id">아이디 찾기</button>
-        <button class="tab-btn" id="tab-pw" onclick="switchTab('pw')" data-i18n="find_pw">비밀번호 찾기</button>
+    <div id="find-id-panel" class="tab-panel active">
+      <p class="panel-desc">가입 시 등록한 이름과 휴대폰 번호로 PASS 인증 후 이메일을 확인할 수 있습니다.</p>
+      <div class="input-group">
+        <label class="input-label">이름</label>
+        <input type="text" id="find-name" class="form-input" placeholder="이름을 입력하세요" oninput="checkFindIdReady()"/>
       </div>
-      <div id="find-id-panel" class="tab-panel active">
-        <p class="panel-desc">가입 시 등록한 이름과 휴대폰 번호로 PASS 인증 후 이메일을 확인할 수 있습니다.</p>
+      <div class="input-group">
+        <label class="input-label">휴대폰 번호</label>
+        <input type="tel" id="find-phone" class="form-input" placeholder="01012345678"
+               oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11);checkFindIdReady();"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">통신사</label>
+        <div style="display:flex;gap:8px;">
+          <button onclick="selectFindCarrier(this,'SKT')" class="find-carrier-btn"
+                  style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:.84rem;color:var(--text-2);cursor:pointer;transition:all .2s;">SKT</button>
+          <button onclick="selectFindCarrier(this,'KT')" class="find-carrier-btn"
+                  style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:.84rem;color:var(--text-2);cursor:pointer;transition:all .2s;">KT</button>
+          <button onclick="selectFindCarrier(this,'LGU+')" class="find-carrier-btn"
+                  style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:.84rem;color:var(--text-2);cursor:pointer;transition:all .2s;">LGU+</button>
+        </div>
+      </div>
+      <button id="find-id-pass-btn" onclick="handleFindId()" disabled
+              style="width:100%;padding:14px;margin-top:8px;margin-bottom:12px;background:linear-gradient(135deg,#3182f6,#1a5fd4);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:.92rem;font-weight:700;opacity:.5;transition:all .2s;cursor:not-allowed;">
+        📱 PASS 앱으로 이메일 찾기
+      </button>
+      <div class="result-box" id="find-id-result" style="display:none;margin-top:8px;padding:14px;border-radius:var(--r);font-size:.9rem;font-weight:700;text-align:center;"></div>
+    </div>
+    <div id="find-pw-panel" class="tab-panel">
+      <p class="panel-desc">이메일·이름·휴대폰 입력 후 PASS 인증으로 비밀번호를 변경합니다.</p>
+      <div id="find-pw-step1">
+        <div class="input-group">
+          <label class="input-label">이메일</label>
+          <input type="email" id="find-pw-email" class="form-input" placeholder="가입한 이메일 주소" oninput="checkFindPwReady()"/>
+        </div>
         <div class="input-group">
           <label class="input-label">이름</label>
-          <input type="text" id="find-name" class="form-input" placeholder="이름을 입력하세요" oninput="checkFindIdReady()"/>
+          <input type="text" id="find-pw-name" class="form-input" placeholder="이름을 입력하세요" oninput="checkFindPwReady()"/>
         </div>
         <div class="input-group">
           <label class="input-label">휴대폰 번호</label>
-          <input type="tel" id="find-phone" class="form-input" placeholder="01012345678"
-                 oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11);checkFindIdReady();"/>
+          <input type="tel" id="find-pw-phone" class="form-input" placeholder="01012345678"
+                 oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11);checkFindPwReady();"/>
         </div>
         <div class="input-group">
           <label class="input-label">통신사</label>
           <div style="display:flex;gap:8px;">
-            <button onclick="selectFindCarrier(this,'SKT')" class="find-carrier-btn"
+            <button onclick="selectFindPwCarrier(this,'SKT')" class="find-pw-carrier-btn"
                     style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:.84rem;color:var(--text-2);cursor:pointer;transition:all .2s;">SKT</button>
-            <button onclick="selectFindCarrier(this,'KT')" class="find-carrier-btn"
+            <button onclick="selectFindPwCarrier(this,'KT')" class="find-pw-carrier-btn"
                     style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:.84rem;color:var(--text-2);cursor:pointer;transition:all .2s;">KT</button>
-            <button onclick="selectFindCarrier(this,'LGU+')" class="find-carrier-btn"
+            <button onclick="selectFindPwCarrier(this,'LGU+')" class="find-pw-carrier-btn"
                     style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:.84rem;color:var(--text-2);cursor:pointer;transition:all .2s;">LGU+</button>
           </div>
         </div>
-        <button id="find-id-pass-btn" onclick="handleFindId()" disabled
-                style="width:100%;padding:14px;margin-top:8px;margin-bottom:12px;background:linear-gradient(135deg,#3182f6,#1a5fd4);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:.92rem;font-weight:700;opacity:.5;transition:all .2s;cursor:not-allowed;">
-          📱 PASS 앱으로 이메일 찾기
+        <button id="find-pw-pass-btn" onclick="handleFindPwStep1()" disabled
+                style="width:100%;padding:14px;margin-top:8px;background:linear-gradient(135deg,#3182f6,#1a5fd4);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:.92rem;font-weight:700;opacity:.5;transition:all .2s;cursor:not-allowed;">
+          📱 PASS 앱으로 본인인증
         </button>
-        <div class="result-box" id="find-id-result" style="display:none;margin-top:8px;padding:14px;border-radius:var(--r);font-size:.9rem;font-weight:700;text-align:center;"></div>
+        <div id="find-pw-result" style="display:none;margin-top:10px;padding:14px;border-radius:var(--r);font-size:.9rem;font-weight:700;text-align:center;"></div>
       </div>
-      <div id="find-pw-panel" class="tab-panel">
-        <p class="panel-desc">이메일·이름·휴대폰 입력 후 PASS 인증으로 비밀번호를 변경합니다.</p>
-        <div id="find-pw-step1">
-          <div class="input-group">
-            <label class="input-label">이메일</label>
-            <input type="email" id="find-pw-email" class="form-input" placeholder="가입한 이메일 주소" oninput="checkFindPwReady()"/>
-          </div>
-          <div class="input-group">
-            <label class="input-label">이름</label>
-            <input type="text" id="find-pw-name" class="form-input" placeholder="이름을 입력하세요" oninput="checkFindPwReady()"/>
-          </div>
-          <div class="input-group">
-            <label class="input-label">휴대폰 번호</label>
-            <input type="tel" id="find-pw-phone" class="form-input" placeholder="01012345678"
-                   oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,11);checkFindPwReady();"/>
-          </div>
-          <div class="input-group">
-            <label class="input-label">통신사</label>
-            <div style="display:flex;gap:8px;">
-              <button onclick="selectFindPwCarrier(this,'SKT')" class="find-pw-carrier-btn"
-                      style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:.84rem;color:var(--text-2);cursor:pointer;transition:all .2s;">SKT</button>
-              <button onclick="selectFindPwCarrier(this,'KT')" class="find-pw-carrier-btn"
-                      style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:.84rem;color:var(--text-2);cursor:pointer;transition:all .2s;">KT</button>
-              <button onclick="selectFindPwCarrier(this,'LGU+')" class="find-pw-carrier-btn"
-                      style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);font-family:var(--font);font-size:.84rem;color:var(--text-2);cursor:pointer;transition:all .2s;">LGU+</button>
-            </div>
-          </div>
-          <button id="find-pw-pass-btn" onclick="handleFindPwStep1()" disabled
-                  style="width:100%;padding:14px;margin-top:8px;background:linear-gradient(135deg,#3182f6,#1a5fd4);color:#fff;border:none;border-radius:var(--r);font-family:var(--font);font-size:.92rem;font-weight:700;opacity:.5;transition:all .2s;cursor:not-allowed;">
-            📱 PASS 앱으로 본인인증
-          </button>
-          <div id="find-pw-result" style="display:none;margin-top:10px;padding:14px;border-radius:var(--r);font-size:.9rem;font-weight:700;text-align:center;"></div>
+      <div id="find-pw-step2" style="display:none;">
+        <div style="background:rgba(29,122,58,.08);border:1px solid rgba(29,122,58,.2);border-radius:var(--r);padding:12px;margin-bottom:16px;font-size:.84rem;color:#1d7a3a;font-weight:700;">
+          ✅ 본인인증 완료 — 새 비밀번호를 설정하세요
         </div>
-        <div id="find-pw-step2" style="display:none;">
-          <div style="background:rgba(29,122,58,.08);border:1px solid rgba(29,122,58,.2);border-radius:var(--r);padding:12px;margin-bottom:16px;font-size:.84rem;color:#1d7a3a;font-weight:700;">
-            ✅ 본인인증 완료 — 새 비밀번호를 설정하세요
-          </div>
-          <div class="input-group">
-            <label class="input-label">새 비밀번호</label>
-            <input type="password" id="find-pw-new" class="form-input" placeholder="영문+숫자+특수문자 8자 이상" oninput="checkNewPwStrength(this.value)"/>
-            <div class="pw-strength-bar"><div id="new-pw-strength-fill"></div></div>
-            <span class="input-hint" id="new-pw-hint"></span>
-          </div>
-          <div class="input-group">
-            <label class="input-label">새 비밀번호 확인</label>
-            <input type="password" id="find-pw-new2" class="form-input" placeholder="비밀번호를 다시 입력하세요"/>
-          </div>
-          <button class="submit-btn" onclick="handleChangePw()">비밀번호 변경 완료</button>
+        <div class="input-group">
+          <label class="input-label">새 비밀번호</label>
+          <input type="password" id="find-pw-new" class="form-input" placeholder="영문+숫자+특수문자 8자 이상" oninput="checkNewPwStrength(this.value)"/>
+          <div class="pw-strength-bar"><div id="new-pw-strength-fill"></div></div>
+          <span class="input-hint" id="new-pw-hint"></span>
         </div>
+        <div class="input-group">
+          <label class="input-label">새 비밀번호 확인</label>
+          <input type="password" id="find-pw-new2" class="form-input" placeholder="비밀번호를 다시 입력하세요"/>
+        </div>
+        <button class="submit-btn" onclick="handleChangePw()">비밀번호 변경 완료</button>
       </div>
-      <button class="back-bottom-btn" onclick="goTo('main-screen')" data-i18n="back">뒤로</button>
     </div>
+    <button class="back-bottom-btn" onclick="goTo('main-screen')" data-i18n="back">뒤로</button>
   </div>
+</div>
 
 <!-- ══ SIGNUP ══ -->
 <div id="signup-screen" class="screen">
@@ -1190,595 +1190,595 @@ if(window.navigator.standalone){
   }
 </style>
 
-    <!-- ══ TERMS MODAL ══ -->
-    <div id="terms-modal" class="modal-overlay" onclick="closeTermsBg(event)">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span class="modal-title" id="modal-title">약관</span>
-          <button class="modal-close" onclick="closeTerms()">✕</button>
+<!-- ══ TERMS MODAL ══ -->
+<div id="terms-modal" class="modal-overlay" onclick="closeTermsBg(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">약관</span>
+      <button class="modal-close" onclick="closeTerms()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <button class="submit-btn small" onclick="closeTerms()" data-i18n="confirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD CARD MODAL ══ -->
+<div id="add-card-modal" class="modal-overlay" onclick="closeAddCard(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" data-i18n="mp_add_card">카드 등록</span>
+      <button class="modal-close" onclick="closeAddCard()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label class="input-label" data-i18n="card_num">카드 번호</label>
+        <input type="text" id="ac-num" class="form-input" placeholder="0000 - 0000 - 0000 - 0000" maxlength="19"/>
+      </div>
+      <div class="input-row" style="gap:10px;">
+        <div class="input-group flex1">
+          <label class="input-label" data-i18n="card_exp">유효기간</label>
+          <input type="text" id="ac-exp" class="form-input" placeholder="MM / YY" maxlength="7"/>
         </div>
-        <div class="modal-body" id="modal-body"></div>
-        <div class="modal-footer">
-          <button class="submit-btn small" onclick="closeTerms()" data-i18n="confirm">확인</button>
+        <div class="input-group flex1">
+          <label class="input-label">CVC</label>
+          <input type="text" id="ac-cvc" class="form-input" placeholder="000" maxlength="3"/>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">카드 별칭 (선택)</label>
+        <input type="text" id="ac-name" class="form-input" placeholder="예: 내 신한카드"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="submit-btn small" onclick="saveCard()" data-i18n="confirm">등록</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 홈 메뉴 패널 ══ -->
+<div class="home-menu-overlay" id="home-menu-overlay" onclick="closeHomeMenu()"></div>
+<div class="home-menu-panel" id="home-menu-panel">
+
+  <!-- 사용자 정보 -->
+  <div class="hmenu-profile">
+    <div class="hmenu-avatar">👤</div>
+    <div class="hmenu-user-info">
+      <div class="hmenu-name" id="hmenu-name">사용자</div>
+      <div class="hmenu-id" id="hmenu-id">omj05007</div>
+    </div>
+    <button class="hmenu-close" onclick="closeHomeMenu()">✕</button>
+  </div>
+
+  <div class="hmenu-divider"></div>
+
+  <!-- 메뉴 항목 -->
+  <button class="hmenu-item" onclick="closeHomeMenu();goTo('usage-history-screen')">
+    <span class="hmenu-item-icon">📋</span>
+    <span class="hmenu-item-label">이용내역</span>
+    <span class="hmenu-item-arrow">›</span>
+  </button>
+  <button class="hmenu-item" onclick="closeHomeMenu();goTo('event-screen')">
+    <span class="hmenu-item-icon">🎉</span>
+    <span class="hmenu-item-label">이벤트</span>
+    <span class="hmenu-item-arrow">›</span>
+  </button>
+  <button class="hmenu-item" onclick="closeHomeMenu();goTo('mypage-screen')">
+    <span class="hmenu-item-icon">⚙️</span>
+    <span class="hmenu-item-label">계정관리</span>
+    <span class="hmenu-item-arrow">›</span>
+  </button>
+
+  <div class="hmenu-divider"></div>
+
+  <button class="hmenu-item" onclick="closeHomeMenu();history.pushState({screen:'cs-screen'},'','');goTo('cs-screen')">
+    <span class="hmenu-item-icon">🎧</span>
+    <span class="hmenu-item-label">고객센터</span>
+    <span class="hmenu-item-arrow">›</span>
+  </button>
+  <button class="hmenu-item hmenu-logout" onclick="closeHomeMenu();handleLogout()">
+    <span class="hmenu-item-icon">🚪</span>
+    <span class="hmenu-item-label">로그아웃</span>
+  </button>
+
+</div>
+
+
+<!-- ══ DEV SCREEN ══ -->
+<div id="dev-screen" class="screen">
+  <div class="dev-bg"></div>
+  <div class="dev-header">
+    <div class="dev-logo">DEV CONSOLE</div>
+    <div class="dev-sub">CARO MOBILITY ADMIN</div>
+    <button class="dev-logout-btn" onclick="handleLogout()">나가기</button>
+  </div>
+  <div class="dev-body">
+
+    <!-- 운영 현황 -->
+    <div class="dev-section">
+      <div class="dev-section-title">📊 운영 현황</div>
+      <div class="dev-stats-grid">
+        <div class="dev-stat-card"><div class="dev-stat-num" id="dev-s-car">6</div><div class="dev-stat-label">일반 차량</div></div>
+        <div class="dev-stat-card"><div class="dev-stat-num" id="dev-s-bl">5</div><div class="dev-stat-label">BL 차량</div></div>
+        <div class="dev-stat-card dev-stat-highlight"><div class="dev-stat-num" id="dev-s-res">0</div><div class="dev-stat-label">총 예약</div></div>
+        <div class="dev-stat-card"><div class="dev-stat-num" id="dev-s-ev">4</div><div class="dev-stat-label">이벤트</div></div>
+      </div>
+    </div>
+
+    <!-- 등록 차량 현황 -->
+    <div class="dev-section">
+      <div class="dev-section-title">🚗 일반 차량 현황</div>
+      <div class="dev-card" id="dev-car-overview"></div>
+    </div>
+    <div class="dev-section">
+      <div class="dev-section-title">⭐ 카로 더 블랙 차량 현황</div>
+      <div class="dev-card" id="dev-bl-overview"></div>
+    </div>
+
+    <!-- 차량 등록 (사진+정보 통합, 탭으로 분류) -->
+    <div class="dev-section">
+      <div class="dev-section-title">➕ 차량 등록 / 사진 등록</div>
+      <div class="dev-card">
+        <!-- 탭 -->
+        <div style="display:flex;border-bottom:1px solid rgba(91,200,255,.1);">
+          <button id="dev-tab-normal" class="dev-tab-btn dev-tab-active" onclick="devSwitchTab('normal')">일반 차량</button>
+          <button id="dev-tab-bl" class="dev-tab-btn" onclick="devSwitchTab('bl')">카로 더 블랙</button>
+        </div>
+
+        <!-- 일반 차량 등록 -->
+        <div id="dev-reg-normal">
+          <!-- 차량 선택 + 지역 선택 -->
+          <div class="dev-row" style="padding-top:12px;gap:6px;">
+            <span class="dev-label" style="min-width:60px;">차량선택</span>
+            <select class="dev-select" id="dev-photo-car" style="flex:1;"><option value="">신규 등록</option></select>
+            <select class="dev-select" id="dev-add-region" style="flex:0 0 90px;">
+              <option value="auto">🎯 자동</option>
+              <option value="구월동">🟢 구월동</option>
+              <option value="송도">🔵 송도</option>
+            </select>
+          </div>
+          <!-- 차량번호 -->
+          <div class="dev-row">
+            <span class="dev-label" style="min-width:60px;">차량번호</span>
+            <input class="dev-input" id="dev-add-carnum" placeholder="예: 12가 3456"/>
+          </div>
+          <!-- 차량명 -->
+          <div class="dev-row">
+            <span class="dev-label" style="min-width:60px;">차량명</span>
+            <input class="dev-input" id="dev-add-name" placeholder="예: 셀토스, 아이오닉5, 스포티지"/>
+          </div>
+          <!-- 연료 -->
+          <div class="dev-row">
+            <span class="dev-label" style="min-width:60px;">연료</span>
+            <select class="dev-select" id="dev-add-fuel">
+              <option value="전기">전기</option>
+              <option value="가솔린">가솔린</option>
+              <option value="디젤">디젤</option>
+              <option value="하이브리드">하이브리드</option>
+            </select>
+          </div>
+          <!-- 하루요금 → 시간당 자동계산 + 시간당 + km당 -->
+          <div class="dev-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
+            <input class="dev-input" id="dev-add-daily" type="text" inputmode="numeric" placeholder="하루요금(원)"
+                   style="..." oninput="fmtDevNum(this);calcHourlyFromDaily();"/>
+            <span style="font-size:.7rem;color:rgba(91,200,255,.5);flex-shrink:0;">→</span>
+            <span id="dev-add-hourly-preview"
+                  style="font-size:.75rem;color:rgba(91,200,255,.8);font-weight:700;flex-shrink:0;min-width:50px;">—원/h</span>
+            <button class="dev-btn" onclick="applyDailyToHourly()"
+                    style="flex-shrink:0;font-size:.7rem;padding:5px 8px;">자동계산</button>
+            <input class="dev-input" id="dev-add-price" type="text" inputmode="numeric" placeholder="시간당(원)"
+                   style="..." oninput="fmtDevNum(this)"/>
+            <input class="dev-input" id="dev-add-kmrate" type="text" inputmode="numeric" placeholder="km당(원)"
+                   style="..." oninput="fmtDevNum(this)"/>
+          </div>
+          <!-- 옵션 -->
+          <div class="dev-row">
+            <span class="dev-label" style="min-width:60px;">옵션</span>
+            <input class="dev-input" id="dev-add-opts" placeholder="- 선루프, 무선충전, 카플레이"/>
+          </div>
+          <!-- 사진 선택 -->
+          <div class="dev-row" style="align-items:center;gap:10px;">
+            <span class="dev-label" style="min-width:60px;">사진</span>
+            <label class="dev-file-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="file" id="dev-photo-file" accept="image/*" onchange="devPreviewPhoto(this)" style="display:none"/>
+              <span class="dev-btn">📷 사진 선택</span>
+            </label>
+            <img id="dev-photo-preview" style="width:64px;height:50px;border-radius:12px;object-fit:contain;display:none;background:#1a2030;border:1px solid rgba(91,200,255,.25);"/>
+          </div>
+          <!-- 등록 버튼 -->
+          <div class="dev-row">
+            <button class="dev-btn dev-btn-primary" style="flex:1;" onclick="devApplyOrAddCar('normal')">✅ 등록 / 사진 적용</button>
+          </div>
+        </div>
+
+        <!-- 카로 더 블랙 등록 -->
+        <div id="dev-reg-bl" style="display:none;">
+          <!-- 차량 선택 + 지역 선택 -->
+          <div class="dev-row" style="padding-top:12px;gap:6px;">
+            <span class="dev-label" style="min-width:60px;">차량선택</span>
+            <select class="dev-select" id="dev-bl-photo-car" style="flex:1;"><option value="">신규 등록</option></select>
+            <select class="dev-select" id="dev-bl-add-region" style="flex:0 0 90px;">
+              <option value="auto">🎯 자동</option>
+              <option value="구월동">🟢 구월동</option>
+              <option value="송도">🔵 송도</option>
+            </select>
+          </div>
+          <!-- 차량번호 -->
+          <div class="dev-row">
+            <span class="dev-label" style="min-width:60px;">차량번호</span>
+            <input class="dev-input" id="dev-bl-add-carnum" placeholder="예: 12가 3456"/>
+          </div>
+          <!-- 차량명 -->
+          <div class="dev-row">
+            <span class="dev-label" style="min-width:60px;">차량명</span>
+            <input class="dev-input" id="dev-bl-add-name" placeholder=""/>
+          </div>
+          <!-- 연료 -->
+          <div class="dev-row">
+            <span class="dev-label" style="min-width:60px;">연료</span>
+            <select class="dev-select" id="dev-bl-add-fuel">
+              <option value="전기">전기</option>
+              <option value="가솔린">가솔린</option>
+              <option value="디젤">디젤</option>
+              <option value="하이브리드">하이브리드</option>
+            </select>
+          </div>
+          <!-- 하루요금 → 시간당 자동계산 + 시간당 + km당 -->
+          <div class="dev-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
+            <input class="dev-input" id="dev-bl-add-daily" type="number" placeholder="하루요금(원)"
+                   style="flex:1;min-width:90px;" oninput="calcBlHourlyFromDaily()"/>
+            <span style="font-size:.7rem;color:rgba(200,169,110,.5);flex-shrink:0;">→</span>
+            <span id="dev-bl-add-hourly-preview"
+                  style="font-size:.75rem;color:rgba(200,169,110,.8);font-weight:700;flex-shrink:0;min-width:50px;">—원/h</span>
+            <button class="dev-btn" onclick="applyBlDailyToHourly()"
+                    style="flex-shrink:0;font-size:.7rem;padding:5px 8px;">자동계산</button>
+            <input class="dev-input" id="dev-bl-add-price" type="number" placeholder="시간당(원)"
+                   style="flex:1;min-width:70px;"/>
+            <input class="dev-input" id="dev-bl-add-kmrate" type="number" placeholder="km당(원)"
+                   style="flex:1;min-width:70px;"/>
+          </div>
+          <!-- 옵션 -->
+          <div class="dev-row">
+            <span class="dev-label" style="min-width:60px;">옵션</span>
+            <input class="dev-input" id="dev-bl-add-opts" placeholder="- 옵션1, 옵션2&#10;- 옵션3"/>
+          </div>
+          <!-- 운영지역 -->
+          <div class="dev-row">
+            <span class="dev-label" style="min-width:60px;">운영지역</span>
+            <input class="dev-input" id="dev-bl-add-area" placeholder="서울 · 인천"/>
+          </div>
+          <!-- 사진 선택 -->
+          <div class="dev-row" style="align-items:center;gap:10px;">
+            <span class="dev-label" style="min-width:60px;">사진</span>
+            <label class="dev-file-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="file" id="dev-bl-photo-file" accept="image/*" onchange="devPreviewBlPhoto(this)" style="display:none"/>
+              <span class="dev-btn">📷 사진 선택</span>
+            </label>
+            <img id="dev-bl-photo-preview" style="width:64px;height:50px;border-radius:12px;object-fit:contain;display:none;background:#1a2030;border:1px solid rgba(200,169,110,.25);"/>
+          </div>
+          <!-- 등록 버튼 -->
+          <div class="dev-row">
+            <button class="dev-btn dev-btn-primary" style="flex:1;" onclick="devApplyOrAddCar('bl')">✅ 카로 더 블랙 등록 / 사진 적용</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ══ ADD CARD MODAL ══ -->
-    <div id="add-card-modal" class="modal-overlay" onclick="closeAddCard(event)">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span class="modal-title" data-i18n="mp_add_card">카드 등록</span>
-          <button class="modal-close" onclick="closeAddCard()">✕</button>
+    <!-- 차량 삭제 -->
+    <div class="dev-section">
+      <div class="dev-section-title">🗑 차량 삭제</div>
+      <div class="dev-card">
+        <!-- 탭 -->
+        <div style="display:flex;border-bottom:1px solid rgba(91,200,255,.1);">
+          <button id="dev-del-tab-normal" class="dev-tab-btn dev-tab-active" onclick="devSwitchDelTab('normal')">일반 차량 <span id="dev-del-count-normal" style="font-size:.65rem;color:rgba(240,90,90,.8);margin-left:2px;"></span></button>
+          <button id="dev-del-tab-bl" class="dev-tab-btn" onclick="devSwitchDelTab('bl')">카로 더 블랙 <span id="dev-del-count-bl" style="font-size:.65rem;color:rgba(240,90,90,.8);margin-left:2px;"></span></button>
         </div>
-        <div class="modal-body">
-          <div class="input-group">
-            <label class="input-label" data-i18n="card_num">카드 번호</label>
-            <input type="text" id="ac-num" class="form-input" placeholder="0000 - 0000 - 0000 - 0000" maxlength="19"/>
-          </div>
-          <div class="input-row" style="gap:10px;">
-            <div class="input-group flex1">
-              <label class="input-label" data-i18n="card_exp">유효기간</label>
-              <input type="text" id="ac-exp" class="form-input" placeholder="MM / YY" maxlength="7"/>
-            </div>
-            <div class="input-group flex1">
-              <label class="input-label">CVC</label>
-              <input type="text" id="ac-cvc" class="form-input" placeholder="000" maxlength="3"/>
-            </div>
-          </div>
-          <div class="input-group">
-            <label class="input-label">카드 별칭 (선택)</label>
-            <input type="text" id="ac-name" class="form-input" placeholder="예: 내 신한카드"/>
-          </div>
+        <div id="dev-car-delete-list"></div>
+        <div id="dev-bl-delete-list" style="display:none;"></div>
+      </div>
+      <button class="dev-btn dev-btn-danger dev-full-btn" onclick="devSaveDelete()" style="margin-top:8px;">🗑 선택 항목 삭제 · 즉시 반영</button>
+    </div>
+
+    <!-- 차량 상태 변경 -->
+    <div class="dev-section">
+      <div class="dev-section-title">🔧 차량 상태 변경</div>
+      <div class="dev-card" id="dev-car-status-list"></div>
+    </div>
+
+    <!-- 예약 차량 강제 변경 -->
+    <div class="dev-section">
+      <div class="dev-section-title">🔄 예약 차량 변경 (관리자)</div>
+      <div class="dev-card">
+        <div class="dev-row">
+          <span class="dev-label">대상 예약</span>
+          <select class="dev-select" id="dev-swap-res"><option value="">예약 선택</option></select>
         </div>
-        <div class="modal-footer">
-          <button class="submit-btn small" onclick="saveCard()" data-i18n="confirm">등록</button>
+        <div class="dev-row">
+          <span class="dev-label">변경 차량</span>
+          <select class="dev-select" id="dev-swap-car"><option value="">차량 선택</option></select>
+        </div>
+        <div class="dev-row">
+          <button class="dev-btn dev-btn-warn" style="flex:1;" onclick="devSwapCar()">⚡ 강제 변경</button>
         </div>
       </div>
     </div>
 
-    <!-- ══ 홈 메뉴 패널 ══ -->
-    <div class="home-menu-overlay" id="home-menu-overlay" onclick="closeHomeMenu()"></div>
-    <div class="home-menu-panel" id="home-menu-panel">
+    <!-- 요금 설정 -->
+    <div class="dev-section">
+      <div class="dev-section-title">💰 대여 요금 설정</div>
+      <div class="dev-card" id="dev-price-list"></div>
+      <button class="dev-btn dev-btn-primary dev-full-btn" onclick="devSavePrices()" style="margin-top:8px;">✅ 요금 저장</button>
+    </div>
 
-      <!-- 사용자 정보 -->
-      <div class="hmenu-profile">
-        <div class="hmenu-avatar">👤</div>
-        <div class="hmenu-user-info">
-          <div class="hmenu-name" id="hmenu-name">사용자</div>
-          <div class="hmenu-id" id="hmenu-id">omj05007</div>
+    <!-- 면책 상품 설정 -->
+    <div class="dev-section">
+      <div class="dev-section-title">🛡 면책 상품 설정</div>
+      <div class="dev-card" id="dev-ins-list"></div>
+      <button class="dev-btn dev-btn-primary dev-full-btn" onclick="devSaveInsurance()" style="margin-top:8px;">✅ 저장</button>
+    </div>
+
+    <!-- 공지사항 관리 -->
+    <div class="dev-section">
+      <div class="dev-section-title">📢 공지사항 관리</div>
+      <div class="dev-card" id="dev-notice-list"></div>
+      <button class="dev-btn dev-btn-primary dev-full-btn" onclick="devAddNotice()" style="margin-top:8px;">+ 공지 추가</button>
+    </div>
+
+    <!-- 이벤트 배너 관리 -->
+    <div class="dev-section">
+      <div class="dev-section-title">🎉 이벤트 배너 관리</div>
+      <div class="dev-card" id="dev-event-list"></div>
+      <button class="dev-btn dev-btn-primary dev-full-btn" onclick="devAddEvent()" style="margin-top:8px;">+ 이벤트 추가</button>
+    </div>
+
+    <!-- 개발자 권한 / 버전 -->
+    <div class="dev-section">
+      <div class="dev-section-title">🔐 권한 · 버전</div>
+      <div class="dev-card">
+        <div class="dev-row"><span class="dev-label">개발자 계정</span><span style="color:rgba(91,200,255,.8);font-size:.82rem;">CAROMOBILITY</span></div>
+        <div class="dev-row">
+          <input class="dev-input" id="dev-new-dev-id" placeholder="신규 권한 아이디"/>
+          <button class="dev-btn dev-btn-warn" onclick="devGrantAccess()">부여</button>
         </div>
-        <button class="hmenu-close" onclick="closeHomeMenu()">✕</button>
+        <div class="dev-row">
+          <span class="dev-label">현재 버전</span>
+          <span id="dev-version" style="color:rgba(91,200,255,.8);font-size:.82rem;">v3.0.0</span>
+        </div>
+        <div class="dev-row">
+          <input class="dev-input" id="dev-new-version" placeholder="새 버전 (예: v3.1.0)"/>
+          <button class="dev-btn" onclick="devUpdateVersion()">업데이트</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DEV 하위 모달 -->
+<div id="dev-modal" class="modal-overlay" onclick="closeDevModal(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="dev-modal-title">설정</span>
+      <button class="modal-close" onclick="closeDevModal()">✕</button>
+    </div>
+    <div class="modal-body" id="dev-modal-body"></div>
+    <div class="modal-footer" id="dev-modal-footer"></div>
+  </div>
+</div>
+
+<!-- ══ 시간 연장 바텀시트 ══ -->
+<div class="ext-overlay" id="ext-overlay" onclick="closeExtendSheet()"></div>
+<div class="extend-sheet" id="extend-sheet">
+  <div class="extend-sheet-handle" onclick="closeExtendSheet()"><div class="extend-sheet-bar"></div></div>
+  <div class="extend-sheet-title">시간 연장</div>
+  <div class="extend-sheet-info" id="ext-info">차량 및 면책 요금 계산 중...</div>
+  <div class="extend-grid" id="ext-grid"></div>
+  <div class="extend-confirm-box" id="ext-confirm-box">
+    <div class="ext-conf-rows">
+      <div class="ext-conf-row"><span class="ext-conf-label">연장 시간</span><span class="ext-conf-value" id="ext-conf-time">—</span></div>
+      <div class="ext-conf-row"><span class="ext-conf-label">대여 추가 요금</span><span class="ext-conf-value" id="ext-conf-car">—</span></div>
+      <div class="ext-conf-row"><span class="ext-conf-label">보험 추가 요금</span><span class="ext-conf-value" id="ext-conf-ins">—</span></div>
+      <div class="ext-conf-row ext-conf-total"><span class="ext-conf-label" style="font-weight:700;">합계</span><span class="ext-conf-value" style="color:#1d7a3a;" id="ext-conf-total">—</span></div>
+    </div>
+  </div>
+  <div class="extend-sheet-btns">
+    <button class="ext-ok-btn" id="ext-ok-btn" onclick="confirmExtendSheet()">시간연장 확정</button>
+    <button class="ext-cancel-btn" onclick="closeExtendSheet()">취소</button>
+  </div>
+</div>
+
+
+<!-- ══ 사진 촬영 모달 ══ -->
+<div class="photo-modal-overlay" id="photo-modal-overlay" onclick="closePhotoModal(event)">
+  <div class="photo-modal-box">
+    <div class="photo-modal-header">
+      <span class="photo-modal-title">📷 주행전 사진 촬영</span>
+      <button class="photo-modal-close" onclick="closePhotoModal()">✕</button>
+    </div>
+    <p class="photo-notice">카메라로 직접 촬영한 사진만 등록 가능합니다 · 각 방향 최대 5장</p>
+
+    <!-- 세로 목록 방식 -->
+    <div class="photo-list-wrap">
+
+      <!-- 전면 -->
+      <div class="photo-list-item" onclick="openSideCapture('front')">
+        <div class="photo-list-left">
+          <div>
+            <div class="photo-list-name">전면 촬영</div>
+            <div class="photo-list-sub">차량 앞부분</div>
+          </div>
+        </div>
+        <div class="photo-list-right">
+          <span class="photo-list-count" id="pcar-count-front">0/5</span>
+          <span class="photo-list-arrow">›</span>
+        </div>
       </div>
 
-      <div class="hmenu-divider"></div>
+      <!-- 후면 -->
+      <div class="photo-list-item" onclick="openSideCapture('rear')">
+        <div class="photo-list-left">
+          <div>
+            <div class="photo-list-name">후면 촬영</div>
+            <div class="photo-list-sub">차량 뒷부분</div>
+          </div>
+        </div>
+        <div class="photo-list-right">
+          <span class="photo-list-count" id="pcar-count-rear">0/5</span>
+          <span class="photo-list-arrow">›</span>
+        </div>
+      </div>
 
-      <!-- 메뉴 항목 -->
-      <button class="hmenu-item" onclick="closeHomeMenu();goTo('usage-history-screen')">
-        <span class="hmenu-item-icon">📋</span>
-        <span class="hmenu-item-label">이용내역</span>
-        <span class="hmenu-item-arrow">›</span>
+      <!-- 좌측 -->
+      <div class="photo-list-item" onclick="openSideCapture('left')">
+        <div class="photo-list-left">
+          <div>
+            <div class="photo-list-name">좌측 촬영</div>
+            <div class="photo-list-sub">운전석 측면</div>
+          </div>
+        </div>
+        <div class="photo-list-right">
+          <span class="photo-list-count" id="pcar-count-left">0/5</span>
+          <span class="photo-list-arrow">›</span>
+        </div>
+      </div>
+
+      <!-- 우측 -->
+      <div class="photo-list-item" onclick="openSideCapture('right')">
+        <div class="photo-list-left">
+          <div>
+            <div class="photo-list-name">우측 촬영</div>
+            <div class="photo-list-sub">조수석 측면</div>
+          </div>
+        </div>
+        <div class="photo-list-right">
+          <span class="photo-list-count" id="pcar-count-right">0/5</span>
+          <span class="photo-list-arrow">›</span>
+        </div>
+      </div>
+
+      <!-- 기타 추가 사진 -->
+      <div class="photo-list-item photo-list-misc" onclick="openSideCapture('misc')">
+        <div class="photo-list-left">
+          <div>
+            <div class="photo-list-name">기타 추가 사진</div>
+            <div class="photo-list-sub">스크래치·파손 등 특이사항</div>
+          </div>
+        </div>
+        <div class="photo-list-right">
+          <span class="photo-list-count" id="pcar-count-misc">0/5</span>
+          <span class="photo-list-arrow">›</span>
+        </div>
+      </div>
+
+    </div>
+
+    <button class="photo-done-btn" onclick="finishPhotoCapture()">✅ 촬영 완료</button>
+  </div>
+</div>
+
+<!-- 방향별 사진 뷰어 -->
+<div class="side-capture-overlay" id="side-capture-overlay" onclick="closeSideCapture(event)">
+  <div class="side-capture-box">
+    <div class="side-capture-header">
+      <span class="side-capture-title" id="side-capture-title">전면 촬영</span>
+      <button class="photo-modal-close" onclick="closeSideCaptureBtn()">✕</button>
+    </div>
+    <div class="side-thumb-row" id="side-thumb-row"></div>
+    <div class="side-add-wrap">
+      <button class="side-cam-btn" id="side-cam-open-btn" onclick="openCaroCamera()">
+        <span class="side-cam-icon">📷</span>
+        <span class="side-cam-label" id="side-cam-label-text">촬영</span>
       </button>
-      <button class="hmenu-item" onclick="closeHomeMenu();goTo('event-screen')">
-        <span class="hmenu-item-icon">🎉</span>
-        <span class="hmenu-item-label">이벤트</span>
-        <span class="hmenu-item-arrow">›</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CARO 전용 카메라 화면 ══ -->
+<div id="caro-camera-screen" class="caro-cam-screen">
+  <div class="caro-cam-header">
+    <span class="caro-cam-title" id="caro-cam-title">전면 촬영</span>
+  </div>
+  <!-- 카메라 뷰파인더 -->
+  <div class="caro-cam-viewfinder">
+    <video id="caro-cam-video" class="caro-cam-video" autoplay playsinline muted poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
+    <!-- 가이드 오버레이 -->
+    <div class="caro-cam-guide">
+      <div class="caro-cam-guide-corner tl"></div>
+      <div class="caro-cam-guide-corner tr"></div>
+      <div class="caro-cam-guide-corner bl"></div>
+      <div class="caro-cam-guide-corner br"></div>
+    </div>
+    <!-- 미리보기 (촬영 후) -->
+    <canvas id="caro-cam-canvas" class="caro-cam-canvas" style="display:none;"></canvas>
+  </div>
+  <!-- 하단 버튼 3개 -->
+  <div class="caro-cam-controls">
+    <button class="caro-cam-btn caro-cam-retry" id="caro-cam-retry-btn" onclick="caroRetake()" style="display:none;">
+      <span class="caro-cam-btn-icon">🔄</span>
+      <span class="caro-cam-btn-label">다시 촬영</span>
+    </button>
+    <button class="caro-cam-btn caro-cam-shutter" id="caro-cam-shutter-btn" onclick="caroShutter()">
+      <div class="caro-cam-shutter-ring">
+        <div class="caro-cam-shutter-dot"></div>
+      </div>
+    </button>
+    <button class="caro-cam-btn caro-cam-save" id="caro-cam-save-btn" onclick="caroSave()" style="display:none;">
+      <span class="caro-cam-btn-icon">💾</span>
+      <span class="caro-cam-btn-label">저장</span>
+    </button>
+    <!-- 촬영 전 취소 버튼 -->
+    <button class="caro-cam-btn caro-cam-cancel" id="caro-cam-cancel-btn" onclick="closeCaroCamera()">
+      <span class="caro-cam-btn-icon">✕</span>
+      <span class="caro-cam-btn-label">취소</span>
+    </button>
+  </div>
+</div>
+
+<!-- ══ 결제 수단 선택 바텀시트 ══ -->
+<div class="modal-overlay" id="pay-sheet-overlay" onclick="closePaySheet(event)">
+  <div class="modal-box" style="max-width:480px;padding:0;">
+    <div style="padding:20px 20px 8px;">
+      <div style="font-size:1.1rem;font-weight:700;color:var(--text-1);margin-bottom:16px;">결제 수단을 선택하세요</div>
+      <div id="pay-sheet-list"></div>
+      <button onclick="closePaySheet();goTo('payment-info-screen');" style="display:flex;align-items:center;gap:10px;width:100%;padding:14px 0;background:none;border:none;border-top:1px solid var(--border);font-family:var(--font);font-size:.92rem;color:var(--text-m);cursor:pointer;margin-top:4px;">
+        <span style="font-size:1.1rem;">+</span> 결제 수단 추가하러 가기
       </button>
-      <button class="hmenu-item" onclick="closeHomeMenu();goTo('mypage-screen')">
-        <span class="hmenu-item-icon">⚙️</span>
-        <span class="hmenu-item-label">계정관리</span>
-        <span class="hmenu-item-arrow">›</span>
-      </button>
-
-      <div class="hmenu-divider"></div>
-
-      <button class="hmenu-item" onclick="closeHomeMenu();history.pushState({screen:'cs-screen'},'','');goTo('cs-screen')">
-        <span class="hmenu-item-icon">🎧</span>
-        <span class="hmenu-item-label">고객센터</span>
-        <span class="hmenu-item-arrow">›</span>
-      </button>
-      <button class="hmenu-item hmenu-logout" onclick="closeHomeMenu();handleLogout()">
-        <span class="hmenu-item-icon">🚪</span>
-        <span class="hmenu-item-label">로그아웃</span>
-      </button>
-
     </div>
-
-
-    <!-- ══ DEV SCREEN ══ -->
-    <div id="dev-screen" class="screen">
-      <div class="dev-bg"></div>
-      <div class="dev-header">
-        <div class="dev-logo">DEV CONSOLE</div>
-        <div class="dev-sub">CARO MOBILITY ADMIN</div>
-        <button class="dev-logout-btn" onclick="handleLogout()">나가기</button>
-      </div>
-      <div class="dev-body">
-
-        <!-- 운영 현황 -->
-        <div class="dev-section">
-          <div class="dev-section-title">📊 운영 현황</div>
-          <div class="dev-stats-grid">
-            <div class="dev-stat-card"><div class="dev-stat-num" id="dev-s-car">6</div><div class="dev-stat-label">일반 차량</div></div>
-            <div class="dev-stat-card"><div class="dev-stat-num" id="dev-s-bl">5</div><div class="dev-stat-label">BL 차량</div></div>
-            <div class="dev-stat-card dev-stat-highlight"><div class="dev-stat-num" id="dev-s-res">0</div><div class="dev-stat-label">총 예약</div></div>
-            <div class="dev-stat-card"><div class="dev-stat-num" id="dev-s-ev">4</div><div class="dev-stat-label">이벤트</div></div>
-          </div>
-        </div>
-
-        <!-- 등록 차량 현황 -->
-        <div class="dev-section">
-          <div class="dev-section-title">🚗 일반 차량 현황</div>
-          <div class="dev-card" id="dev-car-overview"></div>
-        </div>
-        <div class="dev-section">
-          <div class="dev-section-title">⭐ 카로 더 블랙 차량 현황</div>
-          <div class="dev-card" id="dev-bl-overview"></div>
-        </div>
-
-        <!-- 차량 등록 (사진+정보 통합, 탭으로 분류) -->
-        <div class="dev-section">
-          <div class="dev-section-title">➕ 차량 등록 / 사진 등록</div>
-          <div class="dev-card">
-            <!-- 탭 -->
-            <div style="display:flex;border-bottom:1px solid rgba(91,200,255,.1);">
-              <button id="dev-tab-normal" class="dev-tab-btn dev-tab-active" onclick="devSwitchTab('normal')">일반 차량</button>
-              <button id="dev-tab-bl" class="dev-tab-btn" onclick="devSwitchTab('bl')">카로 더 블랙</button>
-            </div>
-
-            <!-- 일반 차량 등록 -->
-            <div id="dev-reg-normal">
-              <!-- 차량 선택 + 지역 선택 -->
-              <div class="dev-row" style="padding-top:12px;gap:6px;">
-                <span class="dev-label" style="min-width:60px;">차량선택</span>
-                <select class="dev-select" id="dev-photo-car" style="flex:1;"><option value="">신규 등록</option></select>
-                <select class="dev-select" id="dev-add-region" style="flex:0 0 90px;">
-                  <option value="auto">🎯 자동</option>
-                  <option value="구월동">🟢 구월동</option>
-                  <option value="송도">🔵 송도</option>
-                </select>
-              </div>
-              <!-- 차량번호 -->
-              <div class="dev-row">
-                <span class="dev-label" style="min-width:60px;">차량번호</span>
-                <input class="dev-input" id="dev-add-carnum" placeholder="예: 12가 3456"/>
-              </div>
-              <!-- 차량명 -->
-              <div class="dev-row">
-                <span class="dev-label" style="min-width:60px;">차량명</span>
-                <input class="dev-input" id="dev-add-name" placeholder="예: 셀토스, 아이오닉5, 스포티지"/>
-              </div>
-              <!-- 연료 -->
-              <div class="dev-row">
-                <span class="dev-label" style="min-width:60px;">연료</span>
-                <select class="dev-select" id="dev-add-fuel">
-                  <option value="전기">전기</option>
-                  <option value="가솔린">가솔린</option>
-                  <option value="디젤">디젤</option>
-                  <option value="하이브리드">하이브리드</option>
-                </select>
-              </div>
-              <!-- 하루요금 → 시간당 자동계산 + 시간당 + km당 -->
-              <div class="dev-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
-                <input class="dev-input" id="dev-add-daily" type="text" inputmode="numeric" placeholder="하루요금(원)"
-                       style="..." oninput="fmtDevNum(this);calcHourlyFromDaily();"/>
-                <span style="font-size:.7rem;color:rgba(91,200,255,.5);flex-shrink:0;">→</span>
-                <span id="dev-add-hourly-preview"
-                      style="font-size:.75rem;color:rgba(91,200,255,.8);font-weight:700;flex-shrink:0;min-width:50px;">—원/h</span>
-                <button class="dev-btn" onclick="applyDailyToHourly()"
-                        style="flex-shrink:0;font-size:.7rem;padding:5px 8px;">자동계산</button>
-                <input class="dev-input" id="dev-add-price" type="text" inputmode="numeric" placeholder="시간당(원)"
-                       style="..." oninput="fmtDevNum(this)"/>
-                <input class="dev-input" id="dev-add-kmrate" type="text" inputmode="numeric" placeholder="km당(원)"
-                       style="..." oninput="fmtDevNum(this)"/>
-              </div>
-              <!-- 옵션 -->
-              <div class="dev-row">
-                <span class="dev-label" style="min-width:60px;">옵션</span>
-                <input class="dev-input" id="dev-add-opts" placeholder="- 선루프, 무선충전, 카플레이"/>
-              </div>
-              <!-- 사진 선택 -->
-              <div class="dev-row" style="align-items:center;gap:10px;">
-                <span class="dev-label" style="min-width:60px;">사진</span>
-                <label class="dev-file-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                  <input type="file" id="dev-photo-file" accept="image/*" onchange="devPreviewPhoto(this)" style="display:none"/>
-                  <span class="dev-btn">📷 사진 선택</span>
-                </label>
-                <img id="dev-photo-preview" style="width:64px;height:50px;border-radius:12px;object-fit:contain;display:none;background:#1a2030;border:1px solid rgba(91,200,255,.25);"/>
-              </div>
-              <!-- 등록 버튼 -->
-              <div class="dev-row">
-                <button class="dev-btn dev-btn-primary" style="flex:1;" onclick="devApplyOrAddCar('normal')">✅ 등록 / 사진 적용</button>
-              </div>
-            </div>
-
-            <!-- 카로 더 블랙 등록 -->
-            <div id="dev-reg-bl" style="display:none;">
-              <!-- 차량 선택 + 지역 선택 -->
-              <div class="dev-row" style="padding-top:12px;gap:6px;">
-                <span class="dev-label" style="min-width:60px;">차량선택</span>
-                <select class="dev-select" id="dev-bl-photo-car" style="flex:1;"><option value="">신규 등록</option></select>
-                <select class="dev-select" id="dev-bl-add-region" style="flex:0 0 90px;">
-                  <option value="auto">🎯 자동</option>
-                  <option value="구월동">🟢 구월동</option>
-                  <option value="송도">🔵 송도</option>
-                </select>
-              </div>
-              <!-- 차량번호 -->
-              <div class="dev-row">
-                <span class="dev-label" style="min-width:60px;">차량번호</span>
-                <input class="dev-input" id="dev-bl-add-carnum" placeholder="예: 12가 3456"/>
-              </div>
-              <!-- 차량명 -->
-              <div class="dev-row">
-                <span class="dev-label" style="min-width:60px;">차량명</span>
-                <input class="dev-input" id="dev-bl-add-name" placeholder=""/>
-              </div>
-              <!-- 연료 -->
-              <div class="dev-row">
-                <span class="dev-label" style="min-width:60px;">연료</span>
-                <select class="dev-select" id="dev-bl-add-fuel">
-                  <option value="전기">전기</option>
-                  <option value="가솔린">가솔린</option>
-                  <option value="디젤">디젤</option>
-                  <option value="하이브리드">하이브리드</option>
-                </select>
-              </div>
-              <!-- 하루요금 → 시간당 자동계산 + 시간당 + km당 -->
-              <div class="dev-row" style="flex-wrap:wrap;gap:6px;align-items:center;">
-                <input class="dev-input" id="dev-bl-add-daily" type="number" placeholder="하루요금(원)"
-                       style="flex:1;min-width:90px;" oninput="calcBlHourlyFromDaily()"/>
-                <span style="font-size:.7rem;color:rgba(200,169,110,.5);flex-shrink:0;">→</span>
-                <span id="dev-bl-add-hourly-preview"
-                      style="font-size:.75rem;color:rgba(200,169,110,.8);font-weight:700;flex-shrink:0;min-width:50px;">—원/h</span>
-                <button class="dev-btn" onclick="applyBlDailyToHourly()"
-                        style="flex-shrink:0;font-size:.7rem;padding:5px 8px;">자동계산</button>
-                <input class="dev-input" id="dev-bl-add-price" type="number" placeholder="시간당(원)"
-                       style="flex:1;min-width:70px;"/>
-                <input class="dev-input" id="dev-bl-add-kmrate" type="number" placeholder="km당(원)"
-                       style="flex:1;min-width:70px;"/>
-              </div>
-              <!-- 옵션 -->
-              <div class="dev-row">
-                <span class="dev-label" style="min-width:60px;">옵션</span>
-                <input class="dev-input" id="dev-bl-add-opts" placeholder="- 옵션1, 옵션2&#10;- 옵션3"/>
-              </div>
-              <!-- 운영지역 -->
-              <div class="dev-row">
-                <span class="dev-label" style="min-width:60px;">운영지역</span>
-                <input class="dev-input" id="dev-bl-add-area" placeholder="서울 · 인천"/>
-              </div>
-              <!-- 사진 선택 -->
-              <div class="dev-row" style="align-items:center;gap:10px;">
-                <span class="dev-label" style="min-width:60px;">사진</span>
-                <label class="dev-file-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
-                  <input type="file" id="dev-bl-photo-file" accept="image/*" onchange="devPreviewBlPhoto(this)" style="display:none"/>
-                  <span class="dev-btn">📷 사진 선택</span>
-                </label>
-                <img id="dev-bl-photo-preview" style="width:64px;height:50px;border-radius:12px;object-fit:contain;display:none;background:#1a2030;border:1px solid rgba(200,169,110,.25);"/>
-              </div>
-              <!-- 등록 버튼 -->
-              <div class="dev-row">
-                <button class="dev-btn dev-btn-primary" style="flex:1;" onclick="devApplyOrAddCar('bl')">✅ 카로 더 블랙 등록 / 사진 적용</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 차량 삭제 -->
-        <div class="dev-section">
-          <div class="dev-section-title">🗑 차량 삭제</div>
-          <div class="dev-card">
-            <!-- 탭 -->
-            <div style="display:flex;border-bottom:1px solid rgba(91,200,255,.1);">
-              <button id="dev-del-tab-normal" class="dev-tab-btn dev-tab-active" onclick="devSwitchDelTab('normal')">일반 차량 <span id="dev-del-count-normal" style="font-size:.65rem;color:rgba(240,90,90,.8);margin-left:2px;"></span></button>
-              <button id="dev-del-tab-bl" class="dev-tab-btn" onclick="devSwitchDelTab('bl')">카로 더 블랙 <span id="dev-del-count-bl" style="font-size:.65rem;color:rgba(240,90,90,.8);margin-left:2px;"></span></button>
-            </div>
-            <div id="dev-car-delete-list"></div>
-            <div id="dev-bl-delete-list" style="display:none;"></div>
-          </div>
-          <button class="dev-btn dev-btn-danger dev-full-btn" onclick="devSaveDelete()" style="margin-top:8px;">🗑 선택 항목 삭제 · 즉시 반영</button>
-        </div>
-
-        <!-- 차량 상태 변경 -->
-        <div class="dev-section">
-          <div class="dev-section-title">🔧 차량 상태 변경</div>
-          <div class="dev-card" id="dev-car-status-list"></div>
-        </div>
-
-        <!-- 예약 차량 강제 변경 -->
-        <div class="dev-section">
-          <div class="dev-section-title">🔄 예약 차량 변경 (관리자)</div>
-          <div class="dev-card">
-            <div class="dev-row">
-              <span class="dev-label">대상 예약</span>
-              <select class="dev-select" id="dev-swap-res"><option value="">예약 선택</option></select>
-            </div>
-            <div class="dev-row">
-              <span class="dev-label">변경 차량</span>
-              <select class="dev-select" id="dev-swap-car"><option value="">차량 선택</option></select>
-            </div>
-            <div class="dev-row">
-              <button class="dev-btn dev-btn-warn" style="flex:1;" onclick="devSwapCar()">⚡ 강제 변경</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 요금 설정 -->
-        <div class="dev-section">
-          <div class="dev-section-title">💰 대여 요금 설정</div>
-          <div class="dev-card" id="dev-price-list"></div>
-          <button class="dev-btn dev-btn-primary dev-full-btn" onclick="devSavePrices()" style="margin-top:8px;">✅ 요금 저장</button>
-        </div>
-
-        <!-- 면책 상품 설정 -->
-        <div class="dev-section">
-          <div class="dev-section-title">🛡 면책 상품 설정</div>
-          <div class="dev-card" id="dev-ins-list"></div>
-          <button class="dev-btn dev-btn-primary dev-full-btn" onclick="devSaveInsurance()" style="margin-top:8px;">✅ 저장</button>
-        </div>
-
-        <!-- 공지사항 관리 -->
-        <div class="dev-section">
-          <div class="dev-section-title">📢 공지사항 관리</div>
-          <div class="dev-card" id="dev-notice-list"></div>
-          <button class="dev-btn dev-btn-primary dev-full-btn" onclick="devAddNotice()" style="margin-top:8px;">+ 공지 추가</button>
-        </div>
-
-        <!-- 이벤트 배너 관리 -->
-        <div class="dev-section">
-          <div class="dev-section-title">🎉 이벤트 배너 관리</div>
-          <div class="dev-card" id="dev-event-list"></div>
-          <button class="dev-btn dev-btn-primary dev-full-btn" onclick="devAddEvent()" style="margin-top:8px;">+ 이벤트 추가</button>
-        </div>
-
-        <!-- 개발자 권한 / 버전 -->
-        <div class="dev-section">
-          <div class="dev-section-title">🔐 권한 · 버전</div>
-          <div class="dev-card">
-            <div class="dev-row"><span class="dev-label">개발자 계정</span><span style="color:rgba(91,200,255,.8);font-size:.82rem;">CAROMOBILITY</span></div>
-            <div class="dev-row">
-              <input class="dev-input" id="dev-new-dev-id" placeholder="신규 권한 아이디"/>
-              <button class="dev-btn dev-btn-warn" onclick="devGrantAccess()">부여</button>
-            </div>
-            <div class="dev-row">
-              <span class="dev-label">현재 버전</span>
-              <span id="dev-version" style="color:rgba(91,200,255,.8);font-size:.82rem;">v3.0.0</span>
-            </div>
-            <div class="dev-row">
-              <input class="dev-input" id="dev-new-version" placeholder="새 버전 (예: v3.1.0)"/>
-              <button class="dev-btn" onclick="devUpdateVersion()">업데이트</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
+    <div style="padding:12px 20px 20px;">
+      <button onclick="confirmPaySheet()" style="width:100%;padding:15px;background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r);font-family:var(--font);font-size:1rem;font-weight:700;cursor:pointer;">확인</button>
     </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
 
-    <!-- DEV 하위 모달 -->
-    <div id="dev-modal" class="modal-overlay" onclick="closeDevModal(event)">
-      <div class="modal-box">
-        <div class="modal-header">
-          <span class="modal-title" id="dev-modal-title">설정</span>
-          <button class="modal-close" onclick="closeDevModal()">✕</button>
-        </div>
-        <div class="modal-body" id="dev-modal-body"></div>
-        <div class="modal-footer" id="dev-modal-footer"></div>
-      </div>
-    </div>
-
-    <!-- ══ 시간 연장 바텀시트 ══ -->
-    <div class="ext-overlay" id="ext-overlay" onclick="closeExtendSheet()"></div>
-    <div class="extend-sheet" id="extend-sheet">
-      <div class="extend-sheet-handle" onclick="closeExtendSheet()"><div class="extend-sheet-bar"></div></div>
-      <div class="extend-sheet-title">시간 연장</div>
-      <div class="extend-sheet-info" id="ext-info">차량 및 면책 요금 계산 중...</div>
-      <div class="extend-grid" id="ext-grid"></div>
-      <div class="extend-confirm-box" id="ext-confirm-box">
-        <div class="ext-conf-rows">
-          <div class="ext-conf-row"><span class="ext-conf-label">연장 시간</span><span class="ext-conf-value" id="ext-conf-time">—</span></div>
-          <div class="ext-conf-row"><span class="ext-conf-label">대여 추가 요금</span><span class="ext-conf-value" id="ext-conf-car">—</span></div>
-          <div class="ext-conf-row"><span class="ext-conf-label">보험 추가 요금</span><span class="ext-conf-value" id="ext-conf-ins">—</span></div>
-          <div class="ext-conf-row ext-conf-total"><span class="ext-conf-label" style="font-weight:700;">합계</span><span class="ext-conf-value" style="color:#1d7a3a;" id="ext-conf-total">—</span></div>
-        </div>
-      </div>
-      <div class="extend-sheet-btns">
-        <button class="ext-ok-btn" id="ext-ok-btn" onclick="confirmExtendSheet()">시간연장 확정</button>
-        <button class="ext-cancel-btn" onclick="closeExtendSheet()">취소</button>
-      </div>
-    </div>
-
-
-    <!-- ══ 사진 촬영 모달 ══ -->
-    <div class="photo-modal-overlay" id="photo-modal-overlay" onclick="closePhotoModal(event)">
-      <div class="photo-modal-box">
-        <div class="photo-modal-header">
-          <span class="photo-modal-title">📷 주행전 사진 촬영</span>
-          <button class="photo-modal-close" onclick="closePhotoModal()">✕</button>
-        </div>
-        <p class="photo-notice">카메라로 직접 촬영한 사진만 등록 가능합니다 · 각 방향 최대 5장</p>
-
-        <!-- 세로 목록 방식 -->
-        <div class="photo-list-wrap">
-
-          <!-- 전면 -->
-          <div class="photo-list-item" onclick="openSideCapture('front')">
-            <div class="photo-list-left">
-              <div>
-                <div class="photo-list-name">전면 촬영</div>
-                <div class="photo-list-sub">차량 앞부분</div>
-              </div>
-            </div>
-            <div class="photo-list-right">
-              <span class="photo-list-count" id="pcar-count-front">0/5</span>
-              <span class="photo-list-arrow">›</span>
-            </div>
-          </div>
-
-          <!-- 후면 -->
-          <div class="photo-list-item" onclick="openSideCapture('rear')">
-            <div class="photo-list-left">
-              <div>
-                <div class="photo-list-name">후면 촬영</div>
-                <div class="photo-list-sub">차량 뒷부분</div>
-              </div>
-            </div>
-            <div class="photo-list-right">
-              <span class="photo-list-count" id="pcar-count-rear">0/5</span>
-              <span class="photo-list-arrow">›</span>
-            </div>
-          </div>
-
-          <!-- 좌측 -->
-          <div class="photo-list-item" onclick="openSideCapture('left')">
-            <div class="photo-list-left">
-              <div>
-                <div class="photo-list-name">좌측 촬영</div>
-                <div class="photo-list-sub">운전석 측면</div>
-              </div>
-            </div>
-            <div class="photo-list-right">
-              <span class="photo-list-count" id="pcar-count-left">0/5</span>
-              <span class="photo-list-arrow">›</span>
-            </div>
-          </div>
-
-          <!-- 우측 -->
-          <div class="photo-list-item" onclick="openSideCapture('right')">
-            <div class="photo-list-left">
-              <div>
-                <div class="photo-list-name">우측 촬영</div>
-                <div class="photo-list-sub">조수석 측면</div>
-              </div>
-            </div>
-            <div class="photo-list-right">
-              <span class="photo-list-count" id="pcar-count-right">0/5</span>
-              <span class="photo-list-arrow">›</span>
-            </div>
-          </div>
-
-          <!-- 기타 추가 사진 -->
-          <div class="photo-list-item photo-list-misc" onclick="openSideCapture('misc')">
-            <div class="photo-list-left">
-              <div>
-                <div class="photo-list-name">기타 추가 사진</div>
-                <div class="photo-list-sub">스크래치·파손 등 특이사항</div>
-              </div>
-            </div>
-            <div class="photo-list-right">
-              <span class="photo-list-count" id="pcar-count-misc">0/5</span>
-              <span class="photo-list-arrow">›</span>
-            </div>
-          </div>
-
-        </div>
-
-        <button class="photo-done-btn" onclick="finishPhotoCapture()">✅ 촬영 완료</button>
-      </div>
-    </div>
-
-    <!-- 방향별 사진 뷰어 -->
-    <div class="side-capture-overlay" id="side-capture-overlay" onclick="closeSideCapture(event)">
-      <div class="side-capture-box">
-        <div class="side-capture-header">
-          <span class="side-capture-title" id="side-capture-title">전면 촬영</span>
-          <button class="photo-modal-close" onclick="closeSideCaptureBtn()">✕</button>
-        </div>
-        <div class="side-thumb-row" id="side-thumb-row"></div>
-        <div class="side-add-wrap">
-          <button class="side-cam-btn" id="side-cam-open-btn" onclick="openCaroCamera()">
-            <span class="side-cam-icon">📷</span>
-            <span class="side-cam-label" id="side-cam-label-text">촬영</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ CARO 전용 카메라 화면 ══ -->
-    <div id="caro-camera-screen" class="caro-cam-screen">
-      <div class="caro-cam-header">
-        <span class="caro-cam-title" id="caro-cam-title">전면 촬영</span>
-      </div>
-      <!-- 카메라 뷰파인더 -->
-      <div class="caro-cam-viewfinder">
-        <video id="caro-cam-video" class="caro-cam-video" autoplay playsinline muted poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
-        <!-- 가이드 오버레이 -->
-        <div class="caro-cam-guide">
-          <div class="caro-cam-guide-corner tl"></div>
-          <div class="caro-cam-guide-corner tr"></div>
-          <div class="caro-cam-guide-corner bl"></div>
-          <div class="caro-cam-guide-corner br"></div>
-        </div>
-        <!-- 미리보기 (촬영 후) -->
-        <canvas id="caro-cam-canvas" class="caro-cam-canvas" style="display:none;"></canvas>
-      </div>
-      <!-- 하단 버튼 3개 -->
-      <div class="caro-cam-controls">
-        <button class="caro-cam-btn caro-cam-retry" id="caro-cam-retry-btn" onclick="caroRetake()" style="display:none;">
-          <span class="caro-cam-btn-icon">🔄</span>
-          <span class="caro-cam-btn-label">다시 촬영</span>
-        </button>
-        <button class="caro-cam-btn caro-cam-shutter" id="caro-cam-shutter-btn" onclick="caroShutter()">
-          <div class="caro-cam-shutter-ring">
-            <div class="caro-cam-shutter-dot"></div>
-          </div>
-        </button>
-        <button class="caro-cam-btn caro-cam-save" id="caro-cam-save-btn" onclick="caroSave()" style="display:none;">
-          <span class="caro-cam-btn-icon">💾</span>
-          <span class="caro-cam-btn-label">저장</span>
-        </button>
-        <!-- 촬영 전 취소 버튼 -->
-        <button class="caro-cam-btn caro-cam-cancel" id="caro-cam-cancel-btn" onclick="closeCaroCamera()">
-          <span class="caro-cam-btn-icon">✕</span>
-          <span class="caro-cam-btn-label">취소</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ══ 결제 수단 선택 바텀시트 ══ -->
-    <div class="modal-overlay" id="pay-sheet-overlay" onclick="closePaySheet(event)">
-      <div class="modal-box" style="max-width:480px;padding:0;">
-        <div style="padding:20px 20px 8px;">
-          <div style="font-size:1.1rem;font-weight:700;color:var(--text-1);margin-bottom:16px;">결제 수단을 선택하세요</div>
-          <div id="pay-sheet-list"></div>
-          <button onclick="closePaySheet();goTo('payment-info-screen');" style="display:flex;align-items:center;gap:10px;width:100%;padding:14px 0;background:none;border:none;border-top:1px solid var(--border);font-family:var(--font);font-size:.92rem;color:var(--text-m);cursor:pointer;margin-top:4px;">
-            <span style="font-size:1.1rem;">+</span> 결제 수단 추가하러 가기
-          </button>
-        </div>
-        <div style="padding:12px 20px 20px;">
-          <button onclick="confirmPaySheet()" style="width:100%;padding:15px;background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r);font-family:var(--font);font-size:1rem;font-weight:700;cursor:pointer;">확인</button>
-        </div>
-      </div>
-    </div>
-    <div id="toast" class="toast"></div>
-
-    <!-- ══ 안드로이드 PWA 설치 배너 ══ -->
-    <div id="android-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9990;
+<!-- ══ 안드로이드 PWA 설치 배너 ══ -->
+<div id="android-install-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:9990;
       background:linear-gradient(135deg,#18191c,#2e3138);
       padding:14px 18px calc(14px + env(safe-area-inset-bottom,0px));
       border-top:1px solid rgba(200,169,110,.3);
       box-shadow:0 -4px 20px rgba(0,0,0,.3);">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <img src="icon-192.png" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;" alt="CARO"/>
-        <div style="flex:1;">
-          <div style="font-family:'Oswald',sans-serif;font-size:.9rem;letter-spacing:.08em;color:#c8a96e;margin-bottom:2px;">CARO MOBILITY 앱 설치</div>
-          <div style="font-size:.76rem;color:rgba(220,228,240,.65);">홈 화면에 추가하고 앱처럼 사용하세요</div>
-        </div>
-        <button id="android-install-btn" onclick="triggerAndroidInstall()" style="
+  <div style="display:flex;align-items:center;gap:12px;">
+    <img src="icon-192.png" style="width:44px;height:44px;border-radius:10px;flex-shrink:0;" alt="CARO"/>
+    <div style="flex:1;">
+      <div style="font-family:'Oswald',sans-serif;font-size:.9rem;letter-spacing:.08em;color:#c8a96e;margin-bottom:2px;">CARO MOBILITY 앱 설치</div>
+      <div style="font-size:.76rem;color:rgba(220,228,240,.65);">홈 화면에 추가하고 앱처럼 사용하세요</div>
+    </div>
+    <button id="android-install-btn" onclick="triggerAndroidInstall()" style="
           background:#c8a96e;border:none;border-radius:8px;
           color:#18191c;font-family:'Pretendard',sans-serif;font-size:.8rem;font-weight:700;
           padding:8px 14px;cursor:pointer;flex-shrink:0;white-space:nowrap;">
-          설치
-        </button>
-        <button onclick="dismissAndroidBanner()" style="
+      설치
+    </button>
+    <button onclick="dismissAndroidBanner()" style="
           background:none;border:none;color:rgba(200,228,240,.4);
           font-size:1.2rem;cursor:pointer;padding:4px;flex-shrink:0;">✕</button>
-      </div>
-    </div>
+  </div>
+</div>
 
-    <!-- ══ Firebase SDK ══ -->
-    <script type="module" src="firebase-config.js"></script>
-    <script src="script.js"></script>
+<!-- ══ Firebase SDK ══ -->
+<script type="module" src="firebase-config.js"></script>
+<script src="script.js"></script>
 <script src="script-photo-upload.js?v=2"></script>
 <script src="customer-notices.js?v=3"></script>
 <script src="customer-monthly.js?v=1"></script>
@@ -1787,110 +1787,111 @@ if(window.navigator.standalone){
 <script src="customer-redesign.js?v=4"></script>
 <script src="customer-redesign.js?v=5"></script>
 <script src="customer-redesign.js?v=6"></script>
-    <!-- ══ 드럼롤 날짜/시간 피커 ══ -->
-    <div class="drum-overlay" id="drum-overlay" onclick="closeDrumPicker()">
-      <div class="drum-sheet" id="drum-sheet">
-        <div class="drum-header">
-          <span class="drum-title" id="drum-title">대여 시작</span>
-          <button class="drum-confirm-btn" onclick="confirmDrumPicker()">확인</button>
+<script src="customer-redesign.js?v=7"></script>
+<!-- ══ 드럼롤 날짜/시간 피커 ══ -->
+<div class="drum-overlay" id="drum-overlay" onclick="closeDrumPicker()">
+  <div class="drum-sheet" id="drum-sheet">
+    <div class="drum-header">
+      <span class="drum-title" id="drum-title">대여 시작</span>
+      <button class="drum-confirm-btn" onclick="confirmDrumPicker()">확인</button>
+    </div>
+    <!-- 날짜 + 시간 섹션 -->
+    <div class="drum-body">
+      <!-- 달력 날짜 드럼 -->
+      <div class="drum-section">
+        <div class="drum-label">날짜</div>
+        <div class="drum-wrap" id="drum-date-wrap">
+          <div class="drum-fade-top"></div>
+          <div class="drum-list" id="drum-date-list"></div>
+          <div class="drum-fade-bot"></div>
+          <div class="drum-selector"></div>
         </div>
-        <!-- 날짜 + 시간 섹션 -->
-        <div class="drum-body">
-          <!-- 달력 날짜 드럼 -->
-          <div class="drum-section">
-            <div class="drum-label">날짜</div>
-            <div class="drum-wrap" id="drum-date-wrap">
-              <div class="drum-fade-top"></div>
-              <div class="drum-list" id="drum-date-list"></div>
-              <div class="drum-fade-bot"></div>
-              <div class="drum-selector"></div>
-            </div>
-          </div>
-          <!-- 오전/오후 드럼 -->
-          <div class="drum-section drum-section-sm">
-            <div class="drum-label">오전/오후</div>
-            <div class="drum-wrap" id="drum-ampm-wrap">
-              <div class="drum-fade-top"></div>
-              <div class="drum-list" id="drum-ampm-list"></div>
-              <div class="drum-fade-bot"></div>
-              <div class="drum-selector"></div>
-            </div>
-          </div>
-          <!-- 시 드럼 -->
-          <div class="drum-section drum-section-sm">
-            <div class="drum-label">시</div>
-            <div class="drum-wrap" id="drum-hour-wrap">
-              <div class="drum-fade-top"></div>
-              <div class="drum-list" id="drum-hour-list"></div>
-              <div class="drum-fade-bot"></div>
-              <div class="drum-selector"></div>
-            </div>
-          </div>
-          <!-- 분 드럼 -->
-          <div class="drum-section drum-section-sm">
-            <div class="drum-label">분</div>
-            <div class="drum-wrap" id="drum-min-wrap">
-              <div class="drum-fade-top"></div>
-              <div class="drum-list" id="drum-min-list"></div>
-              <div class="drum-fade-bot"></div>
-              <div class="drum-selector"></div>
-            </div>
-          </div>
+      </div>
+      <!-- 오전/오후 드럼 -->
+      <div class="drum-section drum-section-sm">
+        <div class="drum-label">오전/오후</div>
+        <div class="drum-wrap" id="drum-ampm-wrap">
+          <div class="drum-fade-top"></div>
+          <div class="drum-list" id="drum-ampm-list"></div>
+          <div class="drum-fade-bot"></div>
+          <div class="drum-selector"></div>
+        </div>
+      </div>
+      <!-- 시 드럼 -->
+      <div class="drum-section drum-section-sm">
+        <div class="drum-label">시</div>
+        <div class="drum-wrap" id="drum-hour-wrap">
+          <div class="drum-fade-top"></div>
+          <div class="drum-list" id="drum-hour-list"></div>
+          <div class="drum-fade-bot"></div>
+          <div class="drum-selector"></div>
+        </div>
+      </div>
+      <!-- 분 드럼 -->
+      <div class="drum-section drum-section-sm">
+        <div class="drum-label">분</div>
+        <div class="drum-wrap" id="drum-min-wrap">
+          <div class="drum-fade-top"></div>
+          <div class="drum-list" id="drum-min-list"></div>
+          <div class="drum-fade-bot"></div>
+          <div class="drum-selector"></div>
         </div>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- ══ 반납 주차 확인 모달 ══ -->
-    <div class="modal-overlay" id="return-park-modal" onclick="closeReturnParkModal(event)">
-      <div class="modal-box" style="padding:0;">
-        <div class="modal-header">
-          <span class="modal-title">반납 확인</span>
-          <button class="modal-close" onclick="closeReturnParkModalDirect()">✕</button>
-        </div>
-        <div class="modal-body" style="padding:16px 20px;">
-          <p style="font-size:.9rem;font-weight:700;color:var(--text-1);margin-bottom:16px;">차량을 <strong id="return-park-spot">지정 주차 구역</strong>에<br>주차하셨습니까?</p>
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <button class="submit-btn" onclick="confirmReturn('yes')" style="margin:0;padding:12px;font-size:.88rem;">✅ 네, 지정 위치에 주차했습니다</button>
-            <button class="submit-btn" onclick="confirmReturn('other')" style="margin:0;padding:12px;font-size:.88rem;background:rgba(180,120,30,.85);">⚠️ 다른 위치에 주차했습니다</button>
-            <button class="back-bottom-btn" onclick="closeReturnParkModalDirect()" style="margin:0;">취소</button>
-          </div>
-        </div>
+<!-- ══ 반납 주차 확인 모달 ══ -->
+<div class="modal-overlay" id="return-park-modal" onclick="closeReturnParkModal(event)">
+  <div class="modal-box" style="padding:0;">
+    <div class="modal-header">
+      <span class="modal-title">반납 확인</span>
+      <button class="modal-close" onclick="closeReturnParkModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px;">
+      <p style="font-size:.9rem;font-weight:700;color:var(--text-1);margin-bottom:16px;">차량을 <strong id="return-park-spot">지정 주차 구역</strong>에<br>주차하셨습니까?</p>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button class="submit-btn" onclick="confirmReturn('yes')" style="margin:0;padding:12px;font-size:.88rem;">✅ 네, 지정 위치에 주차했습니다</button>
+        <button class="submit-btn" onclick="confirmReturn('other')" style="margin:0;padding:12px;font-size:.88rem;background:rgba(180,120,30,.85);">⚠️ 다른 위치에 주차했습니다</button>
+        <button class="back-bottom-btn" onclick="closeReturnParkModalDirect()" style="margin:0;">취소</button>
       </div>
     </div>
+  </div>
+</div>
 
-    <!-- ══ 대체 주차 신고 모달 ══ -->
-    <div class="modal-overlay" id="alt-park-modal" onclick="closeAltParkModal(event)">
-      <div class="modal-box" style="padding:0;">
-        <div class="modal-header">
-          <span class="modal-title">대체 주차 신고</span>
-          <button class="modal-close" onclick="closeAltParkModalDirect()">✕</button>
-        </div>
-        <div class="modal-body" style="padding:16px 20px;">
-          <p style="font-size:.82rem;color:var(--text-m);margin-bottom:12px;">지정 주차 구역 사용이 불가하여 다른 위치에 주차한 경우, 위치 설명과 사진을 등록해 주세요.</p>
-          <textarea id="alt-park-desc" class="res-input" style="width:100%;min-height:72px;resize:vertical;box-sizing:border-box;margin-bottom:10px;" placeholder="예: B2층 48번 구역, 타 차량 점유로 인해 B2층 52번에 주차"></textarea>
-          <div style="margin-bottom:12px;">
-            <button class="ctrl-misc-btn" onclick="addAltParkPhoto()" style="width:100%;margin:0;">
-              <span id="alt-park-photo-count">📸 사진 첨부 (0장)</span>
-            </button>
-            <div id="alt-park-photo-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
-          </div>
-          <button class="submit-btn" onclick="submitAltPark()" style="margin:0;padding:12px;font-size:.88rem;">📋 신고 후 반납 진행</button>
-        </div>
-      </div>
+<!-- ══ 대체 주차 신고 모달 ══ -->
+<div class="modal-overlay" id="alt-park-modal" onclick="closeAltParkModal(event)">
+  <div class="modal-box" style="padding:0;">
+    <div class="modal-header">
+      <span class="modal-title">대체 주차 신고</span>
+      <button class="modal-close" onclick="closeAltParkModalDirect()">✕</button>
     </div>
+    <div class="modal-body" style="padding:16px 20px;">
+      <p style="font-size:.82rem;color:var(--text-m);margin-bottom:12px;">지정 주차 구역 사용이 불가하여 다른 위치에 주차한 경우, 위치 설명과 사진을 등록해 주세요.</p>
+      <textarea id="alt-park-desc" class="res-input" style="width:100%;min-height:72px;resize:vertical;box-sizing:border-box;margin-bottom:10px;" placeholder="예: B2층 48번 구역, 타 차량 점유로 인해 B2층 52번에 주차"></textarea>
+      <div style="margin-bottom:12px;">
+        <button class="ctrl-misc-btn" onclick="addAltParkPhoto()" style="width:100%;margin:0;">
+          <span id="alt-park-photo-count">📸 사진 첨부 (0장)</span>
+        </button>
+        <div id="alt-park-photo-preview" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+      </div>
+      <button class="submit-btn" onclick="submitAltPark()" style="margin:0;padding:12px;font-size:.88rem;">📋 신고 후 반납 진행</button>
+    </div>
+  </div>
+</div>
 
-    <!-- ══ 예약 취소 확인 모달 ══ -->
-    <div class="modal-overlay" id="cancel-confirm-modal" onclick="closeCancelConfirmModal(event)" style="z-index:9999;">
-      <div class="modal-box" style="padding:0;" id="cancel-confirm-box">
-        <div class="modal-header">
-          <span class="modal-title">예약 취소 확인</span>
-          <button class="modal-close" onclick="closeCancelConfirmModalDirect()">✕</button>
-        </div>
-        <div class="modal-body" style="padding:16px 20px 20px;">
-          <div id="cancel-confirm-content"></div>
-        </div>
-      </div>
+<!-- ══ 예약 취소 확인 모달 ══ -->
+<div class="modal-overlay" id="cancel-confirm-modal" onclick="closeCancelConfirmModal(event)" style="z-index:9999;">
+  <div class="modal-box" style="padding:0;" id="cancel-confirm-box">
+    <div class="modal-header">
+      <span class="modal-title">예약 취소 확인</span>
+      <button class="modal-close" onclick="closeCancelConfirmModalDirect()">✕</button>
     </div>
+    <div class="modal-body" style="padding:16px 20px 20px;">
+      <div id="cancel-confirm-content"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ══ 고객센터 ══ -->
 <div id="cs-screen" class="screen">
@@ -2499,5 +2500,5 @@ if(window.navigator.standalone){
     </div>
   </div>
 </div>
-    </body>
-    </html>
+</body>
+</html>
