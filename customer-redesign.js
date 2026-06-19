@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 홈 리디자인 v15
+   CARO MOBILITY — 고객 앱 홈 리디자인 v16
    ───────────────────────────────────────────────────────────
    · 골드 히어로/THE BLACK/이벤트는 그대로 유지
    · 타일 아이콘 칩: 검정 → 실버(배경 톤에 맞춤)
    · 히어로 자동차 라인 그림 제거
    적용: index.html — customer-monthly.js 줄 다음:
-     <script src="customer-redesign.js?v=15"></script>
+     <script src="customer-redesign.js?v=16"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -88,15 +88,15 @@
     var g=document.querySelector('#home-screen .home-grid-layout');
     if(!g || g.dataset.caro) return;
     g.dataset.caro='1'; g.classList.add('caro-actions');
-    g.innerHTML='<div class="caro-tiles">'
-      +'<button class="caro-tile" onclick="goTo(\'my-reservation-screen\')"><span class="ct-ic">'+ICON_RESV+'</span><span class="ct-l">예약 확인</span></button>'
-      +'<button class="caro-tile" onclick="if(window.openMonthly)openMonthly()"><span class="ct-ic">'+ICON_CAR+'</span><span class="ct-l">월 렌트</span><span class="ct-s">한 달 단위 대여</span></button>'
-      +'</div>'
-      +'<button class="caro-black-row" onclick="goBlackLabel()">'
+    g.innerHTML='<button class="caro-black-row" onclick="goBlackLabel()">'
       +'<span class="cb-dia">◆</span>'
       +'<span class="cb-txt"><span class="cb-t">CARO THE BLACK</span>'
       +'<span class="cb-s">프리미엄 차량 · 전담 컨시어지</span></span>'
-      +'<span class="cb-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></button>';
+      +'<span class="cb-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></button>'
+      +'<div class="caro-tiles">'
+      +'<button class="caro-tile" onclick="goTo(\'my-reservation-screen\')"><span class="ct-ic">'+ICON_RESV+'</span><span class="ct-l">예약 확인</span></button>'
+      +'<button class="caro-tile" onclick="if(window.openMonthly)openMonthly()"><span class="ct-ic">'+ICON_CAR+'</span><span class="ct-l">월 렌트</span><span class="ct-s">한 달 단위 대여</span></button>'
+      +'</div>';
   }
   function cleanTitles(){
     document.querySelectorAll('#home-screen .home-section-title').forEach(function(el){
@@ -129,7 +129,7 @@
       new MutationObserver(function(){ if(pend) return; pend=true;
         requestAnimationFrame(function(){ pend=false; apply(); }); }).observe(home,{childList:true,subtree:true,characterData:true});
     }
-    console.log('[디자인] ✅ 홈 리디자인 v15 (실버 칩 + 자동차 그림 제거)');
+    console.log('[디자인] ✅ 홈 리디자인 v16 (실버 칩 + 자동차 그림 제거)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
