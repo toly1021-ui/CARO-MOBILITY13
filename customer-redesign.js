@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 홈 리디자인 v6
+   CARO MOBILITY — 고객 앱 홈 리디자인 v7
    ───────────────────────────────────────────────────────────
    · 색상: 골드 버전 복귀 (첫 번째 시안 톤)
    · 하단 탭바: body로 분리 + position:fixed → 화면에 진짜 고정
      (홈 화면이 active일 때만 표시. 스크롤 따라다니던 버그 해결)
    · 이벤트/공지는 원래 색 유지 (골드 강제 안 함)
    적용: index.html — customer-monthly.js 줄 다음:
-     <script src="customer-redesign.js?v=6"></script>
+     <script src="customer-redesign.js?v=7"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -20,6 +20,7 @@
   var st=document.createElement('style');
   st.textContent=
     '#home-screen{justify-content:flex-start!important;}'
+    +'#home-menu-btn{display:none!important;}'
     +
     '#home-screen .home-brand{font-family:var(--font-brand);letter-spacing:.12em;font-weight:600;color:var(--accent);}'
     /* 히어로 — 골드 */
@@ -133,7 +134,7 @@
       new MutationObserver(function(){ if(pend) return; pend=true;
         requestAnimationFrame(function(){ pend=false; apply(); }); }).observe(home,{childList:true,subtree:true,characterData:true});
     }
-    console.log('[디자인] ✅ 홈 리디자인 v6 (골드 + 탭바 body고정)');
+    console.log('[디자인] ✅ 홈 리디자인 v7 (골드 + 탭바 body고정)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
