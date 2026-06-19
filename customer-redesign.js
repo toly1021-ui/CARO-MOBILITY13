@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 홈 리디자인 v12
+   CARO MOBILITY — 고객 앱 홈 리디자인 v15
    ───────────────────────────────────────────────────────────
    · 골드 히어로/THE BLACK/이벤트는 그대로 유지
    · 타일 아이콘 칩: 검정 → 실버(배경 톤에 맞춤)
    · 히어로 자동차 라인 그림 제거
    적용: index.html — customer-monthly.js 줄 다음:
-     <script src="customer-redesign.js?v=12"></script>
+     <script src="customer-redesign.js?v=15"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -28,11 +28,11 @@
     +'background:radial-gradient(circle,rgba(198,164,104,.16),transparent 70%);pointer-events:none;}'
     +'#home-screen .caro-hero-ey{font-size:.85rem;color:var(--text-m);margin-bottom:14px;position:relative;z-index:1;font-weight:500;}'
     +'.caro-hero-h{font-size:1.9rem;font-weight:800;line-height:1.18;letter-spacing:-.02em;color:var(--text-1);position:relative;z-index:1;}'
-    +'.caro-hero-h .g{color:#a8803a;}'
+    +'.caro-hero-h .g{color:var(--text-1);}'
     +'.caro-hero-cta{display:inline-flex;align-items:center;gap:9px;margin-top:20px;position:relative;z-index:1;'
-    +'background:linear-gradient(135deg,#e3cd92,#c6a468);color:#1c1607;font-weight:700;font-size:.96rem;'
-    +'padding:13px 20px;border-radius:14px;border:none;font-family:inherit;cursor:pointer;'
-    +'box-shadow:0 8px 18px -8px rgba(198,164,104,.7);}'
+    +'background:linear-gradient(135deg,#eef1f5,#cdd3db);color:var(--text-1);font-weight:700;font-size:.96rem;'
+    +'padding:13px 20px;border-radius:14px;border:1px solid var(--border-l);font-family:inherit;cursor:pointer;'
+    +'box-shadow:0 2px 6px -2px rgba(24,25,28,.12);}'
     +'.caro-hero-cta svg{width:18px;height:18px;}'
     /* 액션 */
     +'#home-screen .home-grid-layout.caro-actions{display:flex;flex-direction:column;gap:12px;}'
@@ -88,15 +88,15 @@
     var g=document.querySelector('#home-screen .home-grid-layout');
     if(!g || g.dataset.caro) return;
     g.dataset.caro='1'; g.classList.add('caro-actions');
-    g.innerHTML='<button class="caro-black-row" onclick="goBlackLabel()">'
+    g.innerHTML='<div class="caro-tiles">'
+      +'<button class="caro-tile" onclick="goTo(\'my-reservation-screen\')"><span class="ct-ic">'+ICON_RESV+'</span><span class="ct-l">예약 확인</span></button>'
+      +'<button class="caro-tile" onclick="if(window.openMonthly)openMonthly()"><span class="ct-ic">'+ICON_CAR+'</span><span class="ct-l">월 렌트</span><span class="ct-s">한 달 단위 대여</span></button>'
+      +'</div>'
+      +'<button class="caro-black-row" onclick="goBlackLabel()">'
       +'<span class="cb-dia">◆</span>'
       +'<span class="cb-txt"><span class="cb-t">CARO THE BLACK</span>'
       +'<span class="cb-s">프리미엄 차량 · 전담 컨시어지</span></span>'
-      +'<span class="cb-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></button>'
-      +'<div class="caro-tiles">'
-      +'<button class="caro-tile" onclick="goTo(\'my-reservation-screen\')"><span class="ct-ic">'+ICON_RESV+'</span><span class="ct-l">예약 확인</span></button>'
-      +'<button class="caro-tile" onclick="if(window.openMonthly)openMonthly()"><span class="ct-ic">'+ICON_CAR+'</span><span class="ct-l">월 렌트</span><span class="ct-s">한 달 단위 대여</span></button>'
-      +'</div>';
+      +'<span class="cb-arr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span></button>';
   }
   function cleanTitles(){
     document.querySelectorAll('#home-screen .home-section-title').forEach(function(el){
@@ -129,7 +129,7 @@
       new MutationObserver(function(){ if(pend) return; pend=true;
         requestAnimationFrame(function(){ pend=false; apply(); }); }).observe(home,{childList:true,subtree:true,characterData:true});
     }
-    console.log('[디자인] ✅ 홈 리디자인 v12 (실버 칩 + 자동차 그림 제거)');
+    console.log('[디자인] ✅ 홈 리디자인 v15 (실버 칩 + 자동차 그림 제거)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
