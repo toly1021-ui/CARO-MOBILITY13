@@ -1,12 +1,11 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 홈 리디자인 v9
+   CARO MOBILITY — 고객 앱 홈 리디자인 v11
    ───────────────────────────────────────────────────────────
-   · 색상: 골드 버전 복귀 (첫 번째 시안 톤)
-   · 하단 탭바: body로 분리 + position:fixed → 화면에 진짜 고정
-     (홈 화면이 active일 때만 표시. 스크롤 따라다니던 버그 해결)
-   · 이벤트/공지는 원래 색 유지 (골드 강제 안 함)
+   · 골드 히어로/THE BLACK/이벤트는 그대로 유지
+   · 타일 아이콘 칩: 검정 → 실버(배경 톤에 맞춤)
+   · 히어로 자동차 라인 그림 제거
    적용: index.html — customer-monthly.js 줄 다음:
-     <script src="customer-redesign.js?v=9"></script>
+     <script src="customer-redesign.js?v=11"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -15,21 +14,18 @@
   var ICON_HOME='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/></svg>';
   var ICON_USER='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>';
   var ICON_ARROW='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
-  var CAR_ART='<svg class="caro-hero-car" viewBox="0 0 200 110" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 70l14-30a14 14 0 0113-9h66a14 14 0 0113 8l16 31"/><path d="M10 70h170v22a5 5 0 01-5 5h-12a13 13 0 01-26 0H53a13 13 0 01-26 0H15a5 5 0 01-5-5V70z"/><circle cx="40" cy="85" r="8"/><circle cx="148" cy="85" r="8"/></svg>';
 
   var st=document.createElement('style');
   st.textContent=
     '#home-screen{justify-content:flex-start!important;}'
     +'#home-menu-btn{display:none!important;}'
-    +
-    '#home-screen .home-brand{font-family:var(--font-brand);letter-spacing:.12em;font-weight:600;color:var(--accent);}'
-    /* 히어로 — 골드 */
+    +'#home-screen .home-brand{font-family:var(--font-brand);letter-spacing:.12em;font-weight:600;color:var(--accent);}'
+    /* 히어로 — 골드 (자동차 그림 없음) */
     +'#home-screen .home-welcome-banner.caro-hero{position:relative;overflow:hidden;color:#fff;display:block;'
     +'background:linear-gradient(155deg,#262a33 0%,#15161b 70%);border-radius:24px;padding:26px 24px 24px;'
     +'box-shadow:0 18px 40px -22px rgba(20,22,28,.7);}'
     +'.caro-hero-glow{position:absolute;right:-40px;top:-52px;width:172px;height:172px;border-radius:50%;'
     +'background:radial-gradient(circle,rgba(198,164,104,.32),transparent 70%);pointer-events:none;}'
-    +'.caro-hero-car{position:absolute;right:-26px;bottom:-18px;width:188px;height:108px;opacity:.16;color:#fff;}'
     +'#home-screen .caro-hero-ey{font-size:.85rem;color:#a7adba;margin-bottom:14px;position:relative;z-index:1;font-weight:500;}'
     +'.caro-hero-h{font-size:1.9rem;font-weight:800;line-height:1.18;letter-spacing:-.02em;color:#fff;position:relative;z-index:1;}'
     +'.caro-hero-h .g{color:#e3cd92;}'
@@ -53,18 +49,15 @@
     +'.caro-tile{background:var(--glass2);border:1px solid var(--border-l);border-radius:20px;padding:18px 16px;'
     +'display:flex;flex-direction:column;gap:13px;align-items:flex-start;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);'
     +'font-family:inherit;cursor:pointer;text-align:left;min-height:122px;}'
-    +'.caro-tile .ct-ic{width:40px;height:40px;border-radius:12px;background:rgba(198,164,104,.16);'
-    +'display:flex;align-items:center;justify-content:center;color:#9a7530;}'
+    /* 아이콘 칩 — 실버(배경 톤) + 잉크 아이콘 */
+    +'.caro-tile .ct-ic{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#eef1f5,#cdd3db);'
+    +'border:1px solid var(--border-l);display:flex;align-items:center;justify-content:center;color:#2e3138;}'
     +'.caro-tile .ct-ic svg{width:22px;height:22px;}'
     +'.caro-tile .ct-l{font-size:.96rem;font-weight:700;color:var(--text-1);letter-spacing:-.01em;}'
     +'.caro-tile .ct-s{font-size:.72rem;color:var(--text-m);margin-top:-7px;}'
     +'#monthlyRentBtn{display:none!important;}'
     +'#home-screen .home-section-title{font-weight:700;letter-spacing:-.01em;color:var(--text-1);font-size:1.04rem;}'
     +'#home-screen .home-notice-list{background:var(--glass2);border:1px solid var(--border-l);border-radius:18px;overflow:hidden;}'
-    /* 이벤트 슬라이드 — 프리미엄 다크+골드로 통일 */
-    +'#home-screen .sg1,#home-screen .sg3,#home-screen .sg5{background:linear-gradient(135deg,#23262f 0%,#15161b 72%)!important;}'
-    +'#home-screen .sg2,#home-screen .sg4{background:linear-gradient(135deg,#2a2214 0%,#16120a 72%)!important;}'
-    +'#home-screen .slide-badge{background:rgba(227,205,146,.2)!important;color:#e3cd92!important;}'
     /* 하단 탭바 — body 고정 */
     +'#home-screen .home-body{padding-bottom:98px;}'
     +'#caroTabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;align-items:center;'
@@ -86,7 +79,7 @@
     var old=document.getElementById('home-welcome-name');
     var greet=old?stripEmoji(old.textContent):'';
     b.dataset.caro='1'; b.classList.add('caro-hero');
-    b.innerHTML='<div class="caro-hero-glow"></div>'+CAR_ART
+    b.innerHTML='<div class="caro-hero-glow"></div>'
       +'<div class="caro-hero-ey" id="home-welcome-name">'+greet+'</div>'
       +'<div class="caro-hero-h">어디로<br><span class="g">떠나볼까요?</span></div>'
       +'<button class="caro-hero-cta" onclick="goTo(\'rental-screen\')">차량 예약하기 '+ICON_ARROW+'</button>';
@@ -121,13 +114,11 @@
     bar.appendChild(tab(false,ICON_CAR,'예약',function(){ if(window.goTo)goTo('rental-screen'); }));
     bar.appendChild(tab(false,ICON_RESV,'내 예약',function(){ if(window.goTo)goTo('my-reservation-screen'); }));
     bar.appendChild(tab(false,ICON_USER,'메뉴',function(){ if(window.openHomeMenu)openHomeMenu(); }));
-    document.body.appendChild(bar);   /* 화면 영역 밖 → 진짜 고정 */
+    document.body.appendChild(bar);
     var home=document.getElementById('home-screen');
     function sync(){ bar.style.display=(home && home.classList.contains('active'))?'flex':'none'; }
     sync();
-    if(home && window.MutationObserver){
-      new MutationObserver(sync).observe(home,{attributes:true,attributeFilter:['class']});
-    }
+    if(home && window.MutationObserver){ new MutationObserver(sync).observe(home,{attributes:true,attributeFilter:['class']}); }
   }
   function apply(){ buildHero(); buildActions(); cleanTitles(); addTabbar(); }
   function boot(){
@@ -138,7 +129,7 @@
       new MutationObserver(function(){ if(pend) return; pend=true;
         requestAnimationFrame(function(){ pend=false; apply(); }); }).observe(home,{childList:true,subtree:true,characterData:true});
     }
-    console.log('[디자인] ✅ 홈 리디자인 v9 (골드 + 탭바 body고정)');
+    console.log('[디자인] ✅ 홈 리디자인 v11 (실버 칩 + 자동차 그림 제거)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
