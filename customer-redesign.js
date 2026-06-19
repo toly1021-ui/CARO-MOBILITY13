@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 홈 리디자인 v7
+   CARO MOBILITY — 고객 앱 홈 리디자인 v9
    ───────────────────────────────────────────────────────────
    · 색상: 골드 버전 복귀 (첫 번째 시안 톤)
    · 하단 탭바: body로 분리 + position:fixed → 화면에 진짜 고정
      (홈 화면이 active일 때만 표시. 스크롤 따라다니던 버그 해결)
    · 이벤트/공지는 원래 색 유지 (골드 강제 안 함)
    적용: index.html — customer-monthly.js 줄 다음:
-     <script src="customer-redesign.js?v=7"></script>
+     <script src="customer-redesign.js?v=9"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -53,14 +53,18 @@
     +'.caro-tile{background:var(--glass2);border:1px solid var(--border-l);border-radius:20px;padding:18px 16px;'
     +'display:flex;flex-direction:column;gap:13px;align-items:flex-start;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);'
     +'font-family:inherit;cursor:pointer;text-align:left;min-height:122px;}'
-    +'.caro-tile .ct-ic{width:40px;height:40px;border-radius:12px;background:var(--accent);'
-    +'display:flex;align-items:center;justify-content:center;color:#fff;}'
+    +'.caro-tile .ct-ic{width:40px;height:40px;border-radius:12px;background:rgba(198,164,104,.16);'
+    +'display:flex;align-items:center;justify-content:center;color:#9a7530;}'
     +'.caro-tile .ct-ic svg{width:22px;height:22px;}'
     +'.caro-tile .ct-l{font-size:.96rem;font-weight:700;color:var(--text-1);letter-spacing:-.01em;}'
     +'.caro-tile .ct-s{font-size:.72rem;color:var(--text-m);margin-top:-7px;}'
     +'#monthlyRentBtn{display:none!important;}'
     +'#home-screen .home-section-title{font-weight:700;letter-spacing:-.01em;color:var(--text-1);font-size:1.04rem;}'
     +'#home-screen .home-notice-list{background:var(--glass2);border:1px solid var(--border-l);border-radius:18px;overflow:hidden;}'
+    /* 이벤트 슬라이드 — 프리미엄 다크+골드로 통일 */
+    +'#home-screen .sg1,#home-screen .sg3,#home-screen .sg5{background:linear-gradient(135deg,#23262f 0%,#15161b 72%)!important;}'
+    +'#home-screen .sg2,#home-screen .sg4{background:linear-gradient(135deg,#2a2214 0%,#16120a 72%)!important;}'
+    +'#home-screen .slide-badge{background:rgba(227,205,146,.2)!important;color:#e3cd92!important;}'
     /* 하단 탭바 — body 고정 */
     +'#home-screen .home-body{padding-bottom:98px;}'
     +'#caroTabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;align-items:center;'
@@ -134,7 +138,7 @@
       new MutationObserver(function(){ if(pend) return; pend=true;
         requestAnimationFrame(function(){ pend=false; apply(); }); }).observe(home,{childList:true,subtree:true,characterData:true});
     }
-    console.log('[디자인] ✅ 홈 리디자인 v7 (골드 + 탭바 body고정)');
+    console.log('[디자인] ✅ 홈 리디자인 v9 (골드 + 탭바 body고정)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
