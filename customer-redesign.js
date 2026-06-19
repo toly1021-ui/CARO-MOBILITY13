@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 홈 리디자인 v16
+   CARO MOBILITY — 고객 앱 홈 리디자인 v17
    ───────────────────────────────────────────────────────────
    · 골드 히어로/THE BLACK/이벤트는 그대로 유지
    · 타일 아이콘 칩: 검정 → 실버(배경 톤에 맞춤)
    · 히어로 자동차 라인 그림 제거
    적용: index.html — customer-monthly.js 줄 다음:
-     <script src="customer-redesign.js?v=16"></script>
+     <script src="customer-redesign.js?v=17"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -26,6 +26,7 @@
     +'box-shadow:0 1px 2px rgba(24,25,28,.04);}'
     +'.caro-hero-glow{position:absolute;right:-40px;top:-52px;width:172px;height:172px;border-radius:50%;'
     +'background:radial-gradient(circle,rgba(198,164,104,.16),transparent 70%);pointer-events:none;}'
+    +'.caro-hero-car-img{position:absolute;right:-6px;bottom:0;width:58%;max-width:240px;height:auto;opacity:.96;pointer-events:none;z-index:0;}'
     +'#home-screen .caro-hero-ey{font-size:.85rem;color:var(--text-m);margin-bottom:14px;position:relative;z-index:1;font-weight:500;}'
     +'.caro-hero-h{font-size:1.9rem;font-weight:800;line-height:1.18;letter-spacing:-.02em;color:var(--text-1);position:relative;z-index:1;}'
     +'.caro-hero-h .g{color:var(--text-1);}'
@@ -79,10 +80,12 @@
     var old=document.getElementById('home-welcome-name');
     var greet=old?stripEmoji(old.textContent):'';
     b.dataset.caro='1'; b.classList.add('caro-hero');
-    b.innerHTML='<div class="caro-hero-glow"></div>'
+    b.innerHTML='<img class="caro-hero-car-img" src="hero-car.png" alt="">'
       +'<div class="caro-hero-ey" id="home-welcome-name">'+greet+'</div>'
       +'<div class="caro-hero-h">어디로<br><span class="g">떠나볼까요?</span></div>'
       +'<button class="caro-hero-cta" onclick="goTo(\'rental-screen\')">차량 예약하기 '+ICON_ARROW+'</button>';
+    var cimg=b.querySelector('.caro-hero-car-img');
+    if(cimg) cimg.onerror=function(){ this.style.display='none'; };
   }
   function buildActions(){
     var g=document.querySelector('#home-screen .home-grid-layout');
@@ -129,7 +132,7 @@
       new MutationObserver(function(){ if(pend) return; pend=true;
         requestAnimationFrame(function(){ pend=false; apply(); }); }).observe(home,{childList:true,subtree:true,characterData:true});
     }
-    console.log('[디자인] ✅ 홈 리디자인 v16 (실버 칩 + 자동차 그림 제거)');
+    console.log('[디자인] ✅ 홈 리디자인 v17 (실버 칩 + 자동차 그림 제거)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
