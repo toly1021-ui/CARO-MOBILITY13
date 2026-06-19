@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 홈 리디자인 v4
+   CARO MOBILITY — 고객 앱 홈 리디자인 v5
    ───────────────────────────────────────────────────────────
-   · 레이아웃: v3 그대로 (히어로 + THE BLACK 줄 + 타일 + 탭바)
-   · 색상: 원래 앱 톤 복귀 (잉크 다크 배너 / 실버 글래스 / 화이트 CTA)
-           내가 넣었던 골드 제거. THE BLACK 골드만 원래대로 유지.
-   · 하단 탭바: position:fixed 로 화면에 고정 (스크롤 따라다니는 버그 수정)
+   · 색상: 골드 버전 복귀 (첫 번째 시안 톤)
+   · 하단 탭바: body로 분리 + position:fixed → 화면에 진짜 고정
+     (홈 화면이 active일 때만 표시. 스크롤 따라다니던 버그 해결)
+   · 이벤트/공지는 원래 색 유지 (골드 강제 안 함)
    적용: index.html — customer-monthly.js 줄 다음:
-     <script src="customer-redesign.js?v=4"></script>
+     <script src="customer-redesign.js?v=5"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -20,33 +20,34 @@
   var st=document.createElement('style');
   st.textContent=
     '#home-screen .home-brand{font-family:var(--font-brand);letter-spacing:.12em;font-weight:600;color:var(--accent);}'
-    /* 히어로 — 원래 다크 배너 색 */
+    /* 히어로 — 골드 */
     +'#home-screen .home-welcome-banner.caro-hero{position:relative;overflow:hidden;color:#fff;display:block;'
-    +'background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);border-radius:var(--r2);'
-    +'padding:26px 24px 24px;box-shadow:0 6px 20px rgba(24,25,28,.24);}'
+    +'background:linear-gradient(155deg,#262a33 0%,#15161b 70%);border-radius:24px;padding:26px 24px 24px;'
+    +'box-shadow:0 18px 40px -22px rgba(20,22,28,.7);}'
     +'.caro-hero-glow{position:absolute;right:-40px;top:-52px;width:172px;height:172px;border-radius:50%;'
-    +'background:radial-gradient(circle,rgba(255,255,255,.08),transparent 70%);pointer-events:none;}'
-    +'.caro-hero-car{position:absolute;right:-26px;bottom:-18px;width:188px;height:108px;opacity:.13;color:#fff;}'
-    +'#home-screen .caro-hero-ey{font-size:.85rem;color:rgba(220,228,240,.78);margin-bottom:14px;position:relative;z-index:1;font-weight:500;}'
+    +'background:radial-gradient(circle,rgba(198,164,104,.32),transparent 70%);pointer-events:none;}'
+    +'.caro-hero-car{position:absolute;right:-26px;bottom:-18px;width:188px;height:108px;opacity:.16;color:#fff;}'
+    +'#home-screen .caro-hero-ey{font-size:.85rem;color:#a7adba;margin-bottom:14px;position:relative;z-index:1;font-weight:500;}'
     +'.caro-hero-h{font-size:1.9rem;font-weight:800;line-height:1.18;letter-spacing:-.02em;color:#fff;position:relative;z-index:1;}'
-    +'.caro-hero-h .g{color:var(--silver-base);}'
+    +'.caro-hero-h .g{color:#e3cd92;}'
     +'.caro-hero-cta{display:inline-flex;align-items:center;gap:9px;margin-top:20px;position:relative;z-index:1;'
-    +'background:#fff;color:var(--accent);font-weight:700;font-size:.96rem;padding:13px 20px;border-radius:14px;'
-    +'border:none;font-family:inherit;cursor:pointer;box-shadow:0 8px 18px -10px rgba(0,0,0,.45);}'
+    +'background:linear-gradient(135deg,#e3cd92,#c6a468);color:#1c1607;font-weight:700;font-size:.96rem;'
+    +'padding:13px 20px;border-radius:14px;border:none;font-family:inherit;cursor:pointer;'
+    +'box-shadow:0 8px 18px -8px rgba(198,164,104,.7);}'
     +'.caro-hero-cta svg{width:18px;height:18px;}'
     /* 액션 */
     +'#home-screen .home-grid-layout.caro-actions{display:flex;flex-direction:column;gap:12px;}'
-    +'.caro-black-row{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:var(--r2);color:#efe7d4;'
-    +'background:linear-gradient(135deg,#20232b,#14151a);border:1px solid rgba(200,169,110,.3);'
+    +'.caro-black-row{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:20px;color:#efe7d4;'
+    +'background:linear-gradient(135deg,#20232b,#14151a);border:1px solid rgba(198,164,104,.32);'
     +'width:100%;font-family:inherit;cursor:pointer;text-align:left;}'
-    +'.caro-black-row .cb-dia{color:#c8a96e;font-size:.85rem;flex-shrink:0;}'
+    +'.caro-black-row .cb-dia{color:#c6a468;font-size:.85rem;flex-shrink:0;}'
     +'.caro-black-row .cb-txt{display:flex;flex-direction:column;min-width:0;}'
     +'.caro-black-row .cb-t{font-family:var(--font-brand);letter-spacing:.15em;font-weight:600;font-size:.92rem;color:#fff;}'
     +'.caro-black-row .cb-s{font-size:.72rem;color:#9a958c;margin-top:3px;}'
-    +'.caro-black-row .cb-arr{margin-left:auto;color:#c8a96e;display:flex;flex-shrink:0;}'
+    +'.caro-black-row .cb-arr{margin-left:auto;color:#c6a468;display:flex;flex-shrink:0;}'
     +'.caro-black-row .cb-arr svg{width:20px;height:20px;}'
     +'.caro-tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;}'
-    +'.caro-tile{background:var(--glass2);border:1px solid var(--border-l);border-radius:var(--r2);padding:18px 16px;'
+    +'.caro-tile{background:var(--glass2);border:1px solid var(--border-l);border-radius:20px;padding:18px 16px;'
     +'display:flex;flex-direction:column;gap:13px;align-items:flex-start;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);'
     +'font-family:inherit;cursor:pointer;text-align:left;min-height:122px;}'
     +'.caro-tile .ct-ic{width:40px;height:40px;border-radius:12px;background:var(--accent);'
@@ -57,11 +58,11 @@
     +'#monthlyRentBtn{display:none!important;}'
     +'#home-screen .home-section-title{font-weight:700;letter-spacing:-.01em;color:var(--text-1);font-size:1.04rem;}'
     +'#home-screen .home-notice-list{background:var(--glass2);border:1px solid var(--border-l);border-radius:18px;overflow:hidden;}'
-    /* 하단 탭바 — fixed 고정 (스크롤 버그 수정) */
-    +'#home-screen .home-body{padding-bottom:96px;}'
-    +'.caro-tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;align-items:center;'
-    +'padding:9px 12px calc(12px + var(--sab));background:rgba(243,245,249,.94);backdrop-filter:blur(16px);'
-    +'-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border-l);z-index:60;}'
+    /* 하단 탭바 — body 고정 */
+    +'#home-screen .home-body{padding-bottom:98px;}'
+    +'#caroTabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;align-items:center;'
+    +'padding:9px 12px calc(12px + var(--sab));background:rgba(243,245,249,.96);backdrop-filter:blur(16px);'
+    +'-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--border-l);z-index:500;}'
     +'.caro-tab{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10.5px;color:var(--text-m);'
     +'background:none;border:none;font-family:inherit;cursor:pointer;padding:4px 10px;letter-spacing:-.01em;}'
     +'.caro-tab.on{color:var(--accent);font-weight:600;}'
@@ -105,16 +106,21 @@
     if(ey){ var t=stripEmoji(ey.textContent); if(t!==ey.textContent) ey.textContent=t; }
   }
   function addTabbar(){
-    var home=document.getElementById('home-screen');
-    if(!home || document.getElementById('caroTabbar')) return;
-    var bar=document.createElement('div'); bar.id='caroTabbar'; bar.className='caro-tabbar';
+    if(document.getElementById('caroTabbar')) return;
+    var bar=document.createElement('div'); bar.id='caroTabbar';
     function tab(on,svg,label,fn){ var x=document.createElement('button'); x.className='caro-tab'+(on?' on':'');
       x.innerHTML=svg+'<span>'+label+'</span>'; x.onclick=fn; return x; }
     bar.appendChild(tab(true,ICON_HOME,'홈',function(){ if(window.goTo)goTo('home-screen'); }));
     bar.appendChild(tab(false,ICON_CAR,'예약',function(){ if(window.goTo)goTo('rental-screen'); }));
     bar.appendChild(tab(false,ICON_RESV,'내 예약',function(){ if(window.goTo)goTo('my-reservation-screen'); }));
     bar.appendChild(tab(false,ICON_USER,'메뉴',function(){ if(window.openHomeMenu)openHomeMenu(); }));
-    home.appendChild(bar);
+    document.body.appendChild(bar);   /* 화면 영역 밖 → 진짜 고정 */
+    var home=document.getElementById('home-screen');
+    function sync(){ bar.style.display=(home && home.classList.contains('active'))?'flex':'none'; }
+    sync();
+    if(home && window.MutationObserver){
+      new MutationObserver(sync).observe(home,{attributes:true,attributeFilter:['class']});
+    }
   }
   function apply(){ buildHero(); buildActions(); cleanTitles(); addTabbar(); }
   function boot(){
@@ -125,7 +131,7 @@
       new MutationObserver(function(){ if(pend) return; pend=true;
         requestAnimationFrame(function(){ pend=false; apply(); }); }).observe(home,{childList:true,subtree:true,characterData:true});
     }
-    console.log('[디자인] ✅ 홈 리디자인 v4 (원래 색상 + 탭바 고정)');
+    console.log('[디자인] ✅ 홈 리디자인 v5 (골드 + 탭바 body고정)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
