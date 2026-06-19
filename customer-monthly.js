@@ -1,10 +1,9 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 '월 렌트' v1
-   ───────────────────────────────────────────────────────────
-   · 홈 화면 '진행 중인 이벤트' 위에 [월 렌트] 버튼
-   · 누르면 등록된 전 차량(CARS_DATA + BL_CARS)이 월 요금과 함께 표시
-   · 지도 없음. 차량마다 monthlyPrice(관리자 설정) 우선, 없으면 시간요금 기반 예상치
-   적용: index.html </body> 위, customer-notices.js 줄 다음에
+   CARO MOBILITY — 고객 앱 '월 렌트' v2 (앱 디자인 토큰 적용)
+   · 홈 '진행 중인 이벤트' 위 [월 렌트] 버튼
+   · 등록된 전 차량(CARS_DATA + BL_CARS)을 월 요금과 함께 표시 (지도 없음)
+   · 색/카드/버튼을 앱 토큰(--glass2/--border-l/--r2/--accent)으로 통일
+   적용: index.html </body> 위 — 줄 이미 있음:
      <script src="customer-monthly.js?v=1"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
@@ -15,54 +14,56 @@
   function monthlyOf(c){
     if(typeof c.monthlyPrice==='number' && c.monthlyPrice>0) return {v:c.monthlyPrice, est:false};
     var ph=Number(c.pricePerHour||c.price||0);
-    return {v:Math.round(ph*150/10000)*10000, est:true};   /* 예상치: 시간요금×150 (관리자가 월요금 설정하면 그 값 사용) */
+    return {v:Math.round(ph*150/10000)*10000, est:true};
   }
   function esc(s){ return (''+(s==null?'':s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
-  /* ── 스타일 (라이트 테마) ── */
+  /* ── 스타일 (앱 토큰 사용 → 자연스럽게 녹아듦) ── */
   var st=document.createElement('style');
   st.textContent=
-    '.mrent-home-btn{display:flex;align-items:center;justify-content:space-between;width:100%;background:#fff;'
-    +'border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:15px 18px;margin:2px 0 18px;cursor:pointer;'
-    +'box-shadow:0 2px 12px rgba(0,0,0,.05);text-align:left;transition:transform .15s,box-shadow .15s;font-family:inherit;}'
-    +'.mrent-home-btn:active{transform:scale(.99);box-shadow:0 1px 6px rgba(0,0,0,.08);}'
-    +'.mrent-home-t{display:block;font-size:1rem;font-weight:700;color:#18191c;letter-spacing:.01em;}'
-    +'.mrent-home-s{display:block;font-size:.78rem;color:#888d98;margin-top:3px;}'
-    +'.mrent-home-arrow{font-size:1.15rem;color:#888d98;font-weight:300;}'
-    +'#monthly-screen{background:var(--silver-base,#eef1f5);}'
-    +'.mrent-wrap{width:100%;max-width:560px;margin:0 auto;padding:0 16px 40px;box-sizing:border-box;}'
-    +'.mrent-top{display:flex;align-items:center;gap:10px;padding:16px 0 6px;}'
-    +'.mrent-back{width:38px;height:38px;border-radius:11px;border:1px solid rgba(0,0,0,.08);background:#fff;'
-    +'font-size:1.1rem;color:#18191c;cursor:pointer;display:flex;align-items:center;justify-content:center;}'
-    +'.mrent-toptitle{font-size:1rem;font-weight:700;color:#18191c;letter-spacing:.02em;}'
-    +'.mrent-head{padding:12px 2px 10px;}'
-    +'.mrent-h1{font-size:1.4rem;font-weight:700;color:#18191c;margin:0;letter-spacing:.01em;}'
-    +'.mrent-desc{font-size:.85rem;color:#888d98;margin:7px 0 0;line-height:1.5;}'
-    +'.mrent-count{font-size:.8rem;color:#888d98;margin:6px 2px 12px;}'
+    '.mrent-home-btn{display:flex;align-items:center;justify-content:space-between;width:100%;'
+    +'background:var(--glass2);border:1px solid var(--border-l);border-radius:var(--r2);'
+    +'padding:16px 18px;margin:2px 0 18px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);'
+    +'box-shadow:0 1px 2px rgba(24,25,28,.04);text-align:left;transition:transform .15s;font-family:inherit;}'
+    +'.mrent-home-btn:active{transform:scale(.985);}'
+    +'.mrent-home-t{display:block;font-size:1.02rem;font-weight:700;color:var(--text-1);letter-spacing:-.01em;}'
+    +'.mrent-home-s{display:block;font-size:.78rem;color:var(--text-m);margin-top:3px;}'
+    +'.mrent-home-arrow{font-size:1.1rem;color:var(--text-2);font-weight:300;}'
+    +'#monthly-screen{background:linear-gradient(180deg,var(--silver-light),var(--silver-base));}'
+    +'.mrent-wrap{width:100%;max-width:560px;margin:0 auto;padding:0 16px calc(40px + var(--sab));box-sizing:border-box;}'
+    +'.mrent-top{display:flex;align-items:center;gap:10px;padding:calc(16px + var(--sat)) 0 6px;}'
+    +'.mrent-back{width:38px;height:38px;border-radius:12px;border:1px solid var(--border-l);background:var(--glass2);'
+    +'font-size:1.15rem;color:var(--text-1);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}'
+    +'.mrent-toptitle{font-size:1rem;font-weight:700;color:var(--text-1);letter-spacing:-.01em;}'
+    +'.mrent-head{padding:14px 2px 12px;}'
+    +'.mrent-h1{font-size:1.45rem;font-weight:800;color:var(--text-1);margin:0;letter-spacing:-.02em;}'
+    +'.mrent-desc{font-size:.85rem;color:var(--text-m);margin:8px 0 0;line-height:1.55;}'
+    +'.mrent-count{font-size:.8rem;color:var(--text-m);margin:4px 2px 12px;font-weight:600;}'
     +'.mrent-list{display:flex;flex-direction:column;gap:11px;}'
-    +'.mrent-card{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid rgba(0,0,0,.07);'
-    +'border-radius:15px;padding:13px 14px;box-shadow:0 1px 7px rgba(0,0,0,.04);}'
-    +'.mrent-card.black{background:#15171c;border-color:rgba(200,169,110,.4);}'
-    +'.mrent-thumb{width:84px;height:54px;border-radius:12px;object-fit:cover;flex-shrink:0;background:#f0f0f3;}'
+    +'.mrent-card{display:flex;align-items:center;gap:13px;background:var(--glass2);border:1px solid var(--border-l);'
+    +'border-radius:var(--r2);padding:13px 14px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);'
+    +'box-shadow:0 1px 2px rgba(24,25,28,.04);}'
+    +'.mrent-card.black{background:linear-gradient(155deg,#1c1f26,#121317);border-color:rgba(200,169,110,.32);}'
+    +'.mrent-thumb{width:84px;height:54px;border-radius:13px;object-fit:cover;flex-shrink:0;background:var(--silver-light);}'
     +'.mrent-info{flex:1;min-width:0;}'
-    +'.mrent-name{font-size:.96rem;font-weight:700;color:#18191c;display:flex;align-items:center;gap:7px;flex-wrap:wrap;}'
+    +'.mrent-name{font-size:.97rem;font-weight:700;color:var(--text-1);display:flex;align-items:center;gap:7px;flex-wrap:wrap;letter-spacing:-.01em;}'
     +'.mrent-card.black .mrent-name{color:#f0e6d2;}'
-    +'.mrent-tag{font-size:.6rem;font-weight:700;letter-spacing:.1em;color:#1a1813;'
+    +'.mrent-tag{font-size:.58rem;font-weight:700;letter-spacing:.1em;color:#1a1813;'
     +'background:linear-gradient(135deg,#e0c884,#c8a96e);padding:2px 7px;border-radius:4px;}'
-    +'.mrent-sub{font-size:.78rem;color:#888d98;margin-top:3px;}'
+    +'.mrent-sub{font-size:.77rem;color:var(--text-m);margin-top:3px;}'
     +'.mrent-card.black .mrent-sub{color:#9a958c;}'
-    +'.mrent-price{font-size:.82rem;color:#44474f;margin-top:6px;}'
-    +'.mrent-price strong{font-size:1rem;color:#18191c;font-weight:800;}'
+    +'.mrent-price{font-size:.82rem;color:var(--text-2);margin-top:6px;}'
+    +'.mrent-price strong{font-size:1.02rem;color:var(--text-1);font-weight:800;}'
     +'.mrent-card.black .mrent-price{color:#c8a96e;} .mrent-card.black .mrent-price strong{color:#e0c884;}'
-    +'.mrent-est{font-size:.62rem;color:#888d98;border:1px solid rgba(0,0,0,.12);border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:middle;}'
-    +'.mrent-card.black .mrent-est{color:#9a958c;border-color:rgba(255,255,255,.18);}'
-    +'.mrent-apply{flex-shrink:0;align-self:center;background:#18191c;color:#fff;border:none;border-radius:10px;'
-    +'padding:9px 15px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;}'
+    +'.mrent-est{font-size:.62rem;color:var(--text-m);border:1px solid var(--border);border-radius:4px;padding:1px 5px;margin-left:5px;vertical-align:middle;}'
+    +'.mrent-card.black .mrent-est{color:#9a958c;border-color:rgba(255,255,255,.16);}'
+    +'.mrent-apply{flex-shrink:0;align-self:center;background:var(--accent);color:#fff;border:none;border-radius:11px;'
+    +'padding:10px 16px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;}'
+    +'.mrent-apply:active{opacity:.85;}'
     +'.mrent-card.black .mrent-apply{background:linear-gradient(135deg,#d8be7e,#c8a96e);color:#1a1813;}'
-    +'.mrent-empty{text-align:center;color:#888d98;padding:50px 20px;font-size:.9rem;}';
+    +'.mrent-empty{text-align:center;color:var(--text-m);padding:50px 20px;font-size:.9rem;}';
   document.head.appendChild(st);
 
-  /* ── 화면 생성 ── */
   function ensureScreen(){
     if(document.getElementById('monthly-screen')) return;
     var scr=document.createElement('div');
@@ -113,7 +114,6 @@
   window.caroMonthlyApply=function(name){ T(name+' — 월 렌트 신청은 곧 오픈됩니다.'); };
   window.openMonthly=function(){ renderList(); if(window.goTo) goTo('monthly-screen'); };
 
-  /* ── 홈 버튼 삽입 (진행 중인 이벤트 위) ── */
   function injectBtn(){
     if(document.getElementById('monthlyRentBtn')) return true;
     var ev=document.querySelector('#home-screen [data-i18n="event_banner_title"]');
@@ -130,5 +130,5 @@
 
   ensureScreen();
   if(!injectBtn()){ var t=setInterval(function(){ if(injectBtn()) clearInterval(t); },400); setTimeout(function(){clearInterval(t);},15000); }
-  console.log('[월렌트] ✅ 고객 월 렌트 화면 v1 활성화');
+  console.log('[월렌트] ✅ v2 (앱 디자인 토큰 적용)');
 })();
