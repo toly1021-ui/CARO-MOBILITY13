@@ -648,7 +648,6 @@
   var PERIODS=[1,3,6,9,12];
   /* 면책 보험 (현행 자동차손해배상보장법 기준 · 월 단위) */
   var INS=[
-    {name:'완전면책', deduct:'자기부담금 5만원', desc:'대인 무한·대물 2억·자차 완전보상', price:120000},
     {name:'일반면책', deduct:'자기부담금 30만원', desc:'대인 무한·대물 1억·자차 포함', price:70000},
     {name:'기본',     deduct:'자기부담금 70만원', desc:'대인 무한·대물 2천만 책임보험', price:30000}
   ];
@@ -723,6 +722,7 @@
    +'.mrd-sumrow b{color:#18191c;font-weight:700;}'
    +'.mrd-sumtot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-l);margin-top:8px;padding-top:11px;}'
    +'.mrd-sumtot span{font-size:.82rem;color:var(--text-2);}.mrd-sumtot b{font-size:1.25rem;font-weight:800;color:#18191c;}'
+   +'.mrd-summo{text-align:right;font-size:.72rem;color:var(--text-m);margin-top:6px;}'
    +'.mrd-next{width:100%;background:linear-gradient(135deg,#20232b,#14151a);color:#fff;border:none;border-radius:14px;padding:16px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;}'
    +'.mrd-next:disabled{opacity:.4;}'
    +'#slide-dots .slide-dot{cursor:pointer;}';
@@ -846,16 +846,20 @@
   }
   function renderSum(){
     var box=document.getElementById('mrdSum'); if(!box) return;
+    var per=ST.period||0;
     var pr=ST.period!=null?priceFor(ST.period):null;
-    var insP=ST.ins!=null?INS[ST.ins].price:0;
-    var rows='';
-    if(ST.period!=null){ rows+='<div class="mrd-sumrow"><span>렌트 기간</span><b>'+ST.period+'개월</b></div>'; }
-    if(pr){ rows+='<div class="mrd-sumrow"><span>월 렌트료</span><b>월 '+won(pr.final)+'원'+(pr.disc>0?' ('+pr.disc+'%↓)':'')+'</b></div>'; }
-    if(ST.ins!=null){ rows+='<div class="mrd-sumrow"><span>면책 보험</span><b>'+esc(INS[ST.ins].name)+' · 월 '+won(insP)+'원</b></div>'; }
-    var monthly = (pr?pr.final:0)+insP;
-    var tot = (pr&&ST.period)? monthly*ST.period : null;
-    box.innerHTML = rows + (pr?'<div class="mrd-sumtot"><span>'+(ST.period?ST.period+'개월 합계 (보험 포함)':'합계')+'</span><b>'+(tot!=null?won(tot)+'원':'—')+'</b></div>'
-      +'<div class="mrd-sumrow" style="justify-content:flex-end;color:var(--text-m)"><span>월 '+won(monthly)+'원</span></div>':'<div class="mrd-sumrow"><span>기간을 선택하세요</span></div>');
+    var insM=ST.ins!=null?INS[ST.ins].price:null;
+    var r1L=ST.period!=null?(ST.period+'개월'):'렌트 기간';
+    var r1R=!per?'—':(pr?won(pr.final*per)+'원':'문의');
+    var r2L=ST.ins!=null?esc(INS[ST.ins].name):'차량손해 면책 상품';
+    var r2R=(insM==null)?'—':(per?won(insM*per)+'원':won(insM)+'원 / 월');
+    var tot=(pr&&per&&insM!=null)?(pr.final*per+insM*per):null;
+    var perMonthly=(pr?pr.final:0)+(insM||0);
+    box.innerHTML=
+      '<div class="mrd-sumrow"><span>'+r1L+'</span><b>'+r1R+'</b></div>'
+     +'<div class="mrd-sumrow"><span>'+r2L+'</span><b>'+r2R+'</b></div>'
+     +'<div class="mrd-sumtot"><span>총 비용</span><b>'+(tot!=null?won(tot)+'원':'—')+'</b></div>'
+     +(tot!=null?'<div class="mrd-summo">월 '+won(perMonthly)+'원 \u00D7 '+per+'개월</div>':'');
     var nx=document.getElementById('mrdNext'); if(nx) nx.disabled = !(ST.period!=null && pr && ST.start && ST.age!=null && ST.ins!=null);
   }
   function renderDetail(){
