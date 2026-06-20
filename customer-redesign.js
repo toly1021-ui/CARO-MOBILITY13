@@ -149,7 +149,7 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 v11 (반납 이동·화살표 제거) + 이모지 정리 v2
+   CARO MOBILITY — 컨트롤러 v12 (반납 열쇠아이콘 정렬) + 이모지 정리 v2
    · 홈 하단 플로팅 바 → "차량 제어" → 전체화면 페이지 (아래→위 슬라이드)
    · 버튼 재배치: [문열림|문잠금] / 차량이용(비상등|사진|주차) /
      예약관리(연장|예약내용|사고신고) / [반납 전체폭]
@@ -222,7 +222,7 @@
     /* 반납 전체폭 강조 */
     #home-ctrl-modal #ctrl-btn-return{flex-direction:column!important;gap:0!important;background:var(--accent)!important;
       border-color:var(--accent)!important;padding:15px 8px!important;box-shadow:0 4px 12px -4px rgba(20,22,28,.4)!important;}
-    #home-ctrl-modal #ctrl-btn-return .ctrl-sq-icon{display:none!important;}
+    #home-ctrl-modal #ctrl-btn-return .ctrl-sq-icon{margin-bottom:8px!important;color:#fff!important;}
     #home-ctrl-modal #ctrl-btn-return .ctrl-sq-label{color:#fff!important;font-size:.8rem!important;font-weight:700!important;}
 
     .caro-ctrl-modal-img{display:none!important;}
@@ -268,7 +268,8 @@
     cleft:  svg('<polyline points="15 18 9 12 15 6"/>'),
     cright: svg('<polyline points="9 18 15 12 9 6"/>'),
     plus:   svg('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
-    check:  svg('<polyline points="20 6 9 17 4 12"/>')
+    check:  svg('<polyline points="20 6 9 17 4 12"/>'),
+    key:    svg('<circle cx="7.8" cy="15.5" r="3.6"/><path d="M10.3 13 19 4.3"/><path d="m15.6 7.7 2.3 2.3"/><path d="m17.8 5.5 2.4 2.4"/>')
   };
 
   function asDate(x){ return x instanceof Date ? x : new Date(x); }
@@ -379,6 +380,7 @@
       'ctrl-photo-toggle':[ICON.camera,''],
       'ctrl-btn-locate':[ICON.pin,''],
       'ctrl-btn-extend':[ICON.clock,''],
+      'ctrl-btn-return':[ICON.key,'#fff'],
       'caro-btn-acc':[ICON.alert,'#b23a3a']
     };
     Object.keys(map).forEach(function(id){
