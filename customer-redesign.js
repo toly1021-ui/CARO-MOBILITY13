@@ -149,7 +149,7 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 게이팅 v2 (하단 플로팅 바)
+   CARO MOBILITY — 컨트롤러 게이팅 v3 (하단 여백 축소)
    · 예약 없음 / 홈 아님 → 숨김
    · 활성 예약 + 홈 → 탭바 위에 [차 이미지 | 차량명·상태 | 차량 제어] 얇은 바 (고정)
    · 하단 여백 확보로 공지사항 안 가림. 차량 제어 → openHomeCtrl() 모달
@@ -209,7 +209,7 @@
     }
     if(!bar){ bar=document.createElement('div'); bar.id='caro-rental-bar'; document.body.appendChild(bar); }
     bar.style.display='flex';
-    if(body) body.style.paddingBottom='158px';
+    if(body) body.style.paddingBottom='130px';
     var car=res.car||{};
     var name=(window.getCarName?getCarName(car):(car.name||'내 차량'));
     var img=car.img||car.image||'';
@@ -243,7 +243,7 @@
     var home=document.getElementById('home-screen');
     if(home && window.MutationObserver){ new MutationObserver(function(){ syncBar(); }).observe(home,{attributes:true,attributeFilter:['class']}); }
     if(typeof window.openHomeCtrl==='function'){ var _o=window.openHomeCtrl; window.openHomeCtrl=function(){ _o.apply(this,arguments); try{injectModalImg();}catch(e){} }; }
-    console.log('[컨트롤러] ✅ v2 (하단 플로팅 바)');
+    console.log('[컨트롤러] ✅ v3 (하단 여백 축소)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
