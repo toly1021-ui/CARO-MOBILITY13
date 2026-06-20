@@ -149,7 +149,7 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 v12 (반납 열쇠아이콘 정렬) + 이모지 정리 v2
+   CARO MOBILITY — 컨트롤러 v13 (반납 글씨만·정렬유지) + 이모지 정리 v2
    · 홈 하단 플로팅 바 → "차량 제어" → 전체화면 페이지 (아래→위 슬라이드)
    · 버튼 재배치: [문열림|문잠금] / 차량이용(비상등|사진|주차) /
      예약관리(연장|예약내용|사고신고) / [반납 전체폭]
@@ -222,7 +222,7 @@
     /* 반납 전체폭 강조 */
     #home-ctrl-modal #ctrl-btn-return{flex-direction:column!important;gap:0!important;background:var(--accent)!important;
       border-color:var(--accent)!important;padding:15px 8px!important;box-shadow:0 4px 12px -4px rgba(20,22,28,.4)!important;}
-    #home-ctrl-modal #ctrl-btn-return .ctrl-sq-icon{margin-bottom:8px!important;color:#fff!important;}
+    #home-ctrl-modal #ctrl-btn-return .ctrl-sq-icon{display:block!important;height:26px!important;margin-bottom:8px!important;}
     #home-ctrl-modal #ctrl-btn-return .ctrl-sq-label{color:#fff!important;font-size:.8rem!important;font-weight:700!important;}
 
     .caro-ctrl-modal-img{display:none!important;}
@@ -380,7 +380,7 @@
       'ctrl-photo-toggle':[ICON.camera,''],
       'ctrl-btn-locate':[ICON.pin,''],
       'ctrl-btn-extend':[ICON.clock,''],
-      'ctrl-btn-return':[ICON.key,'#fff'],
+      'ctrl-btn-return':['',''],
       'caro-btn-acc':[ICON.alert,'#b23a3a']
     };
     Object.keys(map).forEach(function(id){
