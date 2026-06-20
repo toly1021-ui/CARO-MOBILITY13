@@ -149,9 +149,9 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 v6 (전체화면 페이지 전환)
+   CARO MOBILITY — 컨트롤러 v7 (대각선 슬라이드 수정)
    · 홈 하단 플로팅 바 [차이미지 | 차량명·상태 | 차량 제어]
-   · "차량 제어" → 모달이 전체화면 페이지로 (오른쪽 슬라이드)
+   · "차량 제어" → 모달이 전체화면 페이지로 (위로 슬라이드)
      상단 뒤로가기 + 차 이미지 + 연료바 + 카운트다운
      + 문열림/잠금/비상등/사진/주차위치/시간연장/반납/예약내용/사고신고
    · 기존 컨트롤 함수·게이팅·타이머 그대로 사용
@@ -181,9 +181,7 @@
     #home-ctrl-modal .home-ctrl-box{max-width:none!important;width:100%!important;height:100%!important;
       max-height:none!important;min-height:100vh!important;border-radius:0!important;background:#f0f3f7!important;
       display:flex!important;flex-direction:column!important;overflow-y:auto!important;
-      padding-bottom:calc(8px + var(--sab))!important;
-      transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)!important;}
-    #home-ctrl-modal.open .home-ctrl-box{transform:translateX(0)!important;}
+      padding-bottom:calc(8px + var(--sab))!important;}
     #home-ctrl-modal .ctrl-close-bar{display:none!important;}
 
     .caro-ctrl-head{display:flex;align-items:center;gap:4px;padding:calc(8px + var(--sat)) 8px 8px;
@@ -342,7 +340,7 @@
         window[name]=function(){ var r; try{ r=orig.apply(this,arguments); }catch(e){} try{ syncBar(); }catch(e){} return r; };
       }
     });
-    console.log('[컨트롤러] ✅ v6 (전체화면 페이지)');
+    console.log('[컨트롤러] ✅ v7 (대각선 수정)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
