@@ -712,15 +712,14 @@
     var optsHtml = optsArr.length
       ? optsArr.map(function(l){return '<div class="caro-mr-optline">'+esc(l)+'</div>';}).join('')
       : '<div class="caro-mr-optline" style="opacity:.6">등록된 옵션 정보가 없습니다</div>';
-    var hourly = c.pricePerHour ? won(c.pricePerHour)+'원/h' : '—';
+    var mkm = (c.monthlyKm!=null && c.monthlyKm!=='' && Number(c.monthlyKm)>0) ? won(c.monthlyKm)+'km' : '무제한';
     return '<div class="caro-mr-card">'
       +'<div class="caro-mr-row">'+img
         +'<div class="caro-mr-left"><div class="caro-mr-cname">'+nm+grade+'</div>'+price+'</div>'
         +'<span class="caro-mr-chev">\u203A</span></div>'
       +'<div class="caro-mr-detail"><div class="caro-mr-detin">'
         +'<div class="caro-mr-spec"><span>사용 연료</span><b>'+esc(c.fuel||'—')+'</b></div>'
-        +'<div class="caro-mr-spec"><span>주행 km</span><b>'+kmText(c)+'</b></div>'
-        +'<div class="caro-mr-spec"><span>시간당 요금</span><b>'+hourly+'</b></div>'
+        +'<div class="caro-mr-spec"><span>월 주행거리</span><b>'+mkm+'</b></div>'
         +'<div class="caro-mr-opthead">차량 옵션</div>'+optsHtml
       +'</div></div></div>';
   }
