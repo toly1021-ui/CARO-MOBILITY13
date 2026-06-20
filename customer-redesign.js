@@ -149,7 +149,7 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 v8 (버튼 정리 + 라인 아이콘)
+   CARO MOBILITY — 컨트롤러 v9 (사진 시트 + 뱃지선 수정)
    · 홈 하단 플로팅 바 → "차량 제어" → 전체화면 페이지 (아래→위 슬라이드)
    · 버튼 재배치: [문열림|문잠금] / 차량이용(비상등|사진|주차) /
      예약관리(연장|예약내용|사고신고) / [반납 전체폭]
@@ -226,6 +226,13 @@
     #home-ctrl-modal #ctrl-btn-return .ctrl-sq-label{color:#fff!important;font-size:.96rem!important;font-weight:700!important;}
 
     .caro-ctrl-modal-img{display:none!important;}
+
+    /* 사진 뱃지 빈값 숨김 (선 제거) */
+    #home-ctrl-modal .ctrl-sq-badge:empty{display:none!important;}
+    #home-ctrl-modal .ctrl-sq-badge{top:6px;right:6px;}
+
+    /* 주행전 사진 = 하단에서 반쯤 올라오는 시트 */
+    #photo-modal-overlay .photo-modal-box{max-height:58vh!important;overflow-y:auto!important;}
   `;
   document.head.appendChild(st);
 
@@ -402,13 +409,17 @@
       var _o=window.openHomeCtrl;
       window.openHomeCtrl=function(){ var r; try{ r=_o.apply(this,arguments); }catch(e){} setTimeout(enhanceCtrlPage,0); return r; };
     }
+    /* 주행전 사진: 컨트롤 페이지 닫지 않고 그 위로 하단 시트만 올림 */
+    if(typeof window.openPhotoModal==='function'){
+      window.toggleCtrlPhoto=function(){ try{ openPhotoModal(); }catch(e){} };
+    }
     ['renderMyReservations','showHomeCtrlSwitch'].forEach(function(name){
       if(typeof window[name]==='function'){
         var orig=window[name];
         window[name]=function(){ var r; try{ r=orig.apply(this,arguments); }catch(e){} try{ syncBar(); }catch(e){} return r; };
       }
     });
-    console.log('[컨트롤러] ✅ v8 (버튼 정리 + 라인 아이콘)');
+    console.log('[컨트롤러] ✅ v9 (사진 시트 + 뱃지선 수정)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
