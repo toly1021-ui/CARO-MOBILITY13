@@ -30,7 +30,7 @@
     +'.mr-kpi .l{font-size:12px;color:var(--muted);margin-top:7px;}'
     +'.mr-tbl{width:100%;border-collapse:collapse;font-size:13px;}'
     +'.mr-tbl th{text-align:left;padding:11px 14px;color:var(--muted);font-weight:500;font-size:11.5px;border-bottom:1px solid var(--border);white-space:nowrap;}'
-    +'.mr-tbl td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.035);white-space:nowrap;vertical-align:middle;}'
+    +'.mr-tbl td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.035);white-space:nowrap;vertical-align:middle;text-align:left;}'
     +'.mr-tbl tr:last-child td{border-bottom:none;}'
     +'.mr-grade{font-size:11px;padding:2px 9px;border-radius:20px;border:1px solid var(--border2);color:var(--muted);}'
     +'.mr-grade.bl{color:var(--gold-soft);border-color:rgba(200,169,110,.4);}'
@@ -69,7 +69,7 @@
         +'<div class="mr-kpi"><div class="n" id="mrUnset">0</div><div class="l">미설정</div></div>'
       +'</div>'
       +'<div class="card"><div class="tbl-scroll"><table class="mr-tbl">'
-        +'<thead><tr><th>차량</th><th>등급</th><th>시간당 요금</th><th>월 요금</th><th></th></tr></thead>'
+        +'<thead><tr><th>차량</th><th>등급</th><th>시간당 요금</th><th>월 요금</th><th style="text-align:right">저장</th></tr></thead>'
         +'<tbody id="mrBody"></tbody></table></div></div>';
     dash.parentNode.insertBefore(section, dash.nextSibling);
 
