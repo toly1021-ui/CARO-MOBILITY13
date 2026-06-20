@@ -632,3 +632,126 @@
   (document.head||document.documentElement).appendChild(st);
   console.log('[\uB514\uC790\uC778] \u2705 \uB85C\uADF8\uC778 \uC804 \uD654\uBA74 \uB9AC\uB514\uC790\uC778 v1');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 월 렌트 화면 + 이벤트 배너 수동 스와이프 v1
+   · openMonthly(): 차량별 월 요금 화면(없던 기능 신규)
+   · 진행중 이벤트 배너: 손가락 스와이프 / 점 클릭으로 수동 넘김
+═══════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  /* ── 공통: 스타일 ── */
+  var st=document.createElement('style');
+  st.textContent=
+    '#caro-mr-ov{position:fixed;inset:0;z-index:700;background:#f0f3f7;display:flex;flex-direction:column;'
+   +'transform:translateY(100%);transition:transform .32s cubic-bezier(.22,1,.36,1);visibility:hidden;}'
+   +'#caro-mr-ov.open{transform:translateY(0);visibility:visible;}'
+   +'.caro-mr-head{display:flex;align-items:center;gap:6px;padding:calc(10px + var(--sat,0px)) 10px 10px;'
+   +'background:#f0f3f7;border-bottom:1px solid var(--border-l);position:sticky;top:0;z-index:2;}'
+   +'.caro-mr-back{width:40px;height:40px;border:none;background:none;font-size:1.7rem;line-height:1;color:#18191c;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;}'
+   +'.caro-mr-title{font-size:1.15rem;font-weight:800;color:#18191c;letter-spacing:-.01em;}'
+   +'.caro-mr-body{flex:1;overflow-y:auto;padding:14px 16px calc(28px + var(--sab,0px));}'
+   +'.caro-mr-note{font-size:.8rem;color:var(--text-m);line-height:1.5;margin:2px 2px 14px;}'
+   +'.caro-mr-card{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;'
+   +'border:1px solid var(--border-l);border-radius:16px;padding:16px 16px;margin-bottom:10px;box-shadow:0 1px 4px rgba(20,22,28,.04);}'
+   +'.caro-mr-left{min-width:0;}'
+   +'.caro-mr-cname{font-size:.95rem;font-weight:700;color:#18191c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+   +'.caro-mr-grade{display:inline-block;font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid var(--border-l);color:var(--text-m);margin-left:6px;vertical-align:middle;}'
+   +'.caro-mr-grade.bl{color:#c6a468;border-color:rgba(198,164,104,.45);}'
+   +'.caro-mr-hint{font-size:.72rem;color:var(--text-m);margin-top:4px;}'
+   +'.caro-mr-price{font-size:1.02rem;font-weight:800;color:#18191c;white-space:nowrap;flex-shrink:0;}'
+   +'.caro-mr-price.ask{font-size:.82rem;font-weight:700;color:#b07800;}'
+   +'.caro-mr-empty{text-align:center;color:var(--text-m);font-size:.9rem;padding:50px 0;}'
+   /* 배너 점 클릭 영역 살짝 키움 */
+   +'#slide-dots .slide-dot{cursor:pointer;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  /* ── 월 렌트 ── */
+  function won(n){ try{ return Number(n).toLocaleString('ko-KR'); }catch(e){ return n; } }
+  function buildOverlay(){
+    var ov=document.createElement('div'); ov.id='caro-mr-ov';
+    ov.innerHTML=
+      '<div class="caro-mr-head">'
+     +'<button class="caro-mr-back" aria-label="뒤로">\u2190</button>'
+     +'<span class="caro-mr-title">월 렌트</span></div>'
+     +'<div class="caro-mr-body">'
+     +'<div class="caro-mr-note">한 달 단위 장기 대여 요금이에요. 차량별 월 요금을 확인하고, 미정 차량은 문의해 주세요.</div>'
+     +'<div class="caro-mr-list" id="caro-mr-list"></div></div>';
+    ov.querySelector('.caro-mr-back').addEventListener('click',closeMonthly);
+    return ov;
+  }
+  function renderList(){
+    var list=document.getElementById('caro-mr-list'); if(!list) return;
+    var normal=(window.CARS_DATA||[]).map(function(c){ return {c:c,bl:false}; });
+    var black =(window.BL_CARS||[]).map(function(c){ return {c:c,bl:true}; });
+    var all=black.concat(normal); // THE BLACK 먼저
+    if(!all.length){ list.innerHTML='<div class="caro-mr-empty">등록된 차량이 없습니다.</div>'; return; }
+    var seen={};
+    list.innerHTML=all.map(function(o){
+      var c=o.c||{}; var nm=c.name||'차량';
+      if(seen[nm+(o.bl?'_b':'')]) return ''; seen[nm+(o.bl?'_b':'')]=1;
+      var mp=c.monthlyPrice;
+      var priceHtml = (mp!=null && mp!=='' && Number(mp)>0)
+        ? '<div class="caro-mr-price">'+won(mp)+'원<span style="font-size:.7rem;font-weight:600;color:var(--text-m)"> / 월</span></div>'
+        : '<div class="caro-mr-price ask">월 요금 문의</div>';
+      var gradeHtml = o.bl ? '<span class="caro-mr-grade bl">THE BLACK</span>' : '<span class="caro-mr-grade">일반</span>';
+      var hourly = c.pricePerHour ? '<div class="caro-mr-hint">시간당 '+won(c.pricePerHour)+'원</div>' : '';
+      return '<div class="caro-mr-card">'
+        +'<div class="caro-mr-left"><div class="caro-mr-cname">'+nm+gradeHtml+'</div>'+hourly+'</div>'
+        +priceHtml+'</div>';
+    }).join('') || '<div class="caro-mr-empty">등록된 차량이 없습니다.</div>';
+  }
+  function openMonthly(){
+    if(window.loadCarsData){ try{ window.loadCarsData(); }catch(e){} }
+    var ov=document.getElementById('caro-mr-ov');
+    if(!ov){ ov=buildOverlay(); document.body.appendChild(ov); }
+    renderList();
+    requestAnimationFrame(function(){ ov.classList.add('open'); });
+  }
+  function closeMonthly(){ var ov=document.getElementById('caro-mr-ov'); if(ov) ov.classList.remove('open'); }
+  window.openMonthly=openMonthly;
+  window.closeMonthly=closeMonthly;
+
+  /* ── 이벤트 배너 수동 스와이프 ── */
+  function curIdx(){
+    var dots=document.querySelectorAll('#slide-dots .slide-dot'); var i=0;
+    dots.forEach(function(d,k){ if(d.classList.contains('active')) i=k; }); return i;
+  }
+  function total(){ return document.querySelectorAll('.auto-slide-item').length||4; }
+  function go(dir){
+    if(!window.moveSlide) return;
+    var t=total(); var n=((curIdx()+dir)%t+t)%t; window.moveSlide(n);
+  }
+  function attachSwipe(){
+    var wrap=document.getElementById('auto-slide-wrap-home');
+    if(!wrap || wrap.dataset.caroSwipe) return;
+    wrap.dataset.caroSwipe='1';
+    var sx=0,sy=0,down=false,moved=false,justSwiped=false;
+    function start(x,y){ down=true;moved=false;sx=x;sy=y; }
+    function move(x,y){ if(!down)return; if(Math.abs(x-sx)>12 && Math.abs(x-sx)>Math.abs(y-sy)) moved=true; }
+    function end(x){ if(!down)return; down=false; if(moved){ go((x-sx)<0?1:-1); justSwiped=true; setTimeout(function(){justSwiped=false;},360); } }
+    wrap.addEventListener('touchstart',function(e){ start(e.touches[0].clientX,e.touches[0].clientY); },{passive:true});
+    wrap.addEventListener('touchmove', function(e){ move(e.touches[0].clientX,e.touches[0].clientY); },{passive:true});
+    wrap.addEventListener('touchend',  function(e){ end(e.changedTouches[0].clientX); },{passive:true});
+    wrap.addEventListener('mousedown', function(e){ start(e.clientX,e.clientY); });
+    wrap.addEventListener('mousemove', function(e){ move(e.clientX,e.clientY); });
+    wrap.addEventListener('mouseup',   function(e){ end(e.clientX); });
+    wrap.addEventListener('mouseleave',function(){ down=false; });
+    /* 스와이프했으면 '이벤트 화면 이동' 클릭 막기 */
+    wrap.addEventListener('click',function(e){ if(justSwiped){ e.stopImmediatePropagation(); e.preventDefault(); } },true);
+    /* 점(dot) 클릭으로 이동 */
+    document.querySelectorAll('#slide-dots .slide-dot').forEach(function(d,i){
+      if(d.dataset.caroDot) return; d.dataset.caroDot='1';
+      d.addEventListener('click',function(e){ e.stopPropagation(); if(window.moveSlide) window.moveSlide(i); });
+    });
+  }
+
+  function boot(){
+    attachSwipe();
+    // 홈이 늦게 그려질 수 있어 잠깐 재시도
+    var tries=0; var iv=setInterval(function(){ attachSwipe(); if(++tries>20) clearInterval(iv); },400);
+    console.log('[\uB514\uC790\uC778] \u2705 \uC6D4\uB80C\uD2B8 \uD654\uBA74 + \uC774\uBCA4\uD2B8 \uBC30\uB108 \uC2A4\uC640\uC774\uD504 v1');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
