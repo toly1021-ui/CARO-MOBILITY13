@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 홈 리디자인 v22
+   CARO MOBILITY — 고객 앱 홈 리디자인 v23
    ───────────────────────────────────────────────────────────
    · 골드 히어로/THE BLACK/이벤트는 그대로 유지
    · 타일 아이콘 칩: 검정 → 실버(배경 톤에 맞춤)
@@ -142,14 +142,14 @@
       new MutationObserver(function(){ if(pend) return; pend=true;
         requestAnimationFrame(function(){ pend=false; apply(); }); }).observe(home,{childList:true,subtree:true,characterData:true});
     }
-    console.log('[디자인] ✅ 홈 리디자인 v22 (실버 칩 + 자동차 그림 제거)');
+    console.log('[디자인] ✅ 홈 리디자인 v23 (실버 칩 + 자동차 그림 제거)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 v10 (사진 시트 그리드 + 라인 아이콘)
+   CARO MOBILITY — 컨트롤러 v11 (반납 이동·화살표 제거) + 이모지 정리 v2
    · 홈 하단 플로팅 바 → "차량 제어" → 전체화면 페이지 (아래→위 슬라이드)
    · 버튼 재배치: [문열림|문잠금] / 차량이용(비상등|사진|주차) /
      예약관리(연장|예약내용|사고신고) / [반납 전체폭]
@@ -220,10 +220,10 @@
     #home-ctrl-modal .ctrl-sq-label{font-size:.8rem!important;margin-top:0!important;font-weight:600!important;color:var(--text-1)!important;}
 
     /* 반납 전체폭 강조 */
-    #home-ctrl-modal #ctrl-btn-return{flex-direction:row!important;gap:9px;background:var(--accent)!important;
-      border-color:var(--accent)!important;padding:17px!important;box-shadow:0 5px 16px -5px rgba(20,22,28,.45)!important;}
-    #home-ctrl-modal #ctrl-btn-return .ctrl-sq-icon{margin-bottom:0!important;color:#fff!important;}
-    #home-ctrl-modal #ctrl-btn-return .ctrl-sq-label{color:#fff!important;font-size:.96rem!important;font-weight:700!important;}
+    #home-ctrl-modal #ctrl-btn-return{flex-direction:column!important;gap:0!important;background:var(--accent)!important;
+      border-color:var(--accent)!important;padding:15px 8px!important;box-shadow:0 4px 12px -4px rgba(20,22,28,.4)!important;}
+    #home-ctrl-modal #ctrl-btn-return .ctrl-sq-icon{display:none!important;}
+    #home-ctrl-modal #ctrl-btn-return .ctrl-sq-label{color:#fff!important;font-size:.8rem!important;font-weight:700!important;}
 
     .caro-ctrl-modal-img{display:none!important;}
 
@@ -379,8 +379,6 @@
       'ctrl-photo-toggle':[ICON.camera,''],
       'ctrl-btn-locate':[ICON.pin,''],
       'ctrl-btn-extend':[ICON.clock,''],
-      'ctrl-btn-return':[ICON.ret,'#fff'],
-      'caro-btn-res':[ICON.doc,''],
       'caro-btn-acc':[ICON.alert,'#b23a3a']
     };
     Object.keys(map).forEach(function(id){
@@ -398,8 +396,6 @@
         hazard=byId('ctrl-btn-hazard'), photo=byId('ctrl-photo-toggle'), locate=byId('ctrl-btn-locate'),
         ext=byId('ctrl-btn-extend'), ret=byId('ctrl-btn-return');
     if(!unlock||!lock||!ret){ return; }
-    var resBtn=mkBtn('예약 내용','caro-btn-res');
-    resBtn.onclick=function(){ if(window.closeHomeCtrlDirect)closeHomeCtrlDirect(); setTimeout(function(){ if(window.goTo)goTo('my-reservation-screen'); },60); };
     var accBtn=mkBtn('사고 신고','caro-btn-acc');
     accBtn.onclick=function(){ if(window.showToast)showToast('사고 신고가 접수되었습니다. 고객센터에서 연락드립니다.'); else alert('사고 신고가 접수되었습니다.'); };
     var mkRow=function(cls,kids){ var r=document.createElement('div'); r.className=cls; kids.forEach(function(k){ if(k) r.appendChild(k); }); return r; };
@@ -409,8 +405,7 @@
     wrap.appendChild(mkLab('차량 이용'));
     wrap.appendChild(mkRow('caro-row-3',[hazard,photo,locate]));
     wrap.appendChild(mkLab('예약 관리'));
-    wrap.appendChild(mkRow('caro-row-3',[ext,resBtn,accBtn]));
-    wrap.appendChild(mkRow('caro-row-1',[ret]));
+    wrap.appendChild(mkRow('caro-row-3',[ext,ret,accBtn]));
     wrap.dataset.caroArranged='1';
     setIcons();
   }
@@ -461,4 +456,113 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 이모지 정리 v2
+   · 앱 전체 화면의 옛날 이모지 → 통일 라인 아이콘(또는 제거)
+   · 컨트롤러/홈 아이콘과 동일한 선 스타일. 화살표(←→)·국기·◆ 등은 보존
+═══════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  function svg(inner){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>'; }
+  var I={
+    car:    svg('<path d="M4 13l1.7-4.4A2.5 2.5 0 018 7h8a2.5 2.5 0 012.3 1.6L20 13"/><path d="M3.5 13h17v4.2a.8.8 0 01-.8.8H18a2 2 0 01-4 0h-4a2 2 0 01-4 0H4.3a.8.8 0 01-.8-.8V13z"/><circle cx="7.6" cy="15" r="1.05"/><circle cx="16.4" cy="15" r="1.05"/>'),
+    pin:    svg('<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>'),
+    resv:   svg('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/><path d="M8.4 14.2l2.2 2.2L15 12"/>'),
+    cal:    svg('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/>'),
+    gift:   svg('<rect x="3.5" y="8" width="17" height="4" rx="1"/><path d="M5 12v7.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V12"/><line x1="12" y1="8" x2="12" y2="20.5"/><path d="M12 8s-1-3.5-3.2-3.5A2 2 0 0 0 8.8 8.5H12zm0 0s1-3.5 3.2-3.5A2 2 0 0 1 15.2 8.5H12z"/>'),
+    mega:   svg('<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 8a5 5 0 0 1 0 8"/>'),
+    card:   svg('<rect x="2.5" y="5" width="19" height="14" rx="2.5"/><line x1="2.5" y1="10" x2="21.5" y2="10"/>'),
+    phone:  svg('<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><line x1="10.5" y1="18.5" x2="13.5" y2="18.5"/>'),
+    hazard: svg('<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+    alert:  svg('<polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'),
+    check:  svg('<circle cx="12" cy="12" r="9"/><polyline points="8.5 12.5 11 15 16 9.5"/>'),
+    lock:   svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'),
+    unlock: svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'),
+    clock:  svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+    bolt:   svg('<polygon points="13 2 4 14 11 14 10 22 20 9 13 9"/>'),
+    shield: svg('<path d="M12 2.5 4.5 6v6c0 4.5 3.2 7.8 7.5 9.5 4.3-1.7 7.5-5 7.5-9.5V6z"/>'),
+    road:   svg('<path d="M6 21 8 3M18 21 16 3"/><path d="M12 5v2M12 11v2M12 17v2"/>'),
+    star:   svg('<polygon points="12 3 14.6 8.6 20.5 9.3 16 13.3 17.3 19.2 12 16.1 6.7 19.2 8 13.3 3.5 9.3 9.4 8.6"/>'),
+    user:   svg('<circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/>'),
+    gear:   svg('<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9 19 19M19 5l-2.1 2.1M7.1 16.9 5 19"/>'),
+    headset:svg('<path d="M5 13v-1a7 7 0 0 1 14 0v1"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/>'),
+    logout: svg('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'),
+    refresh:svg('<path d="M21 12a9 9 0 1 1-2.6-6.3"/><polyline points="21 4 21 9 16 9"/>')
+  };
+  // 이모지 → 아이콘 (선 스타일로 교체)
+  var MAP={
+    '\u{1F697}':I.car,'\u{1F698}':I.car,'\u{1F699}':I.car,'\u{1F695}':I.car,
+    '\u{1F4CD}':I.pin,'\u{1F4CB}':I.resv,'\u{1F4C5}':I.cal,'\u{1F4C6}':I.cal,
+    '\u{1F389}':I.gift,'\u{1F38A}':I.gift,'\u{1F4E2}':I.mega,'\u{1F4E3}':I.mega,
+    '\u{1F4B3}':I.card,'\u{1F4F1}':I.phone,
+    '\u26A0':I.hazard,'\u{1F6A8}':I.alert,'\u2705':I.check,'\u2714':I.check,
+    '\u{1F512}':I.lock,'\u{1F513}':I.unlock,'\u23F1':I.clock,'\u23F0':I.clock,'\u{1F551}':I.clock,
+    '\u26A1':I.bolt,'\u{1F6E1}':I.shield,'\u{1F6E3}':I.road,'\u2B50':I.star,
+    '\u{1F464}':I.user,'\u2699':I.gear,'\u{1F3A7}':I.headset,'\u{1F6AA}':I.logout,'\u{1F504}':I.refresh
+  };
+  // 제거만 (장식용 이모지)
+  var DROP={'\u{1F44B}':1,'\u{1F3AF}':1,'\u{1F7E2}':1,'\u{1F535}':1,'\u{1F527}':1,'\u{1F4A1}':1,'\u{1F4E1}':1,'\u{1F4E8}':1,'\u{1F4CC}':1};
+
+  function base(ch){ return ch.replace(/[\uFE0F\u200D]/g,''); }
+  var keys=Object.keys(MAP).concat(Object.keys(DROP));
+  var reSrc=keys.map(function(k){ return k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }).join('|');
+  var EMRE=new RegExp('(?:'+reSrc+')\\uFE0F?','gu');
+
+  function iconSpan(html){ var s=document.createElement('span'); s.className='caro-ei'; s.innerHTML=html; return s; }
+
+  function processText(node){
+    var txt=node.nodeValue; if(!txt) return;
+    EMRE.lastIndex=0; if(!EMRE.test(txt)) return;
+    EMRE.lastIndex=0;
+    var frag=document.createDocumentFragment(), last=0, m;
+    while((m=EMRE.exec(txt))){
+      if(m.index>last) frag.appendChild(document.createTextNode(txt.slice(last,m.index)));
+      var bc=base(m[0]);
+      if(MAP[bc]) frag.appendChild(iconSpan(MAP[bc]));   // 제거(DROP)면 아무것도 안 넣음
+      last=m.index+m[0].length;
+    }
+    if(last<txt.length) frag.appendChild(document.createTextNode(txt.slice(last)));
+    if(node.parentNode) node.parentNode.replaceChild(frag,node);
+  }
+
+  var SKIP={SCRIPT:1,STYLE:1,NOSCRIPT:1,INPUT:1,TEXTAREA:1,SELECT:1,OPTION:1,svg:1,SVG:1};
+  function walk(root){
+    var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:function(n){
+      var p=n.parentNode; if(!p||!p.nodeName) return NodeFilter.FILTER_REJECT;
+      if(SKIP[p.nodeName]) return NodeFilter.FILTER_REJECT;
+      if(p.closest&&p.closest('.caro-ei,svg')) return NodeFilter.FILTER_REJECT;
+      if(p.isContentEditable) return NodeFilter.FILTER_REJECT;
+      var v=n.nodeValue; if(!v||v.length>3000) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }});
+    var arr=[],n; while((n=w.nextNode())) arr.push(n);
+    arr.forEach(processText);
+  }
+  function stripOptions(){
+    var ops=document.querySelectorAll('option');
+    Array.prototype.forEach.call(ops,function(op){
+      var t=op.textContent, nt=t.replace(EMRE,'').replace(/\s{2,}/g,' ').trim();
+      if(nt!==t) op.textContent=nt;
+    });
+  }
+  function sweep(){ try{ walk(document.body); }catch(e){} try{ stripOptions(); }catch(e){} }
+
+  var st=document.createElement('style');
+  st.textContent='.caro-ei{display:inline-flex;align-items:center;justify-content:center;width:1em;height:1em;vertical-align:-.15em;}'
+    +'.caro-ei svg{width:100%;height:100%;display:block;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function boot(){
+    sweep();
+    if(window.MutationObserver){
+      var pend=false;
+      new MutationObserver(function(){ if(pend) return; pend=true;
+        requestAnimationFrame(function(){ pend=false; sweep(); }); })
+      .observe(document.body,{childList:true,subtree:true});
+    }
+    console.log('[\uB514\uC790\uC778] \u2705 \uC774\uBAA8\uC9C0 \uC815\uB9AC v2 (\uC804\uCCB4 \uD654\uBA74 \uB77C\uC778 \uC544\uC774\uCF58 \uD1B5\uC77C)');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
