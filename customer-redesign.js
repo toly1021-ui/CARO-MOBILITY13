@@ -149,7 +149,7 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 v9 (사진 시트 + 뱃지선 수정)
+   CARO MOBILITY — 컨트롤러 v10 (사진 시트 그리드 + 라인 아이콘)
    · 홈 하단 플로팅 바 → "차량 제어" → 전체화면 페이지 (아래→위 슬라이드)
    · 버튼 재배치: [문열림|문잠금] / 차량이용(비상등|사진|주차) /
      예약관리(연장|예약내용|사고신고) / [반납 전체폭]
@@ -231,8 +231,23 @@
     #home-ctrl-modal .ctrl-sq-badge:empty{display:none!important;}
     #home-ctrl-modal .ctrl-sq-badge{top:6px;right:6px;}
 
-    /* 주행전 사진 = 하단에서 반쯤 올라오는 시트 */
-    #photo-modal-overlay .photo-modal-box{max-height:58vh!important;overflow-y:auto!important;}
+    /* 주행전 사진 시트: 반화면 + 좌우 2칸 그리드 + 라인 아이콘 */
+    #photo-modal-overlay .photo-modal-box{max-height:none!important;height:56vh!important;display:flex!important;flex-direction:column!important;}
+    #photo-modal-overlay .photo-modal-title{font-size:1rem!important;}
+    #photo-modal-overlay .photo-notice{text-align:center!important;font-size:.7rem!important;}
+    #photo-modal-overlay .photo-list-wrap{display:grid!important;grid-template-columns:1fr 1fr!important;gap:9px!important;padding:2px!important;flex:1!important;min-height:0!important;overflow-y:auto!important;align-content:start!important;}
+    #photo-modal-overlay .photo-list-item{flex-direction:column!important;align-items:center!important;justify-content:center!important;text-align:center!important;gap:5px!important;padding:16px 8px!important;border-radius:14px!important;background:#fff!important;border:1px solid var(--border-l)!important;}
+    #photo-modal-overlay .photo-list-misc{grid-column:1 / -1!important;}
+    #photo-modal-overlay .photo-list-left{flex-direction:column!important;align-items:center!important;gap:3px!important;}
+    #photo-modal-overlay .photo-list-right{flex-direction:column!important;align-items:center!important;gap:0!important;}
+    #photo-modal-overlay .photo-list-arrow{display:none!important;}
+    #photo-modal-overlay .caro-ph-icon{color:var(--accent-2);display:flex;justify-content:center;}
+    #photo-modal-overlay .caro-ph-icon svg{width:30px!important;height:30px!important;}
+    #photo-modal-overlay .photo-list-name{font-size:.9rem!important;font-weight:700!important;}
+    #photo-modal-overlay .photo-list-sub{font-size:.66rem!important;color:var(--text-m)!important;}
+    #photo-modal-overlay .photo-list-count{font-size:.74rem!important;font-weight:700!important;color:var(--text-m)!important;}
+    #photo-modal-overlay .photo-done-btn{display:flex!important;align-items:center!important;justify-content:center!important;gap:8px!important;flex-shrink:0!important;}
+    #photo-modal-overlay .photo-done-btn svg{width:20px!important;height:20px!important;}
   `;
   document.head.appendChild(st);
 
@@ -247,7 +262,13 @@
     clock:  svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
     ret:    svg('<polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/>'),
     doc:    svg('<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>'),
-    alert:  svg('<polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>')
+    alert:  svg('<polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'),
+    up:     svg('<polyline points="18 15 12 9 6 15"/>'),
+    down:   svg('<polyline points="6 9 12 15 18 9"/>'),
+    cleft:  svg('<polyline points="15 18 9 12 15 6"/>'),
+    cright: svg('<polyline points="9 18 15 12 9 6"/>'),
+    plus:   svg('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
+    check:  svg('<polyline points="20 6 9 17 4 12"/>')
   };
 
   function asDate(x){ return x instanceof Date ? x : new Date(x); }
@@ -399,6 +420,21 @@
     try{ injectFuel(); }catch(e){}
     try{ rearrange(); }catch(e){}
   }
+  function enhancePhotoSheet(){
+    var box=document.querySelector('#photo-modal-overlay .photo-modal-box'); if(!box) return;
+    if(box.dataset.caroPhoto){ return; }
+    box.dataset.caroPhoto='1';
+    var t=box.querySelector('.photo-modal-title'); if(t) t.textContent='주행전 사진 촬영';
+    var d=box.querySelector('.photo-done-btn'); if(d){ d.innerHTML=ICON.check+'<span>촬영 완료</span>'; }
+    var pm={front:ICON.up,rear:ICON.down,left:ICON.cleft,right:ICON.cright,misc:ICON.plus};
+    var items=box.querySelectorAll('.photo-list-item');
+    Array.prototype.forEach.call(items,function(it){
+      var oc=it.getAttribute('onclick')||''; var m=oc.match(/openSideCapture\('(\w+)'\)/); var key=m?m[1]:'';
+      var left=it.querySelector('.photo-list-left'); if(!left||left.querySelector('.caro-ph-icon')) return;
+      var ic=document.createElement('span'); ic.className='caro-ph-icon'; ic.innerHTML=pm[key]||ICON.camera;
+      left.insertBefore(ic,left.firstChild);
+    });
+  }
 
   function boot(){
     syncBar();
@@ -409,9 +445,11 @@
       var _o=window.openHomeCtrl;
       window.openHomeCtrl=function(){ var r; try{ r=_o.apply(this,arguments); }catch(e){} setTimeout(enhanceCtrlPage,0); return r; };
     }
-    /* 주행전 사진: 컨트롤 페이지 닫지 않고 그 위로 하단 시트만 올림 */
+    /* 주행전 사진 시트: 열릴 때 그리드/아이콘 보정 + 컨트롤 페이지 위로 */
     if(typeof window.openPhotoModal==='function'){
-      window.toggleCtrlPhoto=function(){ try{ openPhotoModal(); }catch(e){} };
+      var _op=window.openPhotoModal;
+      window.openPhotoModal=function(){ var r; try{ r=_op.apply(this,arguments); }catch(e){} setTimeout(enhancePhotoSheet,0); return r; };
+      window.toggleCtrlPhoto=function(){ try{ window.openPhotoModal(); }catch(e){} };
     }
     ['renderMyReservations','showHomeCtrlSwitch'].forEach(function(name){
       if(typeof window[name]==='function'){
@@ -419,7 +457,7 @@
         window[name]=function(){ var r; try{ r=orig.apply(this,arguments); }catch(e){} try{ syncBar(); }catch(e){} return r; };
       }
     });
-    console.log('[컨트롤러] ✅ v9 (사진 시트 + 뱃지선 수정)');
+    console.log('[컨트롤러] ✅ v10 (사진 시트 그리드 + 라인 아이콘)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
