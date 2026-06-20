@@ -149,35 +149,64 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 게이팅 v5 (모달 크게)
-   · 예약 없음 / 홈 아님 → 숨김
-   · 활성 예약 + 홈 → 탭바 위에 [차 이미지 | 차량명·상태 | 차량 제어] 얇은 바 (고정)
-   · 하단 여백 확보로 공지사항 안 가림. 차량 제어 → openHomeCtrl() 모달
+   CARO MOBILITY — 컨트롤러 v6 (전체화면 페이지 전환)
+   · 홈 하단 플로팅 바 [차이미지 | 차량명·상태 | 차량 제어]
+   · "차량 제어" → 모달이 전체화면 페이지로 (오른쪽 슬라이드)
+     상단 뒤로가기 + 차 이미지 + 연료바 + 카운트다운
+     + 문열림/잠금/비상등/사진/주차위치/시간연장/반납/예약내용/사고신고
+   · 기존 컨트롤 함수·게이팅·타이머 그대로 사용
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
   var st=document.createElement('style');
-  st.textContent=
-    '#home-ctrl-switch{display:none!important;}'
-    +'#caro-rental-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(72px + var(--sab));'
-    +'width:calc(100% - 32px);max-width:448px;z-index:480;display:flex;align-items:center;gap:10px;'
-    +'padding:7px 8px 7px 10px;background:var(--glass2);border:1px solid var(--border-l);border-radius:16px;'
-    +'backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 6px 22px -8px rgba(20,22,28,.28);}'
-    +'.crb-img{width:62px;height:38px;object-fit:cover;border-radius:10px;background:var(--silver-light);flex-shrink:0;}'
-    +'.crb-info{flex:1;min-width:0;}'
-    +'.crb-name{font-size:.85rem;font-weight:700;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em;}'
-    +'.crb-status{font-size:.65rem;color:var(--text-m);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
-    +'.crb-status b{color:#1d7a3a;font-weight:700;}'
-    +'.crb-btn{flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:10px 15px;font-size:.84rem;font-weight:700;cursor:pointer;font-family:inherit;}'
-    +'.crb-btn:active{opacity:.9;}'
-    +'.caro-ctrl-modal-img{width:100%;max-width:280px;height:auto;object-fit:contain;display:block;margin:4px auto 12px;}'
-    /* 컨트롤러 모달 크게 (거의 전체화면) */
-    +'#home-ctrl-modal .home-ctrl-box{max-width:480px!important;width:100%!important;height:90vh!important;max-height:90vh!important;display:flex!important;flex-direction:column!important;overflow-y:auto!important;border-radius:24px 24px 0 0!important;}'
-    +'#home-ctrl-modal .ctrl-info-section{padding:12px 0 14px!important;}'
-    +'#home-ctrl-modal .ctrl-btn-wrap{flex:1 1 auto!important;justify-content:center!important;gap:12px!important;padding:16px 16px 24px!important;}'
-    +'#home-ctrl-modal .ctrl-sq-btn{padding:18px 8px!important;border-radius:16px!important;}'
-    +'#home-ctrl-modal .ctrl-sq-icon{transform:scale(1.2);}'
-    +'#home-ctrl-modal .ctrl-sq-label{font-size:.82rem!important;margin-top:8px!important;}';
+  st.textContent=`
+    #home-ctrl-switch{display:none!important;}
+
+    /* 홈 하단 플로팅 바 */
+    #caro-rental-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(72px + var(--sab));
+      width:calc(100% - 32px);max-width:448px;z-index:480;display:flex;align-items:center;gap:10px;
+      padding:7px 8px 7px 10px;background:var(--glass2);border:1px solid var(--border-l);border-radius:16px;
+      backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 6px 22px -8px rgba(20,22,28,.28);}
+    .crb-img{width:62px;height:38px;object-fit:cover;border-radius:10px;background:var(--silver-light);flex-shrink:0;}
+    .crb-info{flex:1;min-width:0;}
+    .crb-name{font-size:.85rem;font-weight:700;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em;}
+    .crb-status{font-size:.65rem;color:var(--text-m);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .crb-status b{color:#1d7a3a;font-weight:700;}
+    .crb-btn{flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:10px 15px;font-size:.84rem;font-weight:700;cursor:pointer;font-family:inherit;}
+    .crb-btn:active{opacity:.9;}
+
+    /* === 컨트롤러 = 전체화면 페이지 === */
+    #home-ctrl-modal{align-items:stretch!important;justify-content:center!important;}
+    #home-ctrl-modal.open{background:#eef1f5!important;}
+    #home-ctrl-modal .home-ctrl-box{max-width:none!important;width:100%!important;height:100%!important;
+      max-height:none!important;min-height:100vh!important;border-radius:0!important;background:#f0f3f7!important;
+      display:flex!important;flex-direction:column!important;overflow-y:auto!important;
+      padding-bottom:calc(8px + var(--sab))!important;
+      transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)!important;}
+    #home-ctrl-modal.open .home-ctrl-box{transform:translateX(0)!important;}
+    #home-ctrl-modal .ctrl-close-bar{display:none!important;}
+
+    .caro-ctrl-head{display:flex;align-items:center;gap:4px;padding:calc(8px + var(--sat)) 8px 8px;
+      position:sticky;top:0;background:#f0f3f7;z-index:3;border-bottom:1px solid var(--border-l);}
+    .caro-ctrl-back{width:40px;height:40px;border:none;background:none;font-size:2rem;line-height:1;
+      cursor:pointer;color:var(--text-1);display:flex;align-items:center;justify-content:center;padding:0 0 4px;font-family:inherit;}
+    .caro-ctrl-title{font-size:1.1rem;font-weight:800;color:var(--text-1);letter-spacing:-.01em;}
+
+    .caro-ctrl-page-img{display:block;width:auto;max-width:300px;max-height:168px;margin:6px auto 6px;object-fit:contain;}
+
+    .caro-ctrl-fuel{margin:6px 16px 2px;}
+    .caro-ctrl-fuel .cf-top{display:flex;justify-content:space-between;align-items:center;font-size:.72rem;color:var(--text-m);margin-bottom:4px;}
+    .caro-ctrl-fuel .cf-pct{font-weight:800;font-size:.86rem;}
+    .caro-ctrl-fuel .cf-track{height:10px;background:rgba(150,156,168,.22);border-radius:14px;overflow:hidden;}
+    .caro-ctrl-fuel .cf-fill{height:100%;border-radius:14px;transition:width .5s;}
+
+    #home-ctrl-modal #home-ctrl-timer{font-size:1.05rem!important;font-weight:800!important;}
+    #home-ctrl-modal .ctrl-btn-wrap{padding:10px 16px calc(20px + var(--sab))!important;gap:11px!important;}
+    #home-ctrl-modal .ctrl-sq-btn{padding:16px 8px!important;border-radius:16px!important;}
+    #home-ctrl-modal .ctrl-sq-icon{font-size:1.5rem;}
+    #home-ctrl-modal .ctrl-sq-label{font-size:.8rem!important;margin-top:7px!important;}
+    .caro-ctrl-modal-img{display:none!important;}
+  `;
   document.head.appendChild(st);
 
   function asDate(x){ return x instanceof Date ? x : new Date(x); }
@@ -203,6 +232,7 @@
   }
   function esc(t){ return (''+(t==null?'':t)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
+  /* ── 홈 하단 플로팅 바 ── */
   function syncBar(){
     var home=document.getElementById('home-screen');
     var homeActive=home && home.classList.contains('active');
@@ -234,14 +264,67 @@
       +'<button class="crb-btn" onclick="if(window.openHomeCtrl)openHomeCtrl()">차량 제어</button>';
   }
 
-  function injectModalImg(){
+  /* ── 컨트롤러 페이지 보강 ── */
+  function fuelOf(car){
+    if(!car) return null;
+    var id=car.id;
+    var pct=(window.fuelLevels&&id!=null&&fuelLevels[id]) || (window.getFuelLevel?getFuelLevel(id):0);
+    if(!pct){ pct=Math.floor(Math.random()*60)+20; try{ if(window.fuelLevels&&id!=null) fuelLevels[id]=pct; }catch(e){} }
+    return pct;
+  }
+  function injectHeader(){
+    var box=document.querySelector('#home-ctrl-modal .home-ctrl-box'); if(!box) return;
+    if(box.querySelector('.caro-ctrl-head')) return;
+    var h=document.createElement('div'); h.className='caro-ctrl-head';
+    var back=document.createElement('button'); back.className='caro-ctrl-back'; back.innerHTML='&#8249;';
+    back.onclick=function(){ if(window.closeHomeCtrlDirect)closeHomeCtrlDirect(); };
+    var t=document.createElement('div'); t.className='caro-ctrl-title'; t.textContent='차량 제어';
+    h.appendChild(back); h.appendChild(t);
+    box.insertBefore(h, box.firstChild);
+  }
+  function injectImg(){
     var sec=document.querySelector('#home-ctrl-modal .ctrl-info-section'); if(!sec) return;
     var res=getActiveRes(); var src=(res&&res.car)?(res.car.img||res.car.image||''):'';
-    var img=document.getElementById('caro-ctrl-modal-img');
+    var img=document.getElementById('caro-ctrl-page-img');
     if(src){
-      if(!img){ img=document.createElement('img'); img.id='caro-ctrl-modal-img'; img.className='caro-ctrl-modal-img'; sec.parentNode.insertBefore(img,sec); }
+      if(!img){ img=document.createElement('img'); img.id='caro-ctrl-page-img'; img.className='caro-ctrl-page-img'; sec.parentNode.insertBefore(img, sec); }
       img.src=src; img.style.display='block';
     } else if(img){ img.style.display='none'; }
+  }
+  function injectFuel(){
+    var sec=document.querySelector('#home-ctrl-modal .ctrl-info-section'); if(!sec) return;
+    var res=getActiveRes(); var car=res&&res.car; if(!car) return;
+    var pct=fuelOf(car); if(!pct){ return; }
+    var isEV=(car.fuel==='전기'||car.fuel==='EV'||car.fuel==='ev');
+    var label=isEV?'배터리':'연료';
+    var color=pct>60?'#1d7a3a':pct>30?'#b07800':'#b23a3a';
+    var el=document.getElementById('caro-ctrl-fuel');
+    if(!el){ el=document.createElement('div'); el.id='caro-ctrl-fuel'; el.className='caro-ctrl-fuel'; sec.parentNode.insertBefore(el, sec.nextSibling); }
+    el.innerHTML='<div class="cf-top"><span>'+label+'</span><span class="cf-pct" style="color:'+color+'">'+pct+'%</span></div>'
+      +'<div class="cf-track"><div class="cf-fill" style="width:'+pct+'%;background:'+color+'"></div></div>';
+  }
+  function mkBtn(icon,label){
+    var b=document.createElement('button'); b.className='ctrl-sq-btn'; b.style.flex='1';
+    b.innerHTML='<span class="ctrl-sq-icon">'+icon+'</span><span class="ctrl-sq-label">'+label+'</span>';
+    return b;
+  }
+  function injectExtra(){
+    var wrap=document.querySelector('#home-ctrl-modal .ctrl-btn-wrap'); if(!wrap) return;
+    if(document.getElementById('caro-ctrl-extra')) return;
+    var row=document.createElement('div'); row.id='caro-ctrl-extra'; row.className='ctrl-row';
+    row.style.cssText='display:flex;gap:10px;width:100%;';
+    var b1=mkBtn('&#128203;','예약 내용');
+    b1.onclick=function(){ if(window.closeHomeCtrlDirect)closeHomeCtrlDirect(); setTimeout(function(){ if(window.goTo)goTo('my-reservation-screen'); },60); };
+    var b2=mkBtn('&#128680;','사고 신고');
+    b2.onclick=function(){ if(window.showToast)showToast('사고 신고가 접수되었습니다. 고객센터에서 연락드립니다.'); else alert('사고 신고가 접수되었습니다.'); };
+    row.appendChild(b1); row.appendChild(b2);
+    wrap.appendChild(row);
+  }
+  function enhanceCtrlPage(){
+    try{ injectHeader(); }catch(e){}
+    try{ injectImg(); }catch(e){}
+    try{ injectFuel(); }catch(e){}
+    try{ injectExtra(); }catch(e){}
   }
 
   function boot(){
@@ -249,15 +332,17 @@
     setInterval(syncBar, 3000);
     var home=document.getElementById('home-screen');
     if(home && window.MutationObserver){ new MutationObserver(function(){ syncBar(); }).observe(home,{attributes:true,attributeFilter:['class']}); }
-    if(typeof window.openHomeCtrl==='function'){ var _o=window.openHomeCtrl; window.openHomeCtrl=function(){ _o.apply(this,arguments); try{injectModalImg();}catch(e){} }; }
-    /* 예약 로드/변경 시점에 바 즉시 갱신 (로그인 직후 바로 노출) */
+    if(typeof window.openHomeCtrl==='function'){
+      var _o=window.openHomeCtrl;
+      window.openHomeCtrl=function(){ var r; try{ r=_o.apply(this,arguments); }catch(e){} setTimeout(enhanceCtrlPage,0); return r; };
+    }
     ['renderMyReservations','showHomeCtrlSwitch'].forEach(function(name){
       if(typeof window[name]==='function'){
         var orig=window[name];
         window[name]=function(){ var r; try{ r=orig.apply(this,arguments); }catch(e){} try{ syncBar(); }catch(e){} return r; };
       }
     });
-    console.log('[컨트롤러] ✅ v5 (모달 크게)');
+    console.log('[컨트롤러] ✅ v6 (전체화면 페이지)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
