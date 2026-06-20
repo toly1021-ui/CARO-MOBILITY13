@@ -215,7 +215,7 @@
       width:auto!important;}
     .caro-row-2 .ctrl-sq-btn{padding:18px 8px!important;}
     #home-ctrl-modal .ctrl-sq-btn:disabled{opacity:.4!important;}
-    #home-ctrl-modal .ctrl-sq-icon{font-size:0!important;line-height:0;margin-bottom:8px!important;color:var(--accent-2);width:auto;height:auto;}
+    #home-ctrl-modal .ctrl-sq-icon{font-size:0!important;line-height:0;margin-bottom:5px!important;color:var(--accent-2);width:auto;height:auto;transform:translateY(3px);}
     #home-ctrl-modal .ctrl-sq-icon svg{width:26px;height:26px;display:block;}
     #home-ctrl-modal .ctrl-sq-label{font-size:.8rem!important;margin-top:0!important;font-weight:600!important;color:var(--text-1)!important;}
 
