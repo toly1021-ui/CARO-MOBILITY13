@@ -149,7 +149,7 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 게이팅 v4 (로그인 직후 즉시 노출)
+   CARO MOBILITY — 컨트롤러 게이팅 v5 (모달 크게)
    · 예약 없음 / 홈 아님 → 숨김
    · 활성 예약 + 홈 → 탭바 위에 [차 이미지 | 차량명·상태 | 차량 제어] 얇은 바 (고정)
    · 하단 여백 확보로 공지사항 안 가림. 차량 제어 → openHomeCtrl() 모달
@@ -170,7 +170,14 @@
     +'.crb-status b{color:#1d7a3a;font-weight:700;}'
     +'.crb-btn{flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:10px 15px;font-size:.84rem;font-weight:700;cursor:pointer;font-family:inherit;}'
     +'.crb-btn:active{opacity:.9;}'
-    +'.caro-ctrl-modal-img{width:100%;max-width:240px;height:auto;object-fit:contain;display:block;margin:2px auto 10px;}';
+    +'.caro-ctrl-modal-img{width:100%;max-width:280px;height:auto;object-fit:contain;display:block;margin:4px auto 12px;}'
+    /* 컨트롤러 모달 크게 (거의 전체화면) */
+    +'#home-ctrl-modal .home-ctrl-box{max-width:480px!important;width:100%!important;height:90vh!important;max-height:90vh!important;display:flex!important;flex-direction:column!important;overflow-y:auto!important;border-radius:24px 24px 0 0!important;}'
+    +'#home-ctrl-modal .ctrl-info-section{padding:12px 0 14px!important;}'
+    +'#home-ctrl-modal .ctrl-btn-wrap{flex:1 1 auto!important;justify-content:center!important;gap:12px!important;padding:16px 16px 24px!important;}'
+    +'#home-ctrl-modal .ctrl-sq-btn{padding:18px 8px!important;border-radius:16px!important;}'
+    +'#home-ctrl-modal .ctrl-sq-icon{transform:scale(1.2);}'
+    +'#home-ctrl-modal .ctrl-sq-label{font-size:.82rem!important;margin-top:8px!important;}';
   document.head.appendChild(st);
 
   function asDate(x){ return x instanceof Date ? x : new Date(x); }
@@ -250,7 +257,7 @@
         window[name]=function(){ var r; try{ r=orig.apply(this,arguments); }catch(e){} try{ syncBar(); }catch(e){} return r; };
       }
     });
-    console.log('[컨트롤러] ✅ v4 (예약 로드시 즉시 노출)');
+    console.log('[컨트롤러] ✅ v5 (모달 크게)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
