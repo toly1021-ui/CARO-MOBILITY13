@@ -77,7 +77,7 @@
     section.id='tab-monthly'; section.className='hide';
     section.innerHTML=
       '<div class="mr-page-hd"><div><div class="mr-ttl">월 렌트 요금 관리</div>'
-      +'<div class="mr-sub">차량을 <b>수정</b>해 이미지·연료·주행km·시간당요금·옵션·월요금을 편집하면 고객 앱에 실시간 반영됩니다. 차량 추가/삭제도 여기서 할 수 있어요.</div></div>'
+      +'<div class="mr-sub">차량을 <b>수정</b>해 이미지·연료·월 주행거리·옵션·월 요금을 편집하면 고객 앱에 실시간 반영됩니다. 차량 추가/삭제도 여기서 할 수 있어요.</div></div>'
       +'<button class="mr-add" onclick="mrOpenEdit(null,null)">+ 차량 추가</button></div>'
       +'<div class="mr-stats">'
         +'<div class="mr-kpi"><div class="n" id="mrTotal">0</div><div class="l">전체 차량</div></div>'
@@ -85,7 +85,7 @@
         +'<div class="mr-kpi"><div class="n" id="mrUnset">0</div><div class="l">미설정</div></div>'
       +'</div>'
       +'<div class="card"><div class="tbl-scroll"><table class="mr-tbl">'
-        +'<thead><tr><th>차량</th><th>등급</th><th>시간당 요금</th><th>월 요금</th><th style="text-align:right">관리</th></tr></thead>'
+        +'<thead><tr><th>차량</th><th>등급</th><th>월 요금</th><th style="text-align:right">관리</th></tr></thead>'
         +'<tbody id="mrBody"></tbody></table></div></div>';
     dash.parentNode.insertBefore(section, dash.nextSibling);
     var anchor=document.querySelector('.tabs [data-tab="black"]') || document.querySelector('.tabs [data-tab="dash"]');
@@ -130,12 +130,11 @@
       return '<tr>'
         +'<td style="color:var(--txt)">'+thumb+esc(name)+'</td>'
         +'<td><span class="mr-grade'+(it.bl?' bl':'')+'">'+(it.bl?'THE BLACK':'일반')+'</span></td>'
-        +'<td style="color:var(--muted);font-family:\'Saira\',sans-serif">'+(ph==null?'—':won(ph)+'원/h')+'</td>'
         +'<td style="font-family:\'Saira\',sans-serif;color:'+(mp==null?'var(--muted)':'var(--txt)')+'">'+(mp==null?'미설정':won(mp)+'원')+'</td>'
         +'<td style="text-align:right"><button class="mr-edit" onclick="mrOpenEdit(\''+it.col+'\',\''+idA+'\')">수정</button></td>'
       +'</tr>';
     }).join('');
-    body.innerHTML = rows || '<tr><td colspan="5" class="mr-empty">등록된 차량이 없습니다. 우측 상단 ‘+ 차량 추가’로 등록하세요.</td></tr>';
+    body.innerHTML = rows || '<tr><td colspan="4" class="mr-empty">등록된 차량이 없습니다. 우측 상단 ‘+ 차량 추가’로 등록하세요.</td></tr>';
     var set=function(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; };
     set('mrTotal',total); set('mrSet',setN); set('mrUnset',total-setN);
   }
@@ -155,10 +154,8 @@
       +'<div class="mrm-field" id="mrmGradeWrap"><label>등급</label><select class="mrm-sel" id="mrmGrade"><option value="cars">일반</option><option value="bl_cars">CARO THE BLACK</option></select></div>'
       +'<div class="mrm-field"><label>사용 연료</label><input class="mrm-in" id="mrmFuel" list="mrmFuelList" placeholder="예: 가솔린 / 전기 / 디젤"/>'
         +'<datalist id="mrmFuelList"><option value="가솔린"></option><option value="디젤"></option><option value="전기"></option><option value="LPG"></option><option value="하이브리드"></option></datalist></div>'
-      +'<div class="mrm-row2"><div class="mrm-field"><label>주행요금 (원/km)</label><input class="mrm-in" id="mrmKmRate" inputmode="numeric" placeholder="전기차만"/></div>'
-        +'<div class="mrm-field"><label>무료 주행 (km)</label><input class="mrm-in" id="mrmFreeKm" inputmode="numeric" placeholder="예: 50"/></div></div>'
-      +'<div class="mrm-row2"><div class="mrm-field"><label>시간당 요금 (원)</label><input class="mrm-in" id="mrmPh" inputmode="numeric"/></div>'
-        +'<div class="mrm-field"><label>월 요금 (원)</label><input class="mrm-in" id="mrmMp" inputmode="numeric" placeholder="미설정"/></div></div>'
+      +'<div class="mrm-field"><label>월 주행거리 (km)</label><input class="mrm-in" id="mrmMonthlyKm" inputmode="numeric" placeholder="예: 2000 (비우면 무제한)"/></div>'
+      +'<div class="mrm-field"><label>월 요금 (원)</label><input class="mrm-in" id="mrmMp" inputmode="numeric" placeholder="미설정"/></div>'
       +'<div class="mrm-field"><label>차량 옵션 (줄바꿈으로 구분)</label><textarea class="mrm-ta" id="mrmOpts" placeholder="예:\n스마트키\n후방카메라\n열선시트"></textarea></div>'
       +'<div class="mrm-actions"><button class="mrm-save" id="mrmSave">저장</button><button class="mrm-del" id="mrmDel">삭제</button></div>'
       +'</div>';
@@ -202,9 +199,7 @@
     document.getElementById('mrmImg').style.visibility=d.img?'visible':'hidden';
     document.getElementById('mrmName').value=d.name||'';
     document.getElementById('mrmFuel').value=d.fuel||'';
-    document.getElementById('mrmKmRate').value=(d.kmRate!=null?d.kmRate:'');
-    document.getElementById('mrmFreeKm').value=(d.fuelFreeKm!=null?d.fuelFreeKm:'');
-    document.getElementById('mrmPh').value=(d.pricePerHour!=null?d.pricePerHour:'');
+    document.getElementById('mrmMonthlyKm').value=(d.monthlyKm!=null?d.monthlyKm:'');
     document.getElementById('mrmMp').value=(d.monthlyPrice!=null?d.monthlyPrice:'');
     document.getElementById('mrmOpts').value=d.options||'';
     document.getElementById('mrmDel').style.display=isNew?'none':'';
@@ -220,9 +215,7 @@
     var payload={
       name:name,
       fuel:(document.getElementById('mrmFuel').value||'').trim(),
-      kmRate:intv(document.getElementById('mrmKmRate').value),
-      fuelFreeKm:intv(document.getElementById('mrmFreeKm').value),
-      pricePerHour:intv(document.getElementById('mrmPh').value),
+      monthlyKm:intv(document.getElementById('mrmMonthlyKm').value),
       monthlyPrice:intv(document.getElementById('mrmMp').value),
       options:document.getElementById('mrmOpts').value||'',
       img:EDIT.img||''
