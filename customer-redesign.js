@@ -1054,7 +1054,7 @@
         var selEl=document.querySelector('.extend-option.selected');
         if(!mins && selEl) mins=+selEl.getAttribute('data-mins')||0;
         if(!mins){ toast('연장 시간을 선택해 주세요.'); return; }
-        var amount=parseWon((document.getElementById('ext-conf-total')||{}).textContent);
+        var amount=window._caroExtAmount||parseWon((document.getElementById('ext-conf-total')||{}).textContent);
         if(!amount && selEl){ var cc=selEl.querySelector('.ext-cost'); amount=cc?parseWon(cc.textContent):0; }
         /* 결제 모달 → 카드 결제 성공 시 원본 연장 로직 실행 */
         openSheet(mins, amount, function(){ try{ orig(); }catch(e){} });
@@ -1065,6 +1065,133 @@
     if(!hook()){ var t=0; var iv=setInterval(function(){ if(hook()||++t>40) clearInterval(iv); },300); }
     handleReturn();
     console.log('[\uC2DC\uAC04\uC5F0\uC7A5] \u2705 \uACB0\uC81C \uC5F0\uACB0 (\uB4F1\uB85D\uCE74\uB4DC / \uD1A0\uC2A4\uD398\uC774\uBA3C\uCE20)');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 시간 연장 유연 선택기
+   · 고정 6옵션 → 10분 단위로 원하는 만큼 한 번에 선택 (슬라이더 + 스테퍼)
+   · 같은 차량의 다음 예약 시작 전까지 (없으면 최대 대여 30일까지) 연장 가능
+   · 연장 시트 크기를 주행전 사진 시트와 동일하게(480px / 82vh 스크롤)
+   · 확정 시 결제수단(등록카드/토스) 모달은 기존 연장결제 모듈이 처리
+═══════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  function el(id){ return document.getElementById(id); }
+  function fmtDur(m){
+    if(m<=0) return '0분';
+    var d=Math.floor(m/1440); m-=d*1440;
+    var h=Math.floor(m/60); var mn=m%60;
+    var s=[]; if(d)s.push(d+'일'); if(h)s.push(h+'시간'); if(mn)s.push(mn+'분');
+    return s.join(' ');
+  }
+  function getRes(){ return (window.ctrlResIdx>=0&&window.myReservations)?window.myReservations[window.ctrlResIdx]:null; }
+
+  var st=document.createElement('style');
+  st.textContent=
+    '.extend-sheet{max-width:480px !important;max-height:82vh;overflow-y:auto;}'
+   +'.cx-wrap{padding:8px 16px 14px;}'
+   +'.cx-max{font-size:.78rem;color:var(--text-m);text-align:center;margin-bottom:12px;line-height:1.5;}'
+   +'.cx-disp{text-align:center;font-size:1.55rem;font-weight:800;color:#18191c;margin-bottom:16px;letter-spacing:-.01em;}'
+   +'.cx-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px;}'
+   +'.cx-steps.plus{margin-bottom:14px;}'
+   +'.cx-step{padding:12px 4px;border:1px solid var(--border-l,#e3e7ec);border-radius:11px;background:#fff;font-size:.84rem;font-weight:700;color:#18191c;cursor:pointer;font-family:inherit;}'
+   +'.cx-step:active{background:#eef1f5;}'
+   +'.cx-step:disabled{opacity:.3;cursor:default;}'
+   +'.cx-slider{width:100%;accent-color:#18191c;height:26px;cursor:pointer;}'
+   +'.cx-none{text-align:center;color:#b23a3a;font-size:.88rem;padding:18px 8px;line-height:1.5;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  var CUR={res:null,carRate:0,insRate:0,max:0,val:0};
+
+  function computeMax(res){
+    var car=res.car||{};
+    var curEnd=(res.end instanceof Date)?res.end:new Date(res.end);
+    var startD=(res.start instanceof Date)?res.start:new Date(res.start);
+    var nextStart=null;
+    var all=[].concat(window.globalActiveReservations||[], window.myReservations||[]);
+    all.forEach(function(r){
+      if(!r||!r.car||!r.start) return;
+      if(String(r.car.id)!==String(car.id)) return;
+      if(res.bookNo&&r.bookNo&&r.bookNo===res.bookNo) return;
+      var s=(r.start instanceof Date)?r.start:new Date(r.start);
+      if(isNaN(s.getTime())) return;
+      if(s.getTime()>=curEnd.getTime()){ if(!nextStart||s.getTime()<nextStart.getTime()) nextStart=s; }
+    });
+    var capEnd=new Date(startD.getTime()+30*24*3600*1000); /* 최대 대여 30일 */
+    var byNext = nextStart && nextStart.getTime()<capEnd.getTime();
+    var limitEnd = byNext ? nextStart : capEnd;
+    var max=Math.floor((limitEnd.getTime()-curEnd.getTime())/60000);
+    max=Math.floor(max/10)*10; if(max<0)max=0;
+    return {max:max, byNext:byNext};
+  }
+
+  function setVal(m){
+    m=Math.round(m/10)*10;
+    if(m<10)m=10; if(m>CUR.max)m=CUR.max;
+    CUR.val=m; window.selectedExtendMins=m;
+    var carCost=Math.round(CUR.carRate*(m/60)), insCost=Math.round(CUR.insRate*(m/60)), total=carCost+insCost;
+    if(el('cxDisp')) el('cxDisp').textContent='+ '+fmtDur(m);
+    var sl=el('cxSlider'); if(sl && +sl.value!==m) sl.value=m;
+    var box=el('ext-confirm-box'); if(box) box.classList.add('show');
+    var curEnd=(CUR.res.end instanceof Date)?CUR.res.end:new Date(CUR.res.end);
+    var pv=new Date(curEnd.getTime()+m*60000); var p2=function(n){return n<10?'0'+n:n;};
+    if(el('ext-conf-time')) el('ext-conf-time').textContent=fmtDur(m)+'  →  반납 '+(pv.getMonth()+1)+'/'+p2(pv.getDate())+' '+p2(pv.getHours())+':'+p2(pv.getMinutes());
+    if(el('ext-conf-car')) el('ext-conf-car').textContent=carCost.toLocaleString()+'원';
+    if(el('ext-conf-ins')) el('ext-conf-ins').textContent=insCost.toLocaleString()+'원';
+    if(el('ext-conf-total')) el('ext-conf-total').textContent=total.toLocaleString()+'원';
+    var steps=document.querySelectorAll('.cx-step');
+    Array.prototype.forEach.call(steps,function(b){
+      var d=+b.getAttribute('data-d');
+      b.disabled = d<0 ? (CUR.val<=10) : (CUR.val>=CUR.max);
+    });
+  }
+
+  function buildSelector(){
+    var res=getRes(); if(!res) return;
+    var car=res.car||{}, ins=res.ins||(window.INSURANCE&&window.INSURANCE[0])||{};
+    CUR.res=res; CUR.carRate=car.pricePerHour||0; CUR.insRate=(ins&&ins.pricePerHour)||0;
+    var mx=computeMax(res); CUR.max=mx.max;
+    var grid=el('ext-grid'); if(!grid) return;
+    grid.style.display='block';
+    var ok=el('ext-ok-btn');
+    if(CUR.max<10){
+      grid.innerHTML='<div class="cx-none">다음 예약이 곧 시작돼<br>연장할 수 있는 시간이 없습니다.</div>';
+      var box=el('ext-confirm-box'); if(box) box.classList.remove('show');
+      window.selectedExtendMins=0; if(ok) ok.disabled=true;
+      return;
+    }
+    if(ok) ok.disabled=false;
+    var maxLbl = mx.byNext
+      ? '다음 예약 전까지 최대 <b>'+fmtDur(CUR.max)+'</b> 연장 가능'
+      : '최대 <b>'+fmtDur(CUR.max)+'</b> 연장 가능 (최대 대여 30일)';
+    grid.innerHTML=
+      '<div class="cx-wrap">'
+      +'<div class="cx-max">'+maxLbl+'</div>'
+      +'<div class="cx-disp" id="cxDisp">+ 1시간</div>'
+      +'<div class="cx-steps"><button class="cx-step" data-d="-1440">−1일</button><button class="cx-step" data-d="-60">−1시간</button><button class="cx-step" data-d="-10">−10분</button></div>'
+      +'<div class="cx-steps plus"><button class="cx-step" data-d="10">+10분</button><button class="cx-step" data-d="60">+1시간</button><button class="cx-step" data-d="1440">+1일</button></div>'
+      +'<input type="range" id="cxSlider" class="cx-slider" min="10" max="'+CUR.max+'" step="10" value="60"/>'
+      +'</div>';
+    var steps=grid.querySelectorAll('.cx-step');
+    Array.prototype.forEach.call(steps,function(b){
+      b.addEventListener('click',function(){ setVal(CUR.val+(+b.getAttribute('data-d'))); });
+    });
+    var sl=el('cxSlider'); if(sl) sl.addEventListener('input',function(){ setVal(+sl.value); });
+    setVal(Math.min(60,CUR.max));
+  }
+
+  function wrap(){
+    if(typeof window.openExtendSheet!=='function' || window.openExtendSheet._caroFlex) return (typeof window.openExtendSheet==='function');
+    var orig=window.openExtendSheet;
+    window.openExtendSheet=function(){ var r; try{ r=orig.apply(this,arguments); }catch(e){} setTimeout(buildSelector,0); return r; };
+    window.openExtendSheet._caroFlex=1;
+    return true;
+  }
+  function boot(){
+    if(!wrap()){ var t=0; var iv=setInterval(function(){ if(wrap()||++t>40) clearInterval(iv); },300); }
+    console.log('[\uC2DC\uAC04\uC5F0\uC7A5] \u2705 \uC720\uC5F0 \uC120\uD0DD\uAE30 (\uB2E4\uC74C \uC608\uC57D\uAE4C\uC9C0)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
