@@ -149,7 +149,7 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 v14 (반납 글씨만·중앙) + 이모지 정리 v2
+   CARO MOBILITY — 컨트롤러 v14 + 이모지 v2 + 계정관리·뒤로가기 THE BLACK
    · 홈 하단 플로팅 바 → "차량 제어" → 전체화면 페이지 (아래→위 슬라이드)
    · 버튼 재배치: [문열림|문잠금] / 차량이용(비상등|사진|주차) /
      예약관리(연장|예약내용|사고신고) / [반납 전체폭]
@@ -567,4 +567,33 @@
     console.log('[\uB514\uC790\uC778] \u2705 \uC774\uBAA8\uC9C0 \uC815\uB9AC v2 (\uC804\uCCB4 \uD654\uBA74 \uB77C\uC778 \uC544\uC774\uCF58 \uD1B5\uC77C)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 계정관리 카드화 + 뒤로가기 THE BLACK v1
+   · #mypage-screen(계정관리): 가장자리 리스트 → 라운드 화이트 카드
+   · 프로그램 전체 뒤로가기 버튼 → CARO THE BLACK(다크 차콜 + 골드)
+═══════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var st=document.createElement('style');
+  st.textContent=
+    /* 계정관리: 라이트 배경 + 라운드 화이트 카드 */
+    '#mypage-screen{background:#f0f3f7!important;}'
+   +'#mypage-screen .metal-bg{display:none!important;}'
+   +'#mypage-screen .mpn-profile{margin:0 16px 16px!important;padding:18px 18px 20px!important;border-radius:18px!important;border:1px solid var(--border-l)!important;background:#fff!important;box-shadow:0 2px 10px rgba(20,22,28,.05)!important;}'
+   +'#mypage-screen .mpn-section{margin-bottom:14px!important;}'
+   +'#mypage-screen .mpn-section-label{padding:2px 22px 8px!important;}'
+   +'#mypage-screen .mpn-group{margin:0 16px!important;border-radius:16px!important;border:1px solid var(--border-l)!important;background:#fff!important;overflow:hidden!important;box-shadow:0 1px 4px rgba(20,22,28,.04)!important;}'
+   +'#mypage-screen .mpn-item{border-bottom:1px solid var(--border-l)!important;}'
+   +'#mypage-screen .mpn-item-last{border-bottom:none!important;}'
+    /* 모든 뒤로가기 버튼 → CARO THE BLACK (다크 차콜 + 골드) */
+   +'.back-bottom-btn,.mpn-back-btn,.mpd-back-btn{background:linear-gradient(135deg,#20232b,#14151a)!important;border:1px solid rgba(255,255,255,.16)!important;color:#fff!important;}'
+   +'.back-icon-btn,.mpd-back-icon,.rental-topbar-back{background-color:#16181d!important;border:1px solid rgba(255,255,255,.16)!important;color:#fff!important;}'
+   +'.rental-topbar-back{border-radius:50%!important;}'
+   +'.back-bottom-btn:hover,.mpn-back-btn:hover,.mpd-back-btn:hover,.back-icon-btn:hover,.mpd-back-icon:hover,.rental-topbar-back:hover{border-color:rgba(255,255,255,.34)!important;color:#fff!important;}'
+    /* 블랙라벨 화면은 이미 다크 배경 → 골드 테두리만 유지(겹침 방지) */
+   +'#black-label-screen .back-bottom-btn,.bl-mode .back-bottom-btn{background:transparent!important;border-color:rgba(255,255,255,.22)!important;color:#fff!important;}';
+  (document.head||document.documentElement).appendChild(st);
+  console.log('[\uB514\uC790\uC778] \u2705 \uACC4\uC815\uAD00\uB9AC \uCE74\uB4DC\uD654 + \uB4A4\uB85C\uAC00\uAE30 THE BLACK v1');
 })();
