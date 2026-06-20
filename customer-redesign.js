@@ -149,7 +149,7 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 게이팅 v3 (하단 여백 축소)
+   CARO MOBILITY — 컨트롤러 게이팅 v4 (로그인 직후 즉시 노출)
    · 예약 없음 / 홈 아님 → 숨김
    · 활성 예약 + 홈 → 탭바 위에 [차 이미지 | 차량명·상태 | 차량 제어] 얇은 바 (고정)
    · 하단 여백 확보로 공지사항 안 가림. 차량 제어 → openHomeCtrl() 모달
@@ -243,7 +243,14 @@
     var home=document.getElementById('home-screen');
     if(home && window.MutationObserver){ new MutationObserver(function(){ syncBar(); }).observe(home,{attributes:true,attributeFilter:['class']}); }
     if(typeof window.openHomeCtrl==='function'){ var _o=window.openHomeCtrl; window.openHomeCtrl=function(){ _o.apply(this,arguments); try{injectModalImg();}catch(e){} }; }
-    console.log('[컨트롤러] ✅ v3 (하단 여백 축소)');
+    /* 예약 로드/변경 시점에 바 즉시 갱신 (로그인 직후 바로 노출) */
+    ['renderMyReservations','showHomeCtrlSwitch'].forEach(function(name){
+      if(typeof window[name]==='function'){
+        var orig=window[name];
+        window[name]=function(){ var r; try{ r=orig.apply(this,arguments); }catch(e){} try{ syncBar(); }catch(e){} return r; };
+      }
+    });
+    console.log('[컨트롤러] ✅ v4 (예약 로드시 즉시 노출)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
