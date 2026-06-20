@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 앱 홈 리디자인 v21
+   CARO MOBILITY — 고객 앱 홈 리디자인 v22
    ───────────────────────────────────────────────────────────
    · 골드 히어로/THE BLACK/이벤트는 그대로 유지
    · 타일 아이콘 칩: 검정 → 실버(배경 톤에 맞춤)
    · 히어로 자동차 라인 그림 제거
    적용: index.html — customer-monthly.js 줄 다음:
-     <script src="customer-redesign.js?v=21"></script>
+     <script src="customer-redesign.js?v=22"></script>
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
@@ -142,36 +142,34 @@
       new MutationObserver(function(){ if(pend) return; pend=true;
         requestAnimationFrame(function(){ pend=false; apply(); }); }).observe(home,{childList:true,subtree:true,characterData:true});
     }
-    console.log('[디자인] ✅ 홈 리디자인 v21 (실버 칩 + 자동차 그림 제거)');
+    console.log('[디자인] ✅ 홈 리디자인 v22 (실버 칩 + 자동차 그림 제거)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 컨트롤러 게이팅 v1
-   · 예약 없음: 컨트롤러 숨김 (하단 손잡이 숨김, 카드 없음)
-   · 활성 예약(!returned): 홈에 '내 이용 차량' 카드(차 사진+상태+제어 버튼)
-   · '차량 제어' → 기존 openHomeCtrl() 모달 (+ 모달에도 차 이미지)
+   CARO MOBILITY — 컨트롤러 게이팅 v2 (하단 플로팅 바)
+   · 예약 없음 / 홈 아님 → 숨김
+   · 활성 예약 + 홈 → 탭바 위에 [차 이미지 | 차량명·상태 | 차량 제어] 얇은 바 (고정)
+   · 하단 여백 확보로 공지사항 안 가림. 차량 제어 → openHomeCtrl() 모달
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
   var st=document.createElement('style');
   st.textContent=
     '#home-ctrl-switch{display:none!important;}'
-    +'.caro-rental-card{background:var(--glass2);border:1px solid var(--border-l);border-radius:20px;'
-    +'padding:16px 18px;margin-bottom:14px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 1px 2px rgba(24,25,28,.04);}'
-    +'.crc-top{display:flex;align-items:center;gap:8px;margin-bottom:12px;}'
-    +'.crc-status{font-size:.66rem;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(140,148,160,.18);color:var(--text-2);letter-spacing:.02em;}'
-    +'.crc-status.on{background:rgba(29,122,58,.14);color:#1d7a3a;}'
-    +'.crc-label{font-size:.78rem;color:var(--text-m);font-weight:600;letter-spacing:.02em;}'
-    +'.crc-body{display:flex;align-items:center;gap:14px;margin-bottom:14px;}'
-    +'.crc-img{width:98px;height:62px;object-fit:cover;border-radius:12px;background:var(--silver-light);flex-shrink:0;}'
-    +'.crc-info{flex:1;min-width:0;}'
-    +'.crc-name{font-size:1rem;font-weight:700;color:var(--text-1);letter-spacing:-.01em;}'
-    +'.crc-time{font-size:.74rem;color:var(--text-m);margin-top:4px;}'
-    +'.crc-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px;font-size:.92rem;font-weight:700;cursor:pointer;font-family:inherit;}'
-    +'.crc-btn:active{opacity:.9;}'
+    +'#caro-rental-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(72px + var(--sab));'
+    +'width:calc(100% - 32px);max-width:448px;z-index:480;display:flex;align-items:center;gap:10px;'
+    +'padding:7px 8px 7px 10px;background:var(--glass2);border:1px solid var(--border-l);border-radius:16px;'
+    +'backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 6px 22px -8px rgba(20,22,28,.28);}'
+    +'.crb-img{width:62px;height:38px;object-fit:cover;border-radius:10px;background:var(--silver-light);flex-shrink:0;}'
+    +'.crb-info{flex:1;min-width:0;}'
+    +'.crb-name{font-size:.85rem;font-weight:700;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em;}'
+    +'.crb-status{font-size:.65rem;color:var(--text-m);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+    +'.crb-status b{color:#1d7a3a;font-weight:700;}'
+    +'.crb-btn{flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:10px 15px;font-size:.84rem;font-weight:700;cursor:pointer;font-family:inherit;}'
+    +'.crb-btn:active{opacity:.9;}'
     +'.caro-ctrl-modal-img{width:100%;max-width:240px;height:auto;object-fit:contain;display:block;margin:2px auto 10px;}';
   document.head.appendChild(st);
 
@@ -198,36 +196,35 @@
   }
   function esc(t){ return (''+(t==null?'':t)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
-  function syncCard(){
-    var body=document.querySelector('#home-screen .home-body'); if(!body) return;
+  function syncBar(){
+    var home=document.getElementById('home-screen');
+    var homeActive=home && home.classList.contains('active');
+    var body=document.querySelector('#home-screen .home-body');
+    var bar=document.getElementById('caro-rental-bar');
     var res=getActiveRes();
-    var card=document.getElementById('caro-rental-card');
-    if(!res){ if(card) card.remove(); return; }
+    if(!res || !homeActive){
+      if(bar) bar.style.display='none';
+      if(body) body.style.paddingBottom='';
+      return;
+    }
+    if(!bar){ bar=document.createElement('div'); bar.id='caro-rental-bar'; document.body.appendChild(bar); }
+    bar.style.display='flex';
+    if(body) body.style.paddingBottom='158px';
     var car=res.car||{};
     var name=(window.getCarName?getCarName(car):(car.name||'내 차량'));
     var img=car.img||car.image||'';
     var num=car.carNumber||car.plate||'';
-    var now=Date.now();
-    var on=(now>=asDate(res.start).getTime()&&now<=asDate(res.end).getTime());
-    var status=on?'이용 중':'이용 예정';
-    var timeStr=fmtRange(res.start,res.end);
-    var sig=name+'|'+num+'|'+status+'|'+timeStr+'|'+(img?img.slice(0,24):'');
-    if(card && card.dataset.sig===sig) return;
-    if(!card){
-      card=document.createElement('div'); card.id='caro-rental-card'; card.className='caro-rental-card';
-      var hero=document.querySelector('#home-screen .home-welcome-banner');
-      if(hero && hero.parentNode) hero.parentNode.insertBefore(card, hero.nextSibling);
-      else body.insertBefore(card, body.firstChild);
-    }
-    card.dataset.sig=sig;
-    card.innerHTML=
-      '<div class="crc-top"><span class="crc-status'+(on?' on':'')+'">'+status+'</span>'
-      +'<span class="crc-label">내 이용 차량</span></div>'
-      +'<div class="crc-body">'
-      +(img?'<img class="crc-img" src="'+esc(img)+'" alt="">':'<div class="crc-img"></div>')
-      +'<div class="crc-info"><div class="crc-name">'+esc(name)+(num?' · '+esc(num):'')+'</div>'
-      +(timeStr?'<div class="crc-time">'+esc(timeStr)+'</div>':'')+'</div></div>'
-      +'<button class="crc-btn" onclick="if(window.openHomeCtrl)openHomeCtrl()">차량 제어</button>';
+    var on=(Date.now()>=asDate(res.start).getTime() && Date.now()<=asDate(res.end).getTime());
+    var statusTxt=(on?'<b>이용 중</b>':'이용 예정');
+    var time=fmtRange(res.start,res.end);
+    var sig=name+'|'+num+'|'+on+'|'+time+'|'+(img?img.slice(0,24):'');
+    if(bar.dataset.sig===sig) return;
+    bar.dataset.sig=sig;
+    bar.innerHTML=
+      (img?'<img class="crb-img" src="'+esc(img)+'" alt="">':'<div class="crb-img"></div>')
+      +'<div class="crb-info"><div class="crb-name">'+esc(name)+(num?' · '+esc(num):'')+'</div>'
+      +'<div class="crb-status">'+statusTxt+(time?' · '+esc(time):'')+'</div></div>'
+      +'<button class="crb-btn" onclick="if(window.openHomeCtrl)openHomeCtrl()">차량 제어</button>';
   }
 
   function injectModalImg(){
@@ -241,13 +238,12 @@
   }
 
   function boot(){
-    syncCard();
-    setInterval(syncCard, 4000);
-    if(typeof window.openHomeCtrl==='function'){
-      var _o=window.openHomeCtrl;
-      window.openHomeCtrl=function(){ _o.apply(this,arguments); try{injectModalImg();}catch(e){} };
-    }
-    console.log('[컨트롤러] ✅ 게이팅 v1 (예약 시 내 이용 차량 카드)');
+    syncBar();
+    setInterval(syncBar, 3000);
+    var home=document.getElementById('home-screen');
+    if(home && window.MutationObserver){ new MutationObserver(function(){ syncBar(); }).observe(home,{attributes:true,attributeFilter:['class']}); }
+    if(typeof window.openHomeCtrl==='function'){ var _o=window.openHomeCtrl; window.openHomeCtrl=function(){ _o.apply(this,arguments); try{injectModalImg();}catch(e){} }; }
+    console.log('[컨트롤러] ✅ v2 (하단 플로팅 바)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
