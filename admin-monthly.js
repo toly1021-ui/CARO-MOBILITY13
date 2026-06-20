@@ -14,6 +14,9 @@
   function esc(s){ return (''+(s==null?'':s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function won(n){ return (Number(n)||0).toLocaleString(); }
   function intv(s){ var r=(''+(s==null?'':s)).replace(/[^0-9]/g,''); return r===''?null:parseInt(r,10); }
+  var MR_PERIODS=[1,3,6,9,12];
+  function plan1(d){ var pl=(d&&d.monthlyPlans)?d.monthlyPlans['1']:null; if(pl&&num(pl.price)!=null&&pl.price>0){ var disc=num(pl.discount)||0; return Math.round(pl.price*(100-disc)/100); } return null; }
+  function gatherPlans(){ var o={}; MR_PERIODS.forEach(function(p){ var pe=document.querySelector('.mrm-pp[data-p="'+p+'"]'); var de=document.querySelector('.mrm-pd[data-p="'+p+'"]'); o[String(p)]={ price:(pe?(intv(pe.value)||0):0), discount:(de?(intv(de.value)||0):0) }; }); return o; }
 
   var HIDE=['dash','price','resv','notice','set','black','monthly'];
 
@@ -52,6 +55,10 @@
    +'.mrm-field{margin-bottom:13px;}'
    +'.mrm-field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px;font-weight:600;}'
    +'.mrm-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}'
+   +'.mrm-plans{display:flex;flex-direction:column;gap:7px;}'
+   +'.mrm-plan{display:grid;grid-template-columns:58px 1fr 84px;gap:8px;align-items:center;}'
+   +'.mrm-plan .pl{font-size:12.5px;color:var(--txt);font-weight:700;}'
+   +'.mrm-plan .mrm-in{padding:8px 10px;}'
    +'.mrm-in,.mrm-sel,.mrm-ta{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;box-sizing:border-box;}'
    +'.mrm-in:focus,.mrm-sel,.mrm-ta:focus{outline:none;}.mrm-in:focus,.mrm-ta:focus{border-color:var(--gold-dim);}'
    +'.mrm-ta{min-height:78px;resize:vertical;line-height:1.5;}'
@@ -77,7 +84,7 @@
     section.id='tab-monthly'; section.className='hide';
     section.innerHTML=
       '<div class="mr-page-hd"><div><div class="mr-ttl">월 렌트 요금 관리</div>'
-      +'<div class="mr-sub">차량을 <b>수정</b>해 이미지·연료·월 주행거리·옵션·월 요금을 편집하면 고객 앱에 실시간 반영됩니다. 차량 추가/삭제도 여기서 할 수 있어요.</div></div>'
+      +'<div class="mr-sub">차량을 <b>수정</b>해 이미지·연료·월 주행거리·옵션·<b>기간별 월 요금</b>을 편집하면 고객 앱에 실시간 반영됩니다. 차량 추가/삭제도 여기서 할 수 있어요.</div></div>'
       +'<button class="mr-add" onclick="mrOpenEdit(null,null)">+ 차량 추가</button></div>'
       +'<div class="mr-stats">'
         +'<div class="mr-kpi"><div class="n" id="mrTotal">0</div><div class="l">전체 차량</div></div>'
@@ -85,7 +92,7 @@
         +'<div class="mr-kpi"><div class="n" id="mrUnset">0</div><div class="l">미설정</div></div>'
       +'</div>'
       +'<div class="card"><div class="tbl-scroll"><table class="mr-tbl">'
-        +'<thead><tr><th>차량</th><th>등급</th><th>월 요금</th><th style="text-align:right">관리</th></tr></thead>'
+        +'<thead><tr><th>차량</th><th>등급</th><th>월 요금(1개월~)</th><th style="text-align:right">관리</th></tr></thead>'
         +'<tbody id="mrBody"></tbody></table></div></div>';
     dash.parentNode.insertBefore(section, dash.nextSibling);
     var anchor=document.querySelector('.tabs [data-tab="black"]') || document.querySelector('.tabs [data-tab="dash"]');
@@ -124,13 +131,13 @@
       var d=it.d||{};
       var name=d.name||d.carName||d.title||'(이름 없음)';
       var ph=num(d.pricePerHour)!=null?num(d.pricePerHour):num(d.price);
-      var mp=num(d.monthlyPrice); if(mp!=null) setN++;
+      var mp=plan1(d); if(mp!=null) setN++;
       var idA=(''+it.id).replace(/\\/g,'').replace(/'/g,"\\'");
       var thumb=d.img?'<img class="mr-thumb" src="'+d.img+'" onerror="this.style.visibility=\'hidden\'"/> ':'';
       return '<tr>'
         +'<td style="color:var(--txt)">'+thumb+esc(name)+'</td>'
         +'<td><span class="mr-grade'+(it.bl?' bl':'')+'">'+(it.bl?'THE BLACK':'일반')+'</span></td>'
-        +'<td style="font-family:\'Saira\',sans-serif;color:'+(mp==null?'var(--muted)':'var(--txt)')+'">'+(mp==null?'미설정':won(mp)+'원')+'</td>'
+        +'<td style="font-family:\'Saira\',sans-serif;color:'+(mp==null?'var(--muted)':'var(--txt)')+'">'+(mp==null?'미설정':won(mp)+'원~')+'</td>'
         +'<td style="text-align:right"><button class="mr-edit" onclick="mrOpenEdit(\''+it.col+'\',\''+idA+'\')">수정</button></td>'
       +'</tr>';
     }).join('');
@@ -155,7 +162,11 @@
       +'<div class="mrm-field"><label>사용 연료</label><input class="mrm-in" id="mrmFuel" list="mrmFuelList" placeholder="예: 가솔린 / 전기 / 디젤"/>'
         +'<datalist id="mrmFuelList"><option value="가솔린"></option><option value="디젤"></option><option value="전기"></option><option value="LPG"></option><option value="하이브리드"></option></datalist></div>'
       +'<div class="mrm-field"><label>월 주행거리 (km)</label><input class="mrm-in" id="mrmMonthlyKm" inputmode="numeric" placeholder="예: 2000 (비우면 무제한)"/></div>'
-      +'<div class="mrm-field"><label>월 요금 (원)</label><input class="mrm-in" id="mrmMp" inputmode="numeric" placeholder="미설정"/></div>'
+      +'<div class="mrm-field"><label>기간별 월 렌트 요금 — 월 금액 / 할인 %</label><div class="mrm-plans">'
+        +MR_PERIODS.map(function(p){ return '<div class="mrm-plan"><span class="pl">'+p+'개월</span>'
+          +'<input class="mrm-in mrm-pp" data-p="'+p+'" inputmode="numeric" placeholder="월 금액(원)"/>'
+          +'<input class="mrm-in mrm-pd" data-p="'+p+'" inputmode="numeric" placeholder="할인%"/></div>'; }).join('')
+        +'</div><div class="mrm-hint">요금·할인은 관리자만 입력합니다. 고객 앱엔 할인 적용가가 표시돼요.</div></div>'
       +'<div class="mrm-field"><label>차량 옵션 (줄바꿈으로 구분)</label><textarea class="mrm-ta" id="mrmOpts" placeholder="예:\n스마트키\n후방카메라\n열선시트"></textarea></div>'
       +'<div class="mrm-actions"><button class="mrm-save" id="mrmSave">저장</button><button class="mrm-del" id="mrmDel">삭제</button></div>'
       +'</div>';
@@ -200,7 +211,12 @@
     document.getElementById('mrmName').value=d.name||'';
     document.getElementById('mrmFuel').value=d.fuel||'';
     document.getElementById('mrmMonthlyKm').value=(d.monthlyKm!=null?d.monthlyKm:'');
-    document.getElementById('mrmMp').value=(d.monthlyPrice!=null?d.monthlyPrice:'');
+    var plans=d.monthlyPlans||{};
+    MR_PERIODS.forEach(function(p){
+      var pl=plans[String(p)]||{};
+      var pe=document.querySelector('.mrm-pp[data-p="'+p+'"]'); if(pe) pe.value=(pl.price!=null&&pl.price!==''&&pl.price!==0)?pl.price:'';
+      var de=document.querySelector('.mrm-pd[data-p="'+p+'"]'); if(de) de.value=(pl.discount!=null&&pl.discount!==''&&pl.discount!==0)?pl.discount:'';
+    });
     document.getElementById('mrmOpts').value=d.options||'';
     document.getElementById('mrmDel').style.display=isNew?'none':'';
     document.getElementById('mrModal').classList.add('open');
@@ -216,7 +232,7 @@
       name:name,
       fuel:(document.getElementById('mrmFuel').value||'').trim(),
       monthlyKm:intv(document.getElementById('mrmMonthlyKm').value),
-      monthlyPrice:intv(document.getElementById('mrmMp').value),
+      monthlyPlans:gatherPlans(),
       options:document.getElementById('mrmOpts').value||'',
       img:EDIT.img||''
     };
