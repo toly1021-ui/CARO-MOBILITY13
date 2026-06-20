@@ -633,20 +633,33 @@
   console.log('[\uB514\uC790\uC778] \u2705 \uB85C\uADF8\uC778 \uC804 \uD654\uBA74 \uB9AC\uB514\uC790\uC778 v1');
 })();
 
+
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 월 렌트 화면 v2 + 이벤트 배너 수동 스와이프
-   · openMonthly(): 등록된 전 차량 + 이미지, 탭하면 아코디언으로
-     옵션·연료·주행km·시간당요금 펼침 (이름중복 제거 안 함 = 전 차량 표시)
-   · 진행중 이벤트 배너: 손가락 스와이프 / 점 클릭 수동 넘김
+   CARO MOBILITY — 월 렌트 v3 (예약 플로우) + 이벤트 배너 스와이프
+   · 차량 탭 → 예약 화면: 이미지/차량명/기간(1·3·6·9·12개월, 월금액+할인)
+     /대여시작일(슬라이드 달력)/운전자나이(만21·만26)/면책보험(좌우선택)
+     /선택 요약/다음
+   · 기간별 월금액·할인은 car.monthlyPlans (관리자만 입력)
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
+  function won(n){ try{ return Number(n).toLocaleString('ko-KR'); }catch(e){ return n; } }
+  function esc(t){ return (''+(t==null?'':t)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  var PERIODS=[1,3,6,9,12];
+  /* 면책 보험 (현행 자동차손해배상보장법 기준 · 월 단위) */
+  var INS=[
+    {name:'완전면책', deduct:'자기부담금 5만원', desc:'대인 무한·대물 2억·자차 완전보상', price:120000},
+    {name:'일반면책', deduct:'자기부담금 30만원', desc:'대인 무한·대물 1억·자차 포함', price:70000},
+    {name:'기본',     deduct:'자기부담금 70만원', desc:'대인 무한·대물 2천만 책임보험', price:30000}
+  ];
 
+  /* ── 스타일 ── */
   var st=document.createElement('style');
   st.textContent=
-    '#caro-mr-ov{position:fixed;inset:0;z-index:700;background:#f0f3f7;display:flex;flex-direction:column;'
-   +'transform:translateY(100%);transition:transform .32s cubic-bezier(.22,1,.36,1);visibility:hidden;}'
-   +'#caro-mr-ov.open{transform:translateY(0);visibility:visible;}'
+    /* 리스트 오버레이 */
+    '#caro-mr-ov,#caro-mrd-ov{position:fixed;inset:0;z-index:700;background:#f0f3f7;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.22,1,.36,1);visibility:hidden;}'
+   +'#caro-mr-ov.open,#caro-mrd-ov.open{transform:translateY(0);visibility:visible;}'
+   +'#caro-mrd-ov{z-index:710;}'
    +'.caro-mr-head{display:flex;align-items:center;gap:6px;padding:calc(10px + var(--sat,0px)) 10px 10px;background:#f0f3f7;border-bottom:1px solid var(--border-l);position:sticky;top:0;z-index:2;}'
    +'.caro-mr-back{width:40px;height:40px;border:none;background:none;font-size:1.7rem;line-height:1;color:#18191c;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;}'
    +'.caro-mr-title{font-size:1.15rem;font-weight:800;color:#18191c;letter-spacing:-.01em;}'
@@ -659,88 +672,217 @@
    +'.caro-mr-cname{font-size:.94rem;font-weight:700;color:#18191c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
    +'.caro-mr-grade{display:inline-block;font-size:.64rem;font-weight:700;padding:1px 8px;border-radius:20px;border:1px solid var(--border-l);color:var(--text-m);margin-left:6px;vertical-align:middle;}'
    +'.caro-mr-grade.bl{color:#c6a468;border-color:rgba(198,164,104,.45);}'
-   +'.caro-mr-price{font-size:.92rem;font-weight:800;color:#18191c;margin-top:3px;}'
-   +'.caro-mr-price.ask{color:#b07800;font-size:.82rem;}'
-   +'.caro-mr-chev{font-size:1.35rem;color:var(--text-m);transition:transform .25s;flex-shrink:0;line-height:1;}'
-   +'.caro-mr-card.open .caro-mr-chev{transform:rotate(90deg);}'
-   +'.caro-mr-detail{max-height:0;overflow:hidden;transition:max-height .33s ease;}'
-   +'.caro-mr-card.open .caro-mr-detail{max-height:600px;}'
-   +'.caro-mr-detin{padding:4px 16px 16px;border-top:1px solid var(--border-l);margin-top:0;}'
-   +'.caro-mr-spec{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.83rem;padding:9px 0;border-bottom:1px dashed var(--border-l);}'
-   +'.caro-mr-spec span{color:var(--text-m);} .caro-mr-spec b{color:#18191c;font-weight:700;text-align:right;}'
-   +'.caro-mr-opthead{font-size:.72rem;font-weight:700;color:var(--text-m);letter-spacing:.02em;margin:12px 0 4px;}'
-   +'.caro-mr-optline{font-size:.82rem;color:var(--text-2);padding:2px 0;line-height:1.45;}'
-   +'.caro-mr-optline:before{content:"·";color:var(--text-m);margin-right:6px;}'
+   +'.caro-mr-from{font-size:.82rem;font-weight:700;color:#18191c;margin-top:3px;}'
+   +'.caro-mr-from .ask{color:#b07800;font-weight:700;}'
+   +'.caro-mr-chev{font-size:1.35rem;color:var(--text-m);flex-shrink:0;line-height:1;}'
    +'.caro-mr-empty{text-align:center;color:var(--text-m);font-size:.9rem;padding:50px 0;}'
+   /* 상세(예약) */
+   +'.mrd-img{display:block;width:auto;max-width:78%;max-height:170px;margin:8px auto 4px;object-fit:contain;}'
+   +'.mrd-name{text-align:center;font-size:1.2rem;font-weight:800;color:#18191c;margin:2px 0 18px;}'
+   +'.mrd-sec{margin-bottom:18px;}'
+   +'.mrd-lbl{font-size:.78rem;font-weight:700;color:var(--text-2);margin:0 2px 9px;}'
+   +'.mrd-periods{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}'
+   +'.mrd-per{background:#fff;border:1px solid var(--border-l);border-radius:13px;padding:11px 4px;text-align:center;cursor:pointer;transition:.15s;}'
+   +'.mrd-per.on{background:#18191c;border-color:#18191c;}'
+   +'.mrd-per .pm{font-size:.82rem;font-weight:800;color:#18191c;}'
+   +'.mrd-per .pp{font-size:.6rem;color:var(--text-m);margin-top:4px;line-height:1.2;}'
+   +'.mrd-per .pd{font-size:.56rem;color:#b07800;margin-top:2px;font-weight:700;}'
+   +'.mrd-per.on .pm{color:#fff;}.mrd-per.on .pp{color:rgba(255,255,255,.7);}.mrd-per.on .pd{color:#e8c98a;}'
+   +'.mrd-drop{background:#fff;border:1px solid var(--border-l);border-radius:13px;padding:14px 15px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:.9rem;color:#18191c;font-weight:600;}'
+   +'.mrd-drop .v{color:var(--text-m);font-weight:600;}'
+   +'.mrd-drop .v.set{color:#18191c;font-weight:700;}'
+   +'.mrd-panel{max-height:0;overflow:hidden;transition:max-height .3s ease;background:#fff;border-radius:13px;margin-top:8px;}'
+   +'.mrd-panel.open{max-height:420px;border:1px solid var(--border-l);}'
+   +'.mrd-panin{padding:12px;}'
+   /* 나이 옵션 */
+   +'.mrd-ages{display:flex;gap:8px;}'
+   +'.mrd-age{flex:1;text-align:center;padding:12px;border:1px solid var(--border-l);border-radius:11px;cursor:pointer;font-size:.88rem;font-weight:600;color:#18191c;background:#fff;}'
+   +'.mrd-age.on{background:#18191c;color:#fff;border-color:#18191c;}'
+   /* 달력 */
+   +'.cal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}'
+   +'.cal-ttl{font-size:.9rem;font-weight:700;color:#18191c;}'
+   +'.cal-nav{width:30px;height:30px;border:none;background:#eef1f5;border-radius:8px;font-size:1.1rem;color:#18191c;cursor:pointer;}'
+   +'.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}'
+   +'.cal-dow{text-align:center;font-size:.66rem;color:var(--text-m);padding:4px 0;}'
+   +'.cal-day{aspect-ratio:1;border:none;background:none;border-radius:8px;font-size:.82rem;color:#18191c;cursor:pointer;font-family:inherit;}'
+   +'.cal-day:hover{background:#eef1f5;}.cal-day.sel{background:#18191c;color:#fff;font-weight:700;}'
+   +'.cal-day.dis{color:#c8ccd2;cursor:default;}'
+   /* 면책 보험 캐러셀 */
+   +'.mrd-ins{display:flex;align-items:stretch;gap:8px;}'
+   +'.mrd-insnav{width:38px;flex-shrink:0;border:1px solid var(--border-l);background:#fff;border-radius:11px;font-size:1.3rem;color:#18191c;cursor:pointer;}'
+   +'.mrd-inscard{flex:1;background:#fff;border:1px solid var(--border-l);border-radius:13px;padding:14px;text-align:center;cursor:pointer;transition:.15s;}'
+   +'.mrd-inscard.on{border-color:#18191c;box-shadow:0 0 0 2px rgba(24,25,28,.12);}'
+   +'.mrd-insname{font-size:.96rem;font-weight:800;color:#18191c;}'
+   +'.mrd-insded{font-size:.74rem;color:var(--text-m);margin-top:3px;}'
+   +'.mrd-insdesc{font-size:.68rem;color:var(--text-m);margin-top:5px;line-height:1.4;}'
+   +'.mrd-insprice{font-size:.9rem;font-weight:800;color:#18191c;margin-top:8px;}'
+   +'.mrd-inssel{font-size:.7rem;color:#1d7a3a;font-weight:700;margin-top:6px;}'
+   /* 요약 + 다음 */
+   +'.mrd-sum{background:#fff;border:1px solid var(--border-l);border-radius:14px;padding:15px;margin:6px 0 14px;}'
+   +'.mrd-sumrow{display:flex;justify-content:space-between;font-size:.85rem;padding:5px 0;color:var(--text-2);}'
+   +'.mrd-sumrow b{color:#18191c;font-weight:700;}'
+   +'.mrd-sumtot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-l);margin-top:8px;padding-top:11px;}'
+   +'.mrd-sumtot span{font-size:.82rem;color:var(--text-2);}.mrd-sumtot b{font-size:1.25rem;font-weight:800;color:#18191c;}'
+   +'.mrd-next{width:100%;background:linear-gradient(135deg,#20232b,#14151a);color:#fff;border:none;border-radius:14px;padding:16px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;}'
+   +'.mrd-next:disabled{opacity:.4;}'
    +'#slide-dots .slide-dot{cursor:pointer;}';
   (document.head||document.documentElement).appendChild(st);
 
-  function won(n){ try{ return Number(n).toLocaleString('ko-KR'); }catch(e){ return n; } }
-  function esc(t){ return (''+(t==null?'':t)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-  function kmText(c){
-    if(c.fuel==='전기') return (c.kmRate!=null?won(c.kmRate)+'원/km':'주행요금 별도');
-    var free=(c.fuelFreeKm!=null && c.fuelFreeKm!=='')?c.fuelFreeKm:50;
-    return free+'km 주행 무료';
-  }
-
-  function buildOverlay(){
+  /* ── 리스트 오버레이 ── */
+  function buildList(){
     var ov=document.createElement('div'); ov.id='caro-mr-ov';
-    ov.innerHTML=
-      '<div class="caro-mr-head"><button class="caro-mr-back" aria-label="뒤로">\u2190</button><span class="caro-mr-title">월 렌트</span></div>'
-     +'<div class="caro-mr-body"><div class="caro-mr-note">한 달 단위 장기 대여예요. 차량을 누르면 옵션·연료·주행 정보가 펼쳐져요. 월 요금 미정 차량은 문의해 주세요.</div>'
-     +'<div class="caro-mr-list" id="caro-mr-list"></div></div>';
-    ov.querySelector('.caro-mr-back').addEventListener('click',closeMonthly);
-    // 아코디언 (이벤트 위임)
-    ov.querySelector('#caro-mr-list').addEventListener('click',function(e){
-      var row=e.target.closest('.caro-mr-row'); if(!row) return;
-      var card=row.parentNode; card.classList.toggle('open');
-    });
+    ov.innerHTML='<div class="caro-mr-head"><button class="caro-mr-back">\u2190</button><span class="caro-mr-title">월 렌트</span></div>'
+      +'<div class="caro-mr-body"><div class="caro-mr-note">차량을 선택해 기간·보험을 정하고 월 렌트를 신청하세요.</div><div id="caro-mr-list"></div></div>';
+    ov.querySelector('.caro-mr-back').addEventListener('click',function(){ ov.classList.remove('open'); });
     return ov;
   }
-
-  function carCard(c,bl){
-    var nm=esc(c.name||'차량');
-    var grade= bl?'<span class="caro-mr-grade bl">THE BLACK</span>':'<span class="caro-mr-grade">일반</span>';
-    var mp=c.monthlyPrice;
-    var price=(mp!=null && mp!=='' && Number(mp)>0)
-      ? '<div class="caro-mr-price">'+won(mp)+'원<span style="font-size:.7rem;font-weight:600;color:var(--text-m)"> / 월</span></div>'
-      : '<div class="caro-mr-price ask">월 요금 문의</div>';
-    var img = c.img
-      ? '<img class="caro-mr-thumb" src="'+c.img+'" alt="" onerror="this.style.visibility=\'hidden\'"/>'
-      : '<div class="caro-mr-thumb"></div>';
-    var optsArr=(c.options||'').split('\n').map(function(l){return l.trim();}).filter(Boolean);
-    var optsHtml = optsArr.length
-      ? optsArr.map(function(l){return '<div class="caro-mr-optline">'+esc(l)+'</div>';}).join('')
-      : '<div class="caro-mr-optline" style="opacity:.6">등록된 옵션 정보가 없습니다</div>';
-    var mkm = (c.monthlyKm!=null && c.monthlyKm!=='' && Number(c.monthlyKm)>0) ? won(c.monthlyKm)+'km' : '무제한';
-    return '<div class="caro-mr-card">'
-      +'<div class="caro-mr-row">'+img
-        +'<div class="caro-mr-left"><div class="caro-mr-cname">'+nm+grade+'</div>'+price+'</div>'
-        +'<span class="caro-mr-chev">\u203A</span></div>'
-      +'<div class="caro-mr-detail"><div class="caro-mr-detin">'
-        +'<div class="caro-mr-spec"><span>사용 연료</span><b>'+esc(c.fuel||'—')+'</b></div>'
-        +'<div class="caro-mr-spec"><span>월 주행거리</span><b>'+mkm+'</b></div>'
-        +'<div class="caro-mr-opthead">차량 옵션</div>'+optsHtml
-      +'</div></div></div>';
-  }
-
+  function planFrom(c){ var pl=(c.monthlyPlans||{})['1']; if(pl&&pl.price>0){ var d=pl.discount||0; return Math.round(pl.price*(100-d)/100); } return null; }
   function renderList(){
     var list=document.getElementById('caro-mr-list'); if(!list) return;
-    var html='';
-    (window.BL_CARS||[]).forEach(function(c){ html+=carCard(c,true); });   // THE BLACK 먼저
-    (window.CARS_DATA||[]).forEach(function(c){ html+=carCard(c,false); }); // 일반 전 차량 (중복제거 안 함)
-    list.innerHTML = html || '<div class="caro-mr-empty">등록된 차량이 없습니다.</div>';
+    var all=[]; (window.BL_CARS||[]).forEach(function(c){ all.push({c:c,bl:true}); }); (window.CARS_DATA||[]).forEach(function(c){ all.push({c:c,bl:false}); });
+    if(!all.length){ list.innerHTML='<div class="caro-mr-empty">등록된 차량이 없습니다.</div>'; return; }
+    list.innerHTML=all.map(function(o,idx){
+      var c=o.c||{}; var nm=esc(c.name||'차량');
+      var grade=o.bl?'<span class="caro-mr-grade bl">THE BLACK</span>':'<span class="caro-mr-grade">일반</span>';
+      var p=planFrom(c);
+      var from = p? '<div class="caro-mr-from">월 '+won(p)+'원~</div>' : '<div class="caro-mr-from"><span class="ask">요금 문의</span></div>';
+      var img=c.img?'<img class="caro-mr-thumb" src="'+c.img+'" onerror="this.style.visibility=\'hidden\'"/>':'<div class="caro-mr-thumb"></div>';
+      return '<div class="caro-mr-card"><div class="caro-mr-row" data-idx="'+idx+'" data-bl="'+(o.bl?1:0)+'">'+img
+        +'<div class="caro-mr-left"><div class="caro-mr-cname">'+nm+grade+'</div>'+from+'</div>'
+        +'<span class="caro-mr-chev">\u203A</span></div></div>';
+    }).join('');
+    list.querySelectorAll('.caro-mr-row').forEach(function(row){
+      row.addEventListener('click',function(){
+        var bl=row.getAttribute('data-bl')==='1'; var arr=bl?(window.BL_CARS||[]):(window.CARS_DATA||[]);
+        var i=+row.getAttribute('data-idx');
+        var realIdx = bl ? i : i-(window.BL_CARS||[]).length;
+        var car = arr[realIdx]; if(car) openDetail(car,bl);
+      });
+    });
   }
-
   function openMonthly(){
     if(window.loadCarsData){ try{ window.loadCarsData(); }catch(e){} }
-    var ov=document.getElementById('caro-mr-ov');
-    if(!ov){ ov=buildOverlay(); document.body.appendChild(ov); }
-    renderList();
-    requestAnimationFrame(function(){ ov.classList.add('open'); });
+    var ov=document.getElementById('caro-mr-ov'); if(!ov){ ov=buildList(); document.body.appendChild(ov); }
+    renderList(); requestAnimationFrame(function(){ ov.classList.add('open'); });
   }
-  function closeMonthly(){ var ov=document.getElementById('caro-mr-ov'); if(ov) ov.classList.remove('open'); }
-  window.openMonthly=openMonthly; window.closeMonthly=closeMonthly;
+  window.openMonthly=openMonthly;
+  window.closeMonthly=function(){ var o=document.getElementById('caro-mr-ov'); if(o)o.classList.remove('open'); };
+
+  /* ── 상세(예약) ── */
+  var ST={car:null,bl:false,period:null,start:null,age:null,ins:null,calY:0,calM:0};
+  function priceFor(p){ var pl=(ST.car.monthlyPlans||{})[String(p)]; if(!pl||!(pl.price>0)) return null; var d=pl.discount||0; return {base:pl.price,disc:d,final:Math.round(pl.price*(100-d)/100)}; }
+
+  function buildDetail(){
+    var ov=document.createElement('div'); ov.id='caro-mrd-ov';
+    ov.innerHTML='<div class="caro-mr-head"><button class="caro-mr-back" id="mrdBack">\u2190</button><span class="caro-mr-title">월 렌트 신청</span></div>'
+      +'<div class="caro-mr-body">'
+      +'<img class="mrd-img" id="mrdImg" alt=""/>'
+      +'<div class="mrd-name" id="mrdName"></div>'
+      +'<div class="mrd-sec"><div class="mrd-lbl">렌트 기간</div><div class="mrd-periods" id="mrdPeriods"></div></div>'
+      +'<div class="mrd-sec"><div class="mrd-lbl">대여 시작일</div>'
+        +'<div class="mrd-drop" id="mrdDateDrop"><span>날짜 선택</span><span class="v" id="mrdDateV">선택 안 됨</span></div>'
+        +'<div class="mrd-panel" id="mrdCalPanel"><div class="mrd-panin" id="mrdCal"></div></div></div>'
+      +'<div class="mrd-sec"><div class="mrd-lbl">운전자 나이</div>'
+        +'<div class="mrd-drop" id="mrdAgeDrop"><span>나이 선택</span><span class="v" id="mrdAgeV">선택 안 됨</span></div>'
+        +'<div class="mrd-panel" id="mrdAgePanel"><div class="mrd-panin"><div class="mrd-ages">'
+          +'<div class="mrd-age" data-age="21">만 21세</div><div class="mrd-age" data-age="26">만 26세</div></div></div></div></div>'
+      +'<div class="mrd-sec"><div class="mrd-lbl">차량손해 면책 상품</div>'
+        +'<div class="mrd-ins"><button class="mrd-insnav" id="mrdInsPrev">\u2039</button>'
+          +'<div class="mrd-inscard" id="mrdInsCard"></div>'
+          +'<button class="mrd-insnav" id="mrdInsNext">\u203A</button></div></div>'
+      +'<div class="mrd-sum" id="mrdSum"></div>'
+      +'<button class="mrd-next" id="mrdNext">다음</button>'
+      +'</div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#mrdBack').addEventListener('click',function(){ ov.classList.remove('open'); });
+    ov.querySelector('#mrdDateDrop').addEventListener('click',function(){ togglePanel('mrdCalPanel'); });
+    ov.querySelector('#mrdAgeDrop').addEventListener('click',function(){ togglePanel('mrdAgePanel'); });
+    ov.querySelectorAll('.mrd-age').forEach(function(a){ a.addEventListener('click',function(){ ST.age=+a.getAttribute('data-age'); renderDetail(); togglePanel('mrdAgePanel',false); }); });
+    ov.querySelector('#mrdInsPrev').addEventListener('click',function(){ ST.insView=(ST.insView+INS.length-1)%INS.length; renderIns(); });
+    ov.querySelector('#mrdInsNext').addEventListener('click',function(){ ST.insView=(ST.insView+1)%INS.length; renderIns(); });
+    ov.querySelector('#mrdInsCard').addEventListener('click',function(){ ST.ins=ST.insView; renderIns(); renderSum(); });
+    ov.querySelector('#mrdNext').addEventListener('click',onNext);
+    return ov;
+  }
+  function togglePanel(id,force){
+    var p=document.getElementById(id); if(!p) return;
+    var open = force==null ? !p.classList.contains('open') : force;
+    ['mrdCalPanel','mrdAgePanel'].forEach(function(x){ var e=document.getElementById(x); if(e&&x!==id) e.classList.remove('open'); });
+    p.classList.toggle('open',open);
+  }
+  function renderPeriods(){
+    var wrap=document.getElementById('mrdPeriods'); if(!wrap) return;
+    wrap.innerHTML=PERIODS.map(function(p){
+      var pr=priceFor(p); var on=ST.period===p;
+      var pp = pr? '월 '+won(pr.final)+'원' : '문의';
+      var pd = (pr&&pr.disc>0)? pr.disc+'% 할인' : '';
+      return '<div class="mrd-per'+(on?' on':'')+'" data-p="'+p+'"><div class="pm">'+p+'개월</div><div class="pp">'+pp+'</div><div class="pd">'+pd+'</div></div>';
+    }).join('');
+    wrap.querySelectorAll('.mrd-per').forEach(function(el){ el.addEventListener('click',function(){ ST.period=+el.getAttribute('data-p'); renderPeriods(); renderSum(); }); });
+  }
+  function renderCal(){
+    var box=document.getElementById('mrdCal'); if(!box) return;
+    var y=ST.calY, m=ST.calM, first=new Date(y,m,1), startDow=first.getDay(), days=new Date(y,m+1,0).getDate();
+    var today=new Date(); today.setHours(0,0,0,0);
+    var h='<div class="cal-hd"><button class="cal-nav" data-d="-1">\u2039</button><span class="cal-ttl">'+y+'년 '+(m+1)+'월</span><button class="cal-nav" data-d="1">\u203A</button></div><div class="cal-grid">';
+    ['일','월','화','수','목','금','토'].forEach(function(d){ h+='<div class="cal-dow">'+d+'</div>'; });
+    for(var i=0;i<startDow;i++) h+='<div></div>';
+    for(var dd=1;dd<=days;dd++){
+      var date=new Date(y,m,dd); var dis=date<today;
+      var sel=ST.start&&ST.start.getFullYear()===y&&ST.start.getMonth()===m&&ST.start.getDate()===dd;
+      h+='<button class="cal-day'+(sel?' sel':'')+(dis?' dis':'')+'" '+(dis?'disabled':'data-day="'+dd+'"')+'>'+dd+'</button>';
+    }
+    h+='</div>'; box.innerHTML=h;
+    box.querySelectorAll('.cal-nav').forEach(function(b){ b.addEventListener('click',function(){ var d=+b.getAttribute('data-d'); ST.calM+=d; if(ST.calM<0){ST.calM=11;ST.calY--;} if(ST.calM>11){ST.calM=0;ST.calY++;} renderCal(); }); });
+    box.querySelectorAll('.cal-day[data-day]').forEach(function(b){ b.addEventListener('click',function(){ ST.start=new Date(ST.calY,ST.calM,+b.getAttribute('data-day')); renderCal(); renderDetail(); togglePanel('mrdCalPanel',false); }); });
+  }
+  function renderIns(){
+    var card=document.getElementById('mrdInsCard'); if(!card) return;
+    var v=INS[ST.insView]; var selected=ST.ins===ST.insView;
+    card.className='mrd-inscard'+(selected?' on':'');
+    card.innerHTML='<div class="mrd-insname">'+esc(v.name)+'</div><div class="mrd-insded">'+esc(v.deduct)+'</div>'
+      +'<div class="mrd-insdesc">'+esc(v.desc)+'</div><div class="mrd-insprice">월 '+won(v.price)+'원</div>'
+      +'<div class="mrd-inssel">'+(selected?'\u2713 선택됨':'탭하여 선택')+'</div>';
+  }
+  function renderSum(){
+    var box=document.getElementById('mrdSum'); if(!box) return;
+    var pr=ST.period!=null?priceFor(ST.period):null;
+    var insP=ST.ins!=null?INS[ST.ins].price:0;
+    var rows='';
+    if(ST.period!=null){ rows+='<div class="mrd-sumrow"><span>렌트 기간</span><b>'+ST.period+'개월</b></div>'; }
+    if(pr){ rows+='<div class="mrd-sumrow"><span>월 렌트료</span><b>월 '+won(pr.final)+'원'+(pr.disc>0?' ('+pr.disc+'%↓)':'')+'</b></div>'; }
+    if(ST.ins!=null){ rows+='<div class="mrd-sumrow"><span>면책 보험</span><b>'+esc(INS[ST.ins].name)+' · 월 '+won(insP)+'원</b></div>'; }
+    var monthly = (pr?pr.final:0)+insP;
+    var tot = (pr&&ST.period)? monthly*ST.period : null;
+    box.innerHTML = rows + (pr?'<div class="mrd-sumtot"><span>'+(ST.period?ST.period+'개월 합계 (보험 포함)':'합계')+'</span><b>'+(tot!=null?won(tot)+'원':'—')+'</b></div>'
+      +'<div class="mrd-sumrow" style="justify-content:flex-end;color:var(--text-m)"><span>월 '+won(monthly)+'원</span></div>':'<div class="mrd-sumrow"><span>기간을 선택하세요</span></div>');
+    var nx=document.getElementById('mrdNext'); if(nx) nx.disabled = !(ST.period!=null && pr && ST.start && ST.age!=null && ST.ins!=null);
+  }
+  function renderDetail(){
+    document.getElementById('mrdImg').src=ST.car.img||'';
+    document.getElementById('mrdImg').style.visibility=ST.car.img?'visible':'hidden';
+    document.getElementById('mrdName').textContent=ST.car.name||'차량';
+    var dv=document.getElementById('mrdDateV');
+    if(ST.start){ dv.textContent=(ST.start.getMonth()+1)+'월 '+ST.start.getDate()+'일'; dv.classList.add('set'); } else { dv.textContent='선택 안 됨'; dv.classList.remove('set'); }
+    var av=document.getElementById('mrdAgeV');
+    if(ST.age!=null){ av.textContent='만 '+ST.age+'세'; av.classList.add('set'); } else { av.textContent='선택 안 됨'; av.classList.remove('set'); }
+    document.querySelectorAll('.mrd-age').forEach(function(a){ a.classList.toggle('on',+a.getAttribute('data-age')===ST.age); });
+    renderPeriods(); renderCal(); renderIns(); renderSum();
+  }
+  function openDetail(car,bl){
+    var ov=document.getElementById('caro-mrd-ov'); if(!ov){ ov=buildDetail(); }
+    var now=new Date();
+    ST={car:car,bl:bl,period:null,start:null,age:null,ins:null,insView:0,calY:now.getFullYear(),calM:now.getMonth()};
+    renderDetail();
+    requestAnimationFrame(function(){ ov.classList.add('open'); ov.querySelector('.caro-mr-body').scrollTop=0; });
+  }
+  function onNext(){
+    if(ST.period==null||!ST.start||ST.age==null||ST.ins==null){ if(window.showToast)showToast('모든 항목을 선택해 주세요'); return; }
+    var pr=priceFor(ST.period); var insP=INS[ST.ins].price; var tot=((pr?pr.final:0)+insP)*ST.period;
+    var msg=ST.car.name+' · '+ST.period+'개월 · '+(ST.start.getMonth()+1)+'/'+ST.start.getDate()+' 시작 · 만'+ST.age+'세 · '+INS[ST.ins].name+' · 합계 '+won(tot)+'원';
+    if(window.showToast) showToast('신청 정보 확인: '+msg); else alert(msg);
+    /* 다음 단계(결제 등) 연결 지점 */
+  }
 
   /* ── 이벤트 배너 수동 스와이프 ── */
   function curIdx(){ var i=0; document.querySelectorAll('#slide-dots .slide-dot').forEach(function(d,k){ if(d.classList.contains('active')) i=k; }); return i; }
@@ -750,8 +892,7 @@
     var wrap=document.getElementById('auto-slide-wrap-home');
     if(!wrap || wrap.dataset.caroSwipe) return; wrap.dataset.caroSwipe='1';
     var sx=0,sy=0,down=false,moved=false,justSwiped=false;
-    function s(x,y){ down=true;moved=false;sx=x;sy=y; }
-    function m(x,y){ if(!down)return; if(Math.abs(x-sx)>12 && Math.abs(x-sx)>Math.abs(y-sy)) moved=true; }
+    function s(x,y){ down=true;moved=false;sx=x;sy=y; } function m(x,y){ if(!down)return; if(Math.abs(x-sx)>12 && Math.abs(x-sx)>Math.abs(y-sy)) moved=true; }
     function e(x){ if(!down)return; down=false; if(moved){ go((x-sx)<0?1:-1); justSwiped=true; setTimeout(function(){justSwiped=false;},360); } }
     wrap.addEventListener('touchstart',function(ev){ s(ev.touches[0].clientX,ev.touches[0].clientY); },{passive:true});
     wrap.addEventListener('touchmove', function(ev){ m(ev.touches[0].clientX,ev.touches[0].clientY); },{passive:true});
@@ -761,15 +902,9 @@
     wrap.addEventListener('mouseup',   function(ev){ e(ev.clientX); });
     wrap.addEventListener('mouseleave',function(){ down=false; });
     wrap.addEventListener('click',function(ev){ if(justSwiped){ ev.stopImmediatePropagation(); ev.preventDefault(); } },true);
-    document.querySelectorAll('#slide-dots .slide-dot').forEach(function(d,i){
-      if(d.dataset.caroDot) return; d.dataset.caroDot='1';
-      d.addEventListener('click',function(ev){ ev.stopPropagation(); if(window.moveSlide) window.moveSlide(i); });
-    });
+    document.querySelectorAll('#slide-dots .slide-dot').forEach(function(d,i){ if(d.dataset.caroDot) return; d.dataset.caroDot='1'; d.addEventListener('click',function(ev){ ev.stopPropagation(); if(window.moveSlide) window.moveSlide(i); }); });
   }
-  function boot(){
-    attachSwipe();
-    var tries=0; var iv=setInterval(function(){ attachSwipe(); if(++tries>20) clearInterval(iv); },400);
-    console.log('[\uB514\uC790\uC778] \u2705 \uC6D4\uB80C\uD2B8 v2(\uC804\uCC28\uB7C9+\uC774\uBBF8\uC9C0+\uC544\uCF54\uB514\uC5B8) + \uBC30\uB108 \uC2A4\uC640\uC774\uD504');
-  }
+  function boot(){ attachSwipe(); var tr=0; var iv=setInterval(function(){ attachSwipe(); if(++tr>20) clearInterval(iv); },400);
+    console.log('[\uB514\uC790\uC778] \u2705 \uC6D4\uB80C\uD2B8 v3(\uC608\uC57D\uD50C\uB85C\uC6B0) + \uBC30\uB108 \uC2A4\uC640\uC774\uD504'); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
