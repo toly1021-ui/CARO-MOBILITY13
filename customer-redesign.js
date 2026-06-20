@@ -589,9 +589,7 @@
    +'#mypage-screen .mpn-item-last{border-bottom:none!important;}'
     /* 모든 뒤로가기 버튼 → CARO THE BLACK (다크 차콜 + 골드) */
    +'.back-bottom-btn,.mpn-back-btn,.mpd-back-btn{background:linear-gradient(135deg,#20232b,#14151a)!important;border:1px solid rgba(255,255,255,.16)!important;color:#fff!important;}'
-   +'.back-icon-btn,.mpd-back-icon,.rental-topbar-back{background-color:#16181d!important;border:1px solid rgba(255,255,255,.16)!important;color:#fff!important;}'
-   +'.rental-topbar-back{border-radius:50%!important;}'
-   +'.back-bottom-btn:hover,.mpn-back-btn:hover,.mpd-back-btn:hover,.back-icon-btn:hover,.mpd-back-icon:hover,.rental-topbar-back:hover{border-color:rgba(255,255,255,.34)!important;color:#fff!important;}'
+   +'.back-bottom-btn:hover,.mpn-back-btn:hover,.mpd-back-btn:hover{border-color:rgba(255,255,255,.34)!important;color:#fff!important;}'
     /* 블랙라벨 화면은 이미 다크 배경 → 골드 테두리만 유지(겹침 방지) */
    +'#black-label-screen .back-bottom-btn,.bl-mode .back-bottom-btn{background:transparent!important;border-color:rgba(255,255,255,.22)!important;color:#fff!important;}';
   (document.head||document.documentElement).appendChild(st);
