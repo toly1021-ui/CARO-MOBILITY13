@@ -723,6 +723,7 @@
    +'.mrd-sumtot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-l);margin-top:8px;padding-top:11px;}'
    +'.mrd-sumtot span{font-size:.82rem;color:var(--text-2);}.mrd-sumtot b{font-size:1.25rem;font-weight:800;color:#18191c;}'
    +'.mrd-summo{text-align:right;font-size:.72rem;color:var(--text-m);margin-top:6px;}'
+   +'.mrd-mo{font-size:.7rem;font-weight:600;color:var(--text-m);}'
    +'.mrd-next{width:100%;background:linear-gradient(135deg,#20232b,#14151a);color:#fff;border:none;border-radius:14px;padding:16px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;}'
    +'.mrd-next:disabled{opacity:.4;}'
    +'#slide-dots .slide-dot{cursor:pointer;}';
@@ -846,20 +847,18 @@
   }
   function renderSum(){
     var box=document.getElementById('mrdSum'); if(!box) return;
-    var per=ST.period||0;
     var pr=ST.period!=null?priceFor(ST.period):null;
     var insM=ST.ins!=null?INS[ST.ins].price:null;
+    var mo='<span class="mrd-mo"> (월기준)</span>';
     var r1L=ST.period!=null?(ST.period+'개월'):'렌트 기간';
-    var r1R=!per?'—':(pr?won(pr.final*per)+'원':'문의');
+    var r1R=(ST.period==null)?'—':(pr?won(pr.final)+'원'+mo:'문의');
     var r2L=ST.ins!=null?esc(INS[ST.ins].name):'차량손해 면책 상품';
-    var r2R=(insM==null)?'—':(per?won(insM*per)+'원':won(insM)+'원 / 월');
-    var tot=(pr&&per&&insM!=null)?(pr.final*per+insM*per):null;
-    var perMonthly=(pr?pr.final:0)+(insM||0);
+    var r2R=(insM==null)?'—':won(insM)+'원'+mo;
+    var tot=(pr&&insM!=null)?(pr.final+insM):null;
     box.innerHTML=
       '<div class="mrd-sumrow"><span>'+r1L+'</span><b>'+r1R+'</b></div>'
      +'<div class="mrd-sumrow"><span>'+r2L+'</span><b>'+r2R+'</b></div>'
-     +'<div class="mrd-sumtot"><span>총 비용</span><b>'+(tot!=null?won(tot)+'원':'—')+'</b></div>'
-     +(tot!=null?'<div class="mrd-summo">월 '+won(perMonthly)+'원 \u00D7 '+per+'개월</div>':'');
+     +'<div class="mrd-sumtot"><span>총 비용</span><b>'+(tot!=null?won(tot)+'원'+mo:'—')+'</b></div>';
     var nx=document.getElementById('mrdNext'); if(nx) nx.disabled = !(ST.period!=null && pr && ST.start && ST.age!=null && ST.ins!=null);
   }
   function renderDetail(){
