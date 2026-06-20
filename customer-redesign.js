@@ -597,3 +597,40 @@
   (document.head||document.documentElement).appendChild(st);
   console.log('[\uB514\uC790\uC778] \u2705 \uACC4\uC815\uAD00\uB9AC \uCE74\uB4DC\uD654 + \uB4A4\uB85C\uAC00\uAE30 THE BLACK v1');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 로그인 전 화면 리디자인 v1
+   · 스플래시 / 메인(로그인버튼) / 로그인 / 아이디·비번찾기 / 회원가입
+   · 실버 텍스처 배경 → 클린 라이트, 폼/카드 화이트, 1차 버튼 THE BLACK 다크
+═══════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var st=document.createElement('style');
+  st.textContent=
+    /* 배경: 실버 텍스처 → 클린 라이트 그라데이션 */
+    '#splash-screen,#main-screen,#login-screen,#find-screen,#signup-screen{background:linear-gradient(180deg,#f5f7fa,#e9edf2)!important;}'
+   +'#splash-screen .metal-bg,#main-screen .metal-bg,#login-screen .metal-bg,#find-screen .metal-bg,#signup-screen .metal-bg{display:none!important;}'
+    /* 스플래시 로고 — 골드 라인 포인트 */
+   +'#splash-screen .logo-text{color:#1a1c20!important;letter-spacing:.2em!important;text-shadow:none!important;}'
+   +'#splash-screen .logo-line{background:linear-gradient(90deg,transparent,rgba(198,164,104,.55),transparent)!important;}'
+   +'#splash-screen .logo-sub{color:#8a8f99!important;letter-spacing:.3em!important;}'
+   +'#splash-screen .splash-footer{color:#a3a8b1!important;}'
+    /* 메인: 로고/버튼/푸터 */
+   +'#main-screen .main-brand-logo{color:#1a1c20!important;}'
+   +'#main-screen .main-brand-sub{color:#9398a1!important;}'
+   +'#main-screen .main-btn{background:#fff!important;border:1px solid rgba(200,208,218,.7)!important;color:#1a1c20!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:0 1px 4px rgba(20,22,28,.05)!important;border-radius:14px!important;}'
+   +'#main-screen .main-btn:hover{background:#f4f6f9!important;border-color:rgba(160,168,180,.85)!important;}'
+   +'#main-screen .main-footer{color:#a3a8b1!important;}'
+    /* 1차 버튼(로그인 메인 + 각 폼 제출) → THE BLACK 다크 */
+   +'#main-screen .main-btn.primary,#login-screen .submit-btn,#find-screen .submit-btn,#signup-screen .submit-btn{background:linear-gradient(135deg,#20232b,#14151a)!important;color:#fff!important;border:none!important;border-radius:14px!important;box-shadow:0 6px 18px -6px rgba(20,22,28,.5)!important;}'
+   +'#main-screen .main-btn.primary:hover{filter:brightness(1.12)!important;}'
+    /* 폼 카드 화이트 */
+   +'#login-screen .form-container,#find-screen .form-container,#signup-screen .form-container{background:#fff!important;border:1px solid rgba(200,208,218,.6)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:0 6px 22px -8px rgba(20,22,28,.12)!important;border-radius:18px!important;}'
+    /* 입력칸 화이트 */
+   +'#login-screen .form-input,#find-screen .form-input,#signup-screen .form-input{background:#fff!important;border:1px solid rgba(200,208,218,.8)!important;box-shadow:none!important;border-radius:11px!important;}'
+   +'#login-screen .form-input:focus,#find-screen .form-input:focus,#signup-screen .form-input:focus{border-color:#20232b!important;box-shadow:0 0 0 3px rgba(20,22,28,.08)!important;}'
+   +'#login-screen .input-label,#find-screen .input-label,#signup-screen .input-label{color:#5a5e66!important;}'
+   +'#login-screen .login-heading{color:#1a1c20!important;}';
+  (document.head||document.documentElement).appendChild(st);
+  console.log('[\uB514\uC790\uC778] \u2705 \uB85C\uADF8\uC778 \uC804 \uD654\uBA74 \uB9AC\uB514\uC790\uC778 v1');
+})();
