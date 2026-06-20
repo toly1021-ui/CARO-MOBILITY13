@@ -155,7 +155,7 @@
       +'<div class="mrm-field" id="mrmGradeWrap"><label>등급</label><select class="mrm-sel" id="mrmGrade"><option value="cars">일반</option><option value="bl_cars">CARO THE BLACK</option></select></div>'
       +'<div class="mrm-field"><label>사용 연료</label><input class="mrm-in" id="mrmFuel" list="mrmFuelList" placeholder="예: 가솔린 / 전기 / 디젤"/>'
         +'<datalist id="mrmFuelList"><option value="가솔린"></option><option value="디젤"></option><option value="전기"></option><option value="LPG"></option><option value="하이브리드"></option></datalist></div>'
-      +'<div class="mrm-row2"><div class="mrm-field"><label>전기차 주행요금 (원/km)</label><input class="mrm-in" id="mrmKmRate" inputmode="numeric" placeholder="전기차만"/></div>'
+      +'<div class="mrm-row2"><div class="mrm-field"><label>주행요금 (원/km)</label><input class="mrm-in" id="mrmKmRate" inputmode="numeric" placeholder="전기차만"/></div>'
         +'<div class="mrm-field"><label>무료 주행 (km)</label><input class="mrm-in" id="mrmFreeKm" inputmode="numeric" placeholder="예: 50"/></div></div>'
       +'<div class="mrm-row2"><div class="mrm-field"><label>시간당 요금 (원)</label><input class="mrm-in" id="mrmPh" inputmode="numeric"/></div>'
         +'<div class="mrm-field"><label>월 요금 (원)</label><input class="mrm-in" id="mrmMp" inputmode="numeric" placeholder="미설정"/></div></div>'
