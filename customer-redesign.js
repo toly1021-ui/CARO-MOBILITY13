@@ -1373,3 +1373,145 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 주행전 사진 10분 잠금 + 반납 체크리스트
+   · 주행전 사진: 대여 시작 후 10분 경과 시 촬영 마감(잠금)
+   · 반납: 위치 선택(지정/다른) 대신 체크리스트(두고 내린 물건/정상 주차/파손)
+     → 모두 확인 시 반납 진행(doReturnCar)
+═══════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var LOCK_MIN=10;
+  function toast(m){ if(window.showToast) showToast(m); else alert(m); }
+  function activeRes(){ return (window.ctrlResIdx>=0&&window.myReservations)?window.myReservations[window.ctrlResIdx]:null; }
+
+  /* ───────── 1. 주행전 사진 10분 잠금 ───────── */
+  function photoLocked(){
+    var res=activeRes(); if(!res) return false;
+    if(res.returned) return true;
+    if(!res.start) return false;
+    var start=(res.start instanceof Date)?res.start:new Date(res.start);
+    if(isNaN(start.getTime())) return false;
+    return (Date.now()-start.getTime())>LOCK_MIN*60000;
+  }
+  function applyPhotoLock(){
+    var box=document.querySelector('#photo-modal-overlay .photo-modal-box'); if(!box) return;
+    var locked=photoLocked();
+    var items=box.querySelectorAll('.photo-list-item');
+    var done=box.querySelector('.photo-done-btn');
+    var bn=box.querySelector('#caro-photo-lock');
+    if(locked){
+      Array.prototype.forEach.call(items,function(it){ it.style.pointerEvents='none'; it.style.opacity='.4'; });
+      if(done){ done.disabled=true; done.style.opacity='.4'; done.style.pointerEvents='none'; }
+      if(!bn){
+        bn=document.createElement('div'); bn.id='caro-photo-lock'; bn.className='caro-photo-lock';
+        var hdr=box.querySelector('.photo-modal-header');
+        if(hdr&&hdr.parentNode) hdr.parentNode.insertBefore(bn, hdr.nextSibling); else box.insertBefore(bn, box.firstChild);
+      }
+      bn.innerHTML='<b>주행전 사진 촬영이 마감되었습니다.</b><br>대여 시작 후 '+LOCK_MIN+'분이 지나 더 이상 촬영할 수 없습니다.';
+      bn.style.display='block';
+    } else {
+      Array.prototype.forEach.call(items,function(it){ it.style.pointerEvents=''; it.style.opacity=''; });
+      if(done){ done.disabled=false; done.style.opacity=''; done.style.pointerEvents=''; }
+      if(bn) bn.style.display='none';
+    }
+  }
+
+  /* ───────── 2. 반납 체크리스트 ───────── */
+  var CHECKS=[
+    '차량에 두고 내린 물건이 없는지 확인했습니다',
+    '차량을 지정된 장소에 정상 주차했습니다',
+    '차량 외관에 새로운 파손이 없음을 확인했습니다'
+  ];
+  var CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  function buildReturn(){
+    var ov=document.createElement('div'); ov.id='caro-return-ov';
+    ov.innerHTML='<div class="crt-sheet">'
+      +'<div class="crt-head"><span class="crt-title">반납 전 확인</span><button class="crt-x" id="crtX">\u00D7</button></div>'
+      +'<div class="crt-desc">아래 항목을 모두 확인한 뒤 반납해 주세요.</div>'
+      +'<div class="crt-list">'
+        +CHECKS.map(function(c,i){ return '<button class="crt-item" data-i="'+i+'"><span class="crt-box">'+CHK+'</span><span class="crt-lbl">'+c+'</span></button>'; }).join('')
+      +'</div>'
+      +'<div class="crt-btns"><button class="crt-ok" id="crtOk" disabled>반납하기</button><button class="crt-cancel" id="crtCancel">취소</button></div>'
+      +'</div>';
+    document.body.appendChild(ov);
+    var state=[false,false,false];
+    function refresh(){
+      ov.querySelectorAll('.crt-item').forEach(function(b){ b.classList.toggle('on', state[+b.getAttribute('data-i')]); });
+      var ok=ov.querySelector('#crtOk'); ok.disabled = !state.every(Boolean);
+    }
+    ov.querySelectorAll('.crt-item').forEach(function(b){ b.addEventListener('click',function(){ var i=+b.getAttribute('data-i'); state[i]=!state[i]; refresh(); }); });
+    ov.querySelector('#crtX').addEventListener('click',closeReturn);
+    ov.querySelector('#crtCancel').addEventListener('click',closeReturn);
+    ov.addEventListener('click',function(e){ if(e.target===ov) closeReturn(); });
+    ov.querySelector('#crtOk').addEventListener('click',function(){
+      if(!state.every(Boolean)) return;
+      closeReturn();
+      setTimeout(function(){ try{ if(window.doReturnCar) doReturnCar(); else toast('반납 처리를 찾을 수 없습니다.'); }catch(e){ toast('반납 처리 오류'); } },180);
+    });
+    ov._reset=function(){ state=[false,false,false]; refresh(); };
+    return ov;
+  }
+  function openReturn(){
+    var ov=document.getElementById('caro-return-ov')||buildReturn();
+    if(ov._reset) ov._reset();
+    requestAnimationFrame(function(){ ov.classList.add('open'); });
+  }
+  function closeReturn(){ var ov=document.getElementById('caro-return-ov'); if(ov) ov.classList.remove('open'); }
+
+  /* ───────── 스타일 ───────── */
+  var st=document.createElement('style');
+  st.textContent=
+    '.caro-photo-lock{margin:12px 16px 4px;padding:13px 14px;background:rgba(178,58,58,.08);border:1px solid rgba(178,58,58,.28);border-radius:12px;color:#b23a3a;font-size:.82rem;line-height:1.5;text-align:center;}'
+   +'#caro-return-ov{position:fixed;inset:0;z-index:1150;background:rgba(20,22,28,.45);display:none;align-items:flex-end;justify-content:center;}'
+   +'#caro-return-ov.open{display:flex;}'
+   +'.crt-sheet{background:#f0f3f7;width:100%;max-width:480px;border-radius:22px 22px 0 0;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateY(100%);transition:transform .32s cubic-bezier(.22,1,.36,1);max-height:86vh;overflow-y:auto;}'
+   +'#caro-return-ov.open .crt-sheet{transform:translateY(0);}'
+   +'.crt-head{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 6px;}'
+   +'.crt-title{font-size:1.12rem;font-weight:800;color:#18191c;}'
+   +'.crt-x{border:none;background:none;font-size:1.5rem;color:#888d98;cursor:pointer;width:32px;line-height:1;font-family:inherit;}'
+   +'.crt-desc{font-size:.84rem;color:var(--text-m);padding:0 18px 14px;}'
+   +'.crt-list{padding:0 16px;}'
+   +'.crt-item{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:#fff;border:1px solid var(--border-l,#e7eaef);border-radius:14px;padding:15px 14px;margin-bottom:10px;cursor:pointer;font-family:inherit;transition:.14s;}'
+   +'.crt-box{width:26px;height:26px;flex-shrink:0;border-radius:8px;border:2px solid #c8ccd2;display:flex;align-items:center;justify-content:center;color:#fff;transition:.14s;}'
+   +'.crt-box svg{width:16px;height:16px;opacity:0;}'
+   +'.crt-item.on{border-color:#18191c;background:rgba(24,25,28,.03);}'
+   +'.crt-item.on .crt-box{background:#1d7a3a;border-color:#1d7a3a;}'
+   +'.crt-item.on .crt-box svg{opacity:1;}'
+   +'.crt-lbl{font-size:.9rem;font-weight:600;color:#18191c;line-height:1.4;}'
+   +'.crt-btns{display:flex;flex-direction:column;gap:9px;padding:8px 16px 6px;}'
+   +'.crt-ok{width:100%;background:linear-gradient(135deg,#20232b,#14151a);color:#fff;border:none;border-radius:14px;padding:16px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;}'
+   +'.crt-ok:disabled{opacity:.4;cursor:default;}'
+   +'.crt-cancel{width:100%;background:none;border:none;color:var(--text-m);font-size:.9rem;padding:10px;cursor:pointer;font-family:inherit;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function boot(){
+    /* 사진 촬영 잠금: openSideCapture 가드 */
+    if(typeof window.openSideCapture==='function' && !window.openSideCapture._caroLock){
+      var _os=window.openSideCapture;
+      window.openSideCapture=function(){
+        if(photoLocked()){ toast('대여 시작 후 '+LOCK_MIN+'분이 지나 주행전 사진 촬영이 마감되었습니다.'); return; }
+        return _os.apply(this,arguments);
+      };
+      window.openSideCapture._caroLock=1;
+    }
+    /* 사진 모달 열릴 때 잠금 UI 반영 */
+    if(typeof window.openPhotoModal==='function' && !window.openPhotoModal._caroLock){
+      var _op=window.openPhotoModal;
+      window.openPhotoModal=function(){ var r; try{ r=_op.apply(this,arguments); }catch(e){} setTimeout(applyPhotoLock,30); return r; };
+      window.openPhotoModal._caroLock=1;
+    }
+    /* 반납: 위치 선택 → 체크리스트 */
+    function hookReturn(){
+      if(typeof window.openReturnParkModal!=='function' || window.openReturnParkModal._caroChk) return (typeof window.openReturnParkModal==='function');
+      window.openReturnParkModal=function(){ openReturn(); };
+      window.openReturnParkModal._caroChk=1;
+      return true;
+    }
+    if(!hookReturn()){ var t=0; var iv=setInterval(function(){ if(hookReturn()||++t>40) clearInterval(iv); },300); }
+    console.log('[\uBC18\uB0A9/\uC0AC\uC9C4] \u2705 \uC0AC\uC9C4 10\uBD84 \uC7A0\uAE08 + \uBC18\uB0A9 \uCCB4\uD06C\uB9AC\uC2A4\uD2B8');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
