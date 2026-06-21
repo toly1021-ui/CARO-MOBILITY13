@@ -2842,3 +2842,155 @@
 
   console.log('[지도] 카카오맵 전환 모듈 로드 (실패 시 OSM 폴백)');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 차종 필터 → 버튼 + 반화면 시트 (차종별 차량 배치)
+   · 우측 상단 칩들 → 단일 "차종" 버튼으로 교체
+   · 버튼 누르면 화면 절반을 덮는 바텀시트가 올라옴
+   · 시트 안에서 차종(경차/소형/중형/대형/SUV)별로 등록 차량을 섹션 배치
+   · 차종 칩 선택 시 하단 목록 필터도 동기화 / 시트에서 바로 예약
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var CATS=['전체','경차','소형','중형','대형','SUV'];
+  var GROUPS=['경차','소형','중형','대형','SUV'];
+
+  function classify(name){
+    var n=String(name||'');
+    if(/모닝|레이|스파크|캐스퍼/.test(n)) return '경차';
+    if(/코나|셀토스|투싼|스포티지|쏘렌토|싼타페|팰리세이드|티볼리|트랙스|트레일블레이저|QM6|니로|쏘울|베뉴|코란도|렉스턴|EV6|아이오닉\s*5|모하비|토레스/.test(n)) return 'SUV';
+    if(/카니발|스타리아|그랜저|K8|K9|K7|G80|G90|EQ900|제네시스|스팅어|SM7|체어맨|아슬란/.test(n)) return '대형';
+    if(/쏘나타|K5|말리부|SM6|아반떼|K3|아이오닉\s*6|i30|스텔라/.test(n)) return '중형';
+    if(/엑센트|프라이드|베르나|리오|클릭/.test(n)) return '소형';
+    return '기타';
+  }
+  function curF(){ return window.caroCatFilter||'전체'; }
+  function nm(car){ return window.getCarName?window.getCarName(car):car.name; }
+  function isMaintCar(car){ try{ if(typeof window.isMaint==='function') return !!window.isMaint(car); }catch(e){} return !!car.devDisabled; }
+  function isReservedNow(car){
+    var now=new Date(), hit=false;
+    (window.myReservations||[]).forEach(function(r){
+      if(!r.car || r.car.id!==car.id || !r.start || !r.end) return;
+      if(!r.returned){ if(now < new Date(r.end.getTime()+600000)) hit=true; }
+      else if(r.returnedAt){ if(now < new Date(r.returnedAt.getTime()+600000)) hit=true; }
+    });
+    return hit;
+  }
+
+  // ── CSS ──
+  var st=document.createElement('style'); st.id='caro-catsheet-css';
+  st.textContent=
+    '.caro-catbar{display:none!important;}' /* 기존 칩 숨김 */
+   +'.caro-cat-btn{position:absolute;top:62px;right:10px;z-index:25;background:#18191c;color:#fff;border:none;border-radius:20px;padding:9px 15px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.28);display:flex;align-items:center;gap:6px;}'
+   +'.caro-cat-btn:active{transform:scale(.97);}'
+   +'.caro-cat-btn .ic{font-size:15px;line-height:1;}'
+   +'.caro-cat-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:45;opacity:0;pointer-events:none;transition:opacity .2s;}'
+   +'.caro-cat-backdrop.open{opacity:1;pointer-events:auto;}'
+   +'.caro-cat-sheet{position:absolute;left:0;right:0;bottom:0;height:52vh;z-index:46;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -6px 28px rgba(0,0,0,.25);transform:translateY(110%);transition:transform .26s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;}'
+   +'.caro-cat-sheet.open{transform:translateY(0);}'
+   +'.ccs-grip{width:38px;height:4px;background:#d4d7dd;border-radius:3px;margin:8px auto 4px;}'
+   +'.ccs-head{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 6px;}'
+   +'.ccs-title{font-size:1rem;font-weight:800;color:#18191c;}'
+   +'.ccs-x{background:none;border:none;font-size:1.2rem;color:#888d98;cursor:pointer;line-height:1;padding:4px;}'
+   +'.ccs-chips{display:flex;gap:7px;overflow-x:auto;padding:2px 16px 10px;scrollbar-width:none;}'
+   +'.ccs-chips::-webkit-scrollbar{display:none;}'
+   +'.ccs-chip{flex:0 0 auto;background:#f1f2f4;border:none;color:#44474f;border-radius:16px;padding:6px 14px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;}'
+   +'.ccs-chip.on{background:#18191c;color:#fff;}'
+   +'.ccs-list{flex:1;overflow-y:auto;padding:2px 12px 18px;}'
+   +'.ccs-sec{font-size:.8rem;font-weight:800;color:#888d98;margin:12px 6px 7px;}'
+   +'.ccs-car{display:flex;align-items:center;gap:11px;padding:9px;border:1px solid rgba(0,0,0,.07);border-radius:13px;margin-bottom:8px;background:#fff;}'
+   +'.ccs-thumb{width:62px;height:42px;object-fit:contain;border-radius:8px;background:#f5f6f8;flex:0 0 auto;}'
+   +'.ccs-info{flex:1;min-width:0;}'
+   +'.ccs-name{font-size:.92rem;font-weight:700;color:#18191c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+   +'.ccs-meta{font-size:.82rem;color:#44474f;margin-top:3px;display:flex;align-items:center;gap:7px;}'
+   +'.ccs-badge{font-size:.7rem;font-weight:700;padding:1px 7px;border-radius:10px;}'
+   +'.ccs-badge.on{background:#e6f4ec;color:#1d7a3a;}.ccs-badge.off{background:#f0e3e1;color:#b23a3a;}'
+   +'.ccs-rent{flex:0 0 auto;background:#18191c;color:#fff;border:none;border-radius:16px;padding:8px 15px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;}'
+   +'.ccs-rent:disabled{background:#d4d7dd;}'
+   +'.ccs-empty{text-align:center;color:#888d98;padding:34px 12px;font-size:.88rem;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function openSheet(){ ensureCatUI(); renderChips(); renderList();
+    var bd=document.querySelector('.caro-cat-backdrop'), sh=document.querySelector('.caro-cat-sheet');
+    if(bd) bd.classList.add('open'); if(sh) sh.classList.add('open'); }
+  function closeSheet(){
+    var bd=document.querySelector('.caro-cat-backdrop'), sh=document.querySelector('.caro-cat-sheet');
+    if(bd) bd.classList.remove('open'); if(sh) sh.classList.remove('open'); }
+
+  function setFilter(c){
+    window.caroCatFilter=c;
+    try{ if(window.caroApplyCarFilter) window.caroApplyCarFilter(); }catch(e){}
+    renderChips(); renderList(); updateBtnLabel();
+  }
+  function updateBtnLabel(){
+    var lbl=document.querySelector('.caro-cat-btn .ccs-btn-lbl');
+    if(lbl) lbl.textContent = (curF()==='전체') ? '차종' : '차종 · '+curF();
+  }
+
+  function renderChips(){
+    var box=document.getElementById('ccsChips'); if(!box) return;
+    box.innerHTML='';
+    CATS.forEach(function(c){
+      var b=document.createElement('button'); b.className='ccs-chip'+(c===curF()?' on':''); b.textContent=c;
+      b.onclick=function(){ setFilter(c); }; box.appendChild(b);
+    });
+  }
+  function carRow(car){
+    var maint=isMaintCar(car), reserved=isReservedNow(car);
+    var avail=car.status==='available' && !maint && !reserved;
+    var label=avail?'이용 가능':(maint?'점검중':(reserved?'대여 중':'대여 중'));
+    var price=(car.pricePerHour||0).toLocaleString();
+    return '<div class="ccs-car">'
+      +'<img class="ccs-thumb" src="'+car.img+'" alt=""/>'
+      +'<div class="ccs-info"><div class="ccs-name">'+nm(car)+'</div>'
+      +'<div class="ccs-meta"><span class="ccs-badge '+(avail?'on':'off')+'">'+label+'</span><span><strong>'+price+'원</strong>/h</span></div></div>'
+      +(avail?'<button class="ccs-rent" data-id="'+car.id+'">예약</button>':'<button class="ccs-rent" disabled>불가</button>')
+      +'</div>';
+  }
+  function renderList(){
+    var box=document.getElementById('ccsList'); if(!box) return;
+    var f=curF(), cars=(window.CARS_DATA||[]), html='';
+    if(f==='전체'){
+      GROUPS.concat('기타').forEach(function(g){
+        var arr=cars.filter(function(c){ return classify(nm(c))===g; });
+        if(arr.length) html+='<div class="ccs-sec">'+g+' ('+arr.length+'대)</div>'+arr.map(carRow).join('');
+      });
+      if(!html) html='<div class="ccs-empty">등록된 차량이 없어요.</div>';
+    } else {
+      var arr=cars.filter(function(c){ return classify(nm(c))===f; });
+      html = arr.length ? arr.map(carRow).join('') : '<div class="ccs-empty">'+f+' 차량이 아직 없어요.</div>';
+    }
+    box.innerHTML=html;
+    box.querySelectorAll('.ccs-rent[data-id]').forEach(function(b){
+      b.onclick=function(){ var id=parseInt(b.getAttribute('data-id'),10); closeSheet(); try{ if(window.selectCar) window.selectCar(id); }catch(e){} };
+    });
+  }
+
+  function ensureCatUI(){
+    var screen=document.getElementById('rental-screen'); if(!screen) return;
+    if(!screen.querySelector('.caro-cat-btn')){
+      var btn=document.createElement('button'); btn.className='caro-cat-btn';
+      btn.innerHTML='<span class="ic">☰</span><span class="ccs-btn-lbl">차종</span>';
+      btn.onclick=openSheet; screen.appendChild(btn);
+    }
+    if(!screen.querySelector('.caro-cat-sheet')){
+      var bd=document.createElement('div'); bd.className='caro-cat-backdrop'; bd.onclick=closeSheet; screen.appendChild(bd);
+      var sh=document.createElement('div'); sh.className='caro-cat-sheet';
+      sh.innerHTML='<div class="ccs-grip"></div>'
+        +'<div class="ccs-head"><span class="ccs-title">차종별 차량</span><button class="ccs-x" type="button">✕</button></div>'
+        +'<div class="ccs-chips" id="ccsChips"></div><div class="ccs-list" id="ccsList"></div>';
+      screen.appendChild(sh);
+      sh.querySelector('.ccs-x').onclick=closeSheet;
+    }
+    updateBtnLabel();
+  }
+
+  // goTo 추가 래핑(이전 래퍼 보존) → 예약 화면 진입 시 버튼/시트 보장
+  if(typeof window.goTo==='function' && !window.goTo.__caroCatSheetWrapped){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='rental-screen'){ setTimeout(ensureCatUI,80); setTimeout(ensureCatUI,500); } return r; };
+    window.goTo.__caroCatSheetWrapped=true; window.goTo.__caroRentalWrapped=true;
+  }
+  setTimeout(ensureCatUI, 900);
+  window.caroOpenCatSheet=openSheet;
+  console.log('[예약화면] ✅ 차종 버튼 + 반화면 시트(차종별 차량 배치)');
+})();
