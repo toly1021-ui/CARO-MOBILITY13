@@ -1195,3 +1195,169 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 홈 알림 (종 버튼 + 뱃지 + 패널 + 개별 삭제)
+   · CARO MOBILITY 헤더 우측 종 버튼, 안 읽은 알림 있으면 금색 점
+   · 예약 기반 자동 알림: 대여 10분 전 / 반납 30분 전 / 정상 반납 완료
+   · 이벤트 알림(EVENT_DETAILS)
+   · 종 누르면 패널 → 각 알림 우측 상단 X 로 삭제 (localStorage 영속)
+═══════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var BELL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+
+  function uid(){ return (window.userInfo&&(userInfo.id||userInfo.uid))||'guest'; }
+  function listKey(){ return 'caro_nf_'+uid(); }
+  function dismKey(){ return 'caro_nfx_'+uid(); }
+  function load(k){ try{ return JSON.parse(localStorage.getItem(k)||'[]'); }catch(e){ return []; } }
+  function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  function getList(){ return load(listKey()); }
+  function getDism(){ return load(dismKey()); }
+  function fmtDT(d){ var p=function(n){return n<10?'0'+n:n;}; return (d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+  function fmtAgo(ts){ var s=Math.floor((Date.now()-ts)/1000); if(s<60)return '방금'; var m=Math.floor(s/60); if(m<60)return m+'분 전'; var h=Math.floor(m/60); if(h<24)return h+'시간 전'; return Math.floor(h/24)+'일 전'; }
+
+  function addNotif(id,title,body,ts){
+    if(getDism().indexOf(id)>=0) return;
+    var list=getList(); if(list.some(function(n){return n.id===id;})) return;
+    list.push({id:id,title:title,body:body,ts:ts||Date.now(),read:false});
+    save(listKey(),list);
+  }
+  function genNotifs(){
+    var now=Date.now();
+    var res=window.myReservations||[];
+    res.forEach(function(r){
+      if(!r||!r.bookNo) return;
+      var name=(window.getCarName&&r.car)?getCarName(r.car):((r.car&&r.car.name)||'차량');
+      var start=r.start?((r.start instanceof Date)?r.start:new Date(r.start)):null;
+      var end=r.end?((r.end instanceof Date)?r.end:new Date(r.end)):null;
+      if(r.returned && r.returnedAt){
+        var rt=(r.returnedAt instanceof Date)?r.returnedAt:new Date(r.returnedAt);
+        if(!isNaN(rt.getTime())) addNotif('ret-'+r.bookNo, '차량이 정상 반납되었습니다', name+' · '+fmtDT(rt), rt.getTime());
+      } else {
+        if(start && !isNaN(start.getTime())){
+          var dm=start.getTime()-now;
+          if(dm>0 && dm<=10*60000) addNotif('r10-'+r.bookNo, '차량 대여 10분 전입니다', name+' · '+fmtDT(start)+' 대여 시작', now);
+        }
+        if(end && start && !isNaN(end.getTime()) && now>=start.getTime()){
+          var em=end.getTime()-now;
+          if(em>0 && em<=30*60000) addNotif('e30-'+r.bookNo, '차량 반납 30분 전입니다', name+' · '+fmtDT(end)+' 반납 예정', now);
+        }
+      }
+    });
+    (window.EVENT_DETAILS||[]).forEach(function(e,i){
+      if(!e||!e.title) return;
+      addNotif('ev-'+i, '이벤트 · '+e.title, e.period?('진행 기간 · '+e.period):'진행 중인 이벤트입니다', now-1000*(i+1));
+    });
+    updateBadge();
+  }
+
+  function updateBadge(){
+    var dot=document.getElementById('caro-bell-dot'); if(!dot) return;
+    var unread=getList().filter(function(n){return !n.read;}).length;
+    dot.classList.toggle('on', unread>0);
+  }
+
+  function render(){
+    var box=document.getElementById('cnf-list'); if(!box) return;
+    var list=getList().slice().sort(function(a,b){return b.ts-a.ts;});
+    if(!list.length){ box.innerHTML='<div class="cnf-empty">새로운 알림이 없습니다.</div>'; return; }
+    box.innerHTML=list.map(function(n){
+      return '<div class="cnf-item"><button class="cnf-x" data-id="'+n.id+'">\u00D7</button>'
+        +'<div class="cnf-it-title">'+esc(n.title)+'</div>'
+        +'<div class="cnf-it-body">'+esc(n.body||'')+'</div>'
+        +'<div class="cnf-it-time">'+fmtAgo(n.ts)+'</div></div>';
+    }).join('');
+    box.querySelectorAll('.cnf-x').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation(); dismiss(b.getAttribute('data-id')); }); });
+  }
+  function esc(t){ return (''+(t==null?'':t)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function dismiss(id){
+    var list=getList().filter(function(n){return n.id!==id;}); save(listKey(),list);
+    var d=getDism(); if(d.indexOf(id)<0){ d.push(id); save(dismKey(),d); }
+    render(); updateBadge();
+  }
+  function clearAll(){
+    var list=getList(); var d=getDism();
+    list.forEach(function(n){ if(d.indexOf(n.id)<0) d.push(n.id); });
+    save(dismKey(),d); save(listKey(),[]);
+    render(); updateBadge();
+  }
+
+  function buildPanel(){
+    var ov=document.createElement('div'); ov.id='caro-notif-ov';
+    ov.innerHTML='<div class="cnf-panel">'
+      +'<div class="cnf-head"><span class="cnf-title">알림</span><div class="cnf-actions">'
+        +'<button class="cnf-clear" id="cnfClear">모두 지우기</button>'
+        +'<button class="cnf-close" id="cnfClose">\u00D7</button></div></div>'
+      +'<div class="cnf-list" id="cnf-list"></div></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click',function(e){ if(e.target===ov) closePanel(); });
+    ov.querySelector('#cnfClose').addEventListener('click',closePanel);
+    ov.querySelector('#cnfClear').addEventListener('click',clearAll);
+    return ov;
+  }
+  function openPanel(){
+    genNotifs();
+    var ov=document.getElementById('caro-notif-ov')||buildPanel();
+    /* 열면 모두 읽음 처리 → 뱃지 제거 */
+    var list=getList(); list.forEach(function(n){ n.read=true; }); save(listKey(),list);
+    render(); updateBadge();
+    requestAnimationFrame(function(){ ov.classList.add('open'); });
+  }
+  function closePanel(){ var ov=document.getElementById('caro-notif-ov'); if(ov) ov.classList.remove('open'); }
+
+  function injectBell(){
+    var hdr=document.querySelector('#home-screen .home-header');
+    if(!hdr || hdr.querySelector('#caro-bell')) return;
+    var btn=document.createElement('button'); btn.id='caro-bell'; btn.type='button'; btn.setAttribute('aria-label','알림');
+    btn.innerHTML=BELL+'<span class="cnf-dot" id="caro-bell-dot"></span>';
+    btn.addEventListener('click',openPanel);
+    hdr.appendChild(btn);
+    updateBadge();
+  }
+
+  var st=document.createElement('style');
+  st.textContent=
+    '#home-screen .home-header{display:flex;align-items:center;}'
+   +'#caro-bell{position:relative;margin-left:auto;background:none;border:none;padding:6px;color:#18191c;cursor:pointer;display:flex;align-items:center;justify-content:center;width:38px;height:38px;font-family:inherit;}'
+   +'#caro-bell svg{width:23px;height:23px;}'
+   +'.cnf-dot{position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;background:#c6a468;display:none;box-shadow:0 0 0 2px #e9ecf0;}'
+   +'.cnf-dot.on{display:block;}'
+   +'#caro-notif-ov{position:fixed;inset:0;z-index:1100;background:rgba(20,22,28,.4);display:none;}'
+   +'#caro-notif-ov.open{display:block;}'
+   +'.cnf-panel{position:absolute;top:0;left:0;right:0;background:#f0f3f7;border-radius:0 0 22px 22px;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 14px 44px rgba(0,0,0,.22);transform:translateY(-100%);transition:transform .3s cubic-bezier(.22,1,.36,1);}'
+   +'#caro-notif-ov.open .cnf-panel{transform:translateY(0);}'
+   +'.cnf-head{display:flex;align-items:center;justify-content:space-between;padding:calc(15px + var(--sat,0px)) 18px 13px;}'
+   +'.cnf-title{font-size:1.12rem;font-weight:800;color:#18191c;}'
+   +'.cnf-actions{display:flex;align-items:center;gap:4px;}'
+   +'.cnf-clear{background:none;border:none;font-size:.8rem;color:var(--text-m);cursor:pointer;font-family:inherit;padding:6px 8px;}'
+   +'.cnf-close{background:none;border:none;font-size:1.5rem;color:#888d98;cursor:pointer;width:32px;line-height:1;font-family:inherit;}'
+   +'.cnf-list{overflow-y:auto;padding:0 14px 18px;}'
+   +'.cnf-item{background:#fff;border:1px solid var(--border-l,#e7eaef);border-radius:14px;padding:14px 40px 13px 15px;margin-bottom:10px;position:relative;}'
+   +'.cnf-it-title{font-size:.93rem;font-weight:700;color:#18191c;letter-spacing:-.01em;}'
+   +'.cnf-it-body{font-size:.8rem;color:var(--text-m);margin-top:4px;line-height:1.45;}'
+   +'.cnf-it-time{font-size:.7rem;color:#b0b4bc;margin-top:7px;}'
+   +'.cnf-x{position:absolute;top:9px;right:9px;width:26px;height:26px;border:none;background:none;color:#b0b4bc;font-size:1.15rem;cursor:pointer;border-radius:8px;line-height:1;font-family:inherit;}'
+   +'.cnf-x:active{background:#f0f3f7;}'
+   +'.cnf-empty{text-align:center;color:var(--text-m);font-size:.9rem;padding:46px 0;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function boot(){
+    injectBell();
+    var tries=0; var iv=setInterval(function(){ injectBell(); genNotifs(); if(++tries>10) clearInterval(iv); },800);
+    setInterval(function(){ genNotifs(); },30000);
+    /* 예약 갱신 시 재생성 */
+    ['renderMyReservations','showHomeCtrlSwitch','saveUserData'].forEach(function(nm){
+      if(typeof window[nm]==='function' && !window[nm]._caroNotif){
+        var o=window[nm];
+        window[nm]=function(){ var r=o.apply(this,arguments); try{ genNotifs(); }catch(e){} return r; };
+        window[nm]._caroNotif=1;
+      }
+    });
+    /* 외부 API */
+    window.caroAddNotif=function(title,body){ addNotif('m-'+Date.now(), title, body||'', Date.now()); updateBadge(); };
+    console.log('[\uC54C\uB9BC] \u2705 \uC885 \uBC84\uD2BC + \uC608\uC57D/\uC774\uBCA4\uD2B8 \uC54C\uB9BC');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
