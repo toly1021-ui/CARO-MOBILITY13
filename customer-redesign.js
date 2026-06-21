@@ -1929,3 +1929,31 @@
   rebrand(); setTimeout(rebrand, 1500);
   console.log('[관리자모드] ✅ 재디자인 2c (다크+골드 Fleet Control)');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [2c-2] 관리자 모드 진입 전환화면 — 청록 "DEV CONSOLE" → 골드 "CARO ADMIN"
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  window.showDevLoginTransition=function(){
+    var overlay=document.getElementById('dev-login-overlay');
+    if(overlay){ try{ overlay.remove(); }catch(e){} }   /* 기존(청록) 제거 후 골드로 생성 */
+    overlay=document.createElement('div');
+    overlay.id='dev-login-overlay';
+    overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:#141518;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;pointer-events:none;';
+    overlay.innerHTML=
+      '<div style="font-family:\'Oswald\',sans-serif;font-size:.7rem;letter-spacing:.5em;color:rgba(200,169,110,.5);margin-bottom:20px;text-transform:uppercase;">ADMINISTRATOR</div>'+
+      '<div style="font-family:\'Oswald\',sans-serif;font-size:2rem;font-weight:500;letter-spacing:.2em;color:rgba(200,169,110,.95);">CARO ADMIN</div>'+
+      '<div style="width:200px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,169,110,.5),transparent);margin:16px 0;"></div>'+
+      '<div style="font-size:.72rem;color:rgba(200,169,110,.45);letter-spacing:.15em;">FLEET CONTROL</div>';
+    document.body.appendChild(overlay);
+    overlay.style.pointerEvents='all';
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      overlay.style.opacity='1';
+      setTimeout(function(){
+        try{ if(window.goTo) goTo('dev-screen'); }catch(e){}
+        setTimeout(function(){ overlay.style.opacity='0'; overlay.style.pointerEvents='none'; },600);
+      },2000);
+    });});
+  };
+  console.log('[관리자모드] ✅ 진입 전환화면 CARO ADMIN(골드)');
+})();
