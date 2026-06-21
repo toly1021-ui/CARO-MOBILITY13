@@ -2707,3 +2707,138 @@
   setTimeout(mountFilter, 800);
   console.log('[예약화면] ✅ 지도 여백 제거 + 차종 필터(전체/경차/소형/중형/대형/SUV)');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 지도 → 카카오맵(Kakao Maps) 전환
+   · Leaflet/OSM 대신 카카오맵 사용 (한국 도로·상호·라벨 정확)
+   · 마커(일반차/점검/대여), 카로 더 블랙(BL) 마커, 범위 필터, 줌 포팅
+   · SDK 로드 실패/도메인 미등록 등 문제 시 기존 Leaflet 지도로 자동 폴백
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var _origInitMap      = window.initMap;
+  var _origUpdateMarkers= window.updateMapMarkers;
+  var _origBottomSheet  = window.initCarBottomSheet;
+  var _origInBounds     = window.isCarInMapBounds;
+
+  var KCar=[], KBL=[], infoWin=null, building=false, sdkRetry=0;
+
+  function clearArr(arr){ arr.forEach(function(o){ try{o.setMap(null);}catch(e){} }); arr.length=0; }
+  function isMaintCar(car){ try{ if(typeof window.isMaint==='function') return !!window.isMaint(car); }catch(e){} return !!car.devDisabled; }
+
+  function dotHTML(col,label,dark){
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">'
+      +'<div style="width:13px;height:13px;border-radius:50%;background:'+col+';border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>'
+      +'<div style="font-size:9px;font-weight:700;color:'+(dark?'#fff':col)+';background:'+(dark?'rgba(0,0,0,.75)':'rgba(255,255,255,.9)')+';padding:1px 4px;border-radius:14px;white-space:nowrap;">'+label+'</div>'
+      +'</div>';
+  }
+
+  function addMarker(lat,lng,html,popup,arr){
+    var kakao=window.kakao; if(!kakao||!kakao.maps) return;
+    var pos=new kakao.maps.LatLng(lat,lng);
+    var el=document.createElement('div'); el.innerHTML=html; el.style.cursor='pointer';
+    var ov=new kakao.maps.CustomOverlay({position:pos,content:el,yAnchor:0.5,xAnchor:0.5,clickable:true});
+    ov.setMap(window.caroMap); arr.push(ov);
+    if(popup){
+      el.addEventListener('click',function(ev){ ev.stopPropagation();
+        try{ if(!infoWin) infoWin=new kakao.maps.InfoWindow({removable:true});
+          infoWin.setContent('<div style="padding:8px 11px;font-size:12px;line-height:1.55;min-width:130px;">'+popup+'</div>');
+          infoWin.setPosition(pos); infoWin.open(window.caroMap);
+        }catch(e){}
+      });
+    }
+  }
+
+  function buildReservedMap(){
+    var now=new Date(), rm={};
+    (window.myReservations||[]).forEach(function(r){
+      if(r.start && r.end){
+        if(!r.returned){ var rt=new Date(r.end.getTime()+600000); if(now<rt) rm[r.car.id]={until:rt}; }
+        else if(r.returnedAt){ var rtr=new Date(r.returnedAt.getTime()+600000); if(now<rtr && !rm[r.car.id]) rm[r.car.id]={until:rtr}; }
+      }
+    });
+    return rm;
+  }
+
+  function fallbackLeaflet(){
+    console.warn('[지도] 카카오맵 사용 불가 → 기존 지도(OSM)로 폴백');
+    window.initMap=_origInitMap; window.updateMapMarkers=_origUpdateMarkers;
+    window.initCarBottomSheet=_origBottomSheet; window.isCarInMapBounds=_origInBounds;
+    try{ if(_origInitMap) _origInitMap(); }catch(e){}
+  }
+
+  function buildKakaoMap(){
+    if(building || (window.caroMap && window.caroMap.__kakao)) return;
+    building=true;
+    var kakao=window.kakao, el=document.getElementById('caro-map');
+    if(!el){ building=false; return; }
+    try{
+      var map=new kakao.maps.Map(el,{center:new kakao.maps.LatLng(37.4150,126.6820),level:7});
+      map.__kakao=true;
+      map.invalidateSize=function(){ try{ this.relayout(); }catch(e){} }; // Leaflet 호환 shim
+      try{ map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.LEFT); }catch(e){}
+      window.caroMap=map; window.caroMapReady=true;
+      kakao.maps.event.addListener(map,'idle',function(){
+        try{ if(window.renderCars) window.renderCars(); if(window.updateCarSheetCount) window.updateCarSheetCount(); }catch(e){}
+      });
+      setTimeout(function(){ try{map.relayout();}catch(e){} },80);
+      setTimeout(function(){ try{map.relayout();}catch(e){} },450);
+      try{ window.updateMapMarkers(); }catch(e){}
+      try{ window.initCarBottomSheet(); }catch(e){}
+      try{ if(window.renderCars) window.renderCars(); }catch(e){}
+      console.log('[지도] ✅ 카카오맵 적용 완료');
+    }catch(e){ building=false; console.warn('[지도] 카카오맵 생성 실패',e); fallbackLeaflet(); }
+  }
+
+  // ── initMap 교체 ──
+  window.initMap=function(){
+    if(window.caroMap && window.caroMap.__kakao){
+      try{ window.caroMap.relayout(); }catch(e){}
+      try{ window.updateMapMarkers(); window.initCarBottomSheet(); }catch(e){}
+      return;
+    }
+    var kakao=window.kakao;
+    if(kakao && kakao.maps && kakao.maps.Map){ buildKakaoMap(); return; }
+    if(kakao && kakao.maps && kakao.maps.load){ kakao.maps.load(function(){ buildKakaoMap(); }); return; }
+    if(sdkRetry<24){ sdkRetry++; setTimeout(window.initMap,250); return; } // SDK 스크립트 로딩 대기
+    fallbackLeaflet();
+  };
+
+  // ── updateMapMarkers 교체 (일반 차량) ──
+  window.updateMapMarkers=function(){
+    if(!window.caroMap || !window.caroMap.__kakao){ return _origUpdateMarkers? _origUpdateMarkers.apply(this,arguments): undefined; }
+    if(!window.kakao||!window.kakao.maps) return;
+    clearArr(KCar);
+    var rm=buildReservedMap();
+    (window.CARS_DATA||[]).forEach(function(car){
+      var res=rm[car.id], maint=isMaintCar(car);
+      var available=car.status==='available'&&!maint&&!res;
+      var col=available?'#1d7a3a':(maint?'#e07b00':'#b23a3a');
+      var label=available?'이용가능':(maint?'점검중':'대여중');
+      var nm=(window.getCarName?window.getCarName(car):car.name);
+      var popup='<b>'+nm+'</b><br>'+car.fuel+' · '+car.pricePerHour.toLocaleString()+'원/h<br><span style="color:'+col+';font-weight:700;">'+label+'</span>';
+      addMarker(car.lat,car.lng,dotHTML(col,label,false),popup,KCar);
+    });
+  };
+
+  // ── initCarBottomSheet 교체 (카로 더 블랙 마커 + 카운트) ──
+  window.initCarBottomSheet=function(){
+    if(!window.caroMap || !window.caroMap.__kakao){ return _origBottomSheet? _origBottomSheet.apply(this,arguments): undefined; }
+    try{ if(window.updateCarSheetCount) window.updateCarSheetCount(); }catch(e){}
+    if(!window.kakao||!window.kakao.maps) return;
+    clearArr(KBL);
+    (window.BL_CARS||[]).forEach(function(car){
+      var popup='<b>⭐ '+car.name+'</b><br>'+car.fuel+' · '+car.pricePerHour.toLocaleString()+'원/h<br><span style="color:#c8a96e;font-weight:700;">CARO THE BLACK</span>';
+      addMarker(car.lat,car.lng,dotHTML('#c8a96e','BL',true),popup,KBL);
+    });
+  };
+
+  // ── isCarInMapBounds 교체 (카카오 범위 판별) ──
+  window.isCarInMapBounds=function(car){
+    var map=window.caroMap;
+    if(!map || !window.caroMapReady) return true;
+    if(map.__kakao){ try{ return map.getBounds().contain(new window.kakao.maps.LatLng(car.lat,car.lng)); }catch(e){ return true; } }
+    return _origInBounds? _origInBounds(car) : true;
+  };
+
+  console.log('[지도] 카카오맵 전환 모듈 로드 (실패 시 OSM 폴백)');
+})();
