@@ -1636,8 +1636,16 @@
     if(!parkOk()){ toast('다른 장소 주차 시 위치 설명과 사진(1장 이상)을 입력해 주세요.'); return; }
     if(ST.park==='other'){ try{ ST.res.altPark={desc:document.getElementById('rtDesc').value.trim(), photos:ST.photos.length, at:Date.now()}; }catch(e){} }
     var total=ST.costs.total;
-    if(total>0) openPay(total, function(){ finish(); });
-    else finish();
+    if(total>0){
+      /* 쏘카 방식: 앱에 등록된 카드로 즉시 결제 (토스 없음) */
+      var cards=window.savedCards||[];
+      if(!cards.length){ toast('등록된 카드가 없습니다. 계정관리 → 결제수단에서 카드를 먼저 등록해 주세요.'); return; }
+      var c=cards[0];
+      toast('\u2705 '+(c.alias||'카드')+' ····'+(c.last4||'')+' '+won(total)+'원 결제 완료');
+      finish();
+    } else {
+      finish();
+    }
   }
   function finish(){
     closeRet(); closePay();
