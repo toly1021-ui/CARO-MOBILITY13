@@ -1515,3 +1515,269 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 반납 화면 (풀스크린) + 정산 결제
+   · 풀스크린: 반납 확인 체크리스트 / 주차(지정·다른 장소) / 정산 / 결제
+   · 다른 장소 주차 시 위치 설명 + 사진 필수 입력
+   · 지연 패널티: 반납시간 초과 시 10분당 10,000원 누적(실시간)
+   · 반납 시 주행거리 비용 + 하이패스 비용 + 지연 패널티 = 합계 한번에 결제
+     (주행거리=res.drivenKm, 하이패스=res.hipassFee — 디바이스/관리자가 채우는 값)
+   · 결제: 등록 카드 / 토스페이먼츠 (예약·연장 결제와 동일 방식)
+═══════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+  var TOSS_KEY='test_ck_6bJXmgo28eByJonkYwBE3LAnGKWx';
+  var PENALTY_UNIT=10000, PENALTY_PER_MIN=10; /* 10분당 10,000원 */
+  function won(n){ try{ return Number(n||0).toLocaleString('ko-KR'); }catch(e){ return n; } }
+  function toast(m){ if(window.showToast) showToast(m); else alert(m); }
+  function esc(t){ return (''+(t==null?'':t)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function activeRes(){ return (window.ctrlResIdx>=0&&window.myReservations)?window.myReservations[window.ctrlResIdx]:null; }
+
+  function calcCosts(res){
+    var car=res.car||{};
+    var kmRate=+car.kmRate||0, freeKm=+car.fuelFreeKm||0;
+    var drivenKm=+res.drivenKm||0;
+    var billKm=Math.max(0, drivenKm-freeKm);
+    var distCost=Math.round(billKm*kmRate);
+    var hipass=+res.hipassFee||0;
+    var end=(res.end instanceof Date)?res.end:new Date(res.end);
+    var overdueMin=isNaN(end.getTime())?0:Math.max(0,Math.floor((Date.now()-end.getTime())/60000));
+    var penalty=Math.floor(overdueMin/PENALTY_PER_MIN)*PENALTY_UNIT;
+    return {kmRate:kmRate,freeKm:freeKm,drivenKm:drivenKm,billKm:billKm,distCost:distCost,
+            hipass:hipass,overdueMin:overdueMin,penalty:penalty,total:distCost+hipass+penalty};
+  }
+  function fmtOverdue(min){ var h=Math.floor(min/60),m=min%60; return (h>0?h+'시간 ':'')+m+'분'; }
+
+  /* ───────── 상태 ───────── */
+  var ST={res:null, checks:[false,false], park:'spot', photos:[], costs:null};
+
+  /* ───────── 반납 화면 ───────── */
+  var CHK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  var CHECKS=['차량에 두고 내린 물건이 없는지 확인했습니다','차량 외관에 새로운 파손이 없음을 확인했습니다'];
+
+  function build(){
+    var ov=document.createElement('div'); ov.id='caro-ret-ov';
+    ov.innerHTML=''
+      +'<div class="rt-head"><button class="rt-back" id="rtBack">\u2190</button><span class="rt-title">차량 반납</span></div>'
+      +'<div class="rt-body">'
+        +'<div class="rt-sec"><div class="rt-lbl">반납 확인</div><div id="rtChecks"></div></div>'
+        +'<div class="rt-sec"><div class="rt-lbl">주차 위치</div>'
+          +'<div class="rt-park"><button class="rt-pk" data-p="spot">지정 장소에 주차</button><button class="rt-pk" data-p="other">다른 장소에 주차</button></div>'
+          +'<div class="rt-other" id="rtOther">'
+            +'<textarea class="rt-desc" id="rtDesc" rows="3" placeholder="주차한 위치를 자세히 적어주세요 (예: ○○빌딩 지하 2층 B-12)"></textarea>'
+            +'<button class="rt-photo" id="rtPhoto">사진 첨부 (0장)</button>'
+            +'<div class="rt-photos" id="rtPhotos"></div>'
+          +'</div>'
+        +'</div>'
+        +'<div class="rt-sec"><div class="rt-lbl">정산 내역</div><div class="rt-sum" id="rtSum"></div></div>'
+      +'</div>'
+      +'<div class="rt-foot"><button class="rt-submit" id="rtSubmit">반납 및 결제하기</button></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#rtBack').addEventListener('click',closeRet);
+    ov.querySelector('#rtPhoto').addEventListener('click',addPhoto);
+    ov.querySelectorAll('.rt-pk').forEach(function(b){ b.addEventListener('click',function(){ ST.park=b.getAttribute('data-p'); renderPark(); renderSubmit(); }); });
+    ov.querySelector('#rtDesc').addEventListener('input',renderSubmit);
+    ov.querySelector('#rtSubmit').addEventListener('click',submit);
+    return ov;
+  }
+  function renderChecks(){
+    var box=document.getElementById('rtChecks'); if(!box) return;
+    box.innerHTML=CHECKS.map(function(c,i){ return '<button class="rt-item'+(ST.checks[i]?' on':'')+'" data-i="'+i+'"><span class="rt-box">'+CHK+'</span><span class="rt-itl">'+c+'</span></button>'; }).join('');
+    box.querySelectorAll('.rt-item').forEach(function(b){ b.addEventListener('click',function(){ var i=+b.getAttribute('data-i'); ST.checks[i]=!ST.checks[i]; renderChecks(); renderSubmit(); }); });
+  }
+  function renderPark(){
+    document.querySelectorAll('.rt-pk').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-p')===ST.park); });
+    var o=document.getElementById('rtOther'); if(o) o.classList.toggle('open', ST.park==='other');
+  }
+  function renderPhotos(){
+    var box=document.getElementById('rtPhotos'); if(box) box.innerHTML=ST.photos.map(function(p){ return '<img src="'+p+'"/>'; }).join('');
+    var btn=document.getElementById('rtPhoto'); if(btn) btn.textContent='사진 첨부 ('+ST.photos.length+'장)';
+  }
+  function addPhoto(){
+    if(ST.photos.length>=5){ toast('최대 5장까지 첨부 가능합니다.'); return; }
+    function got(dataUrl){ if(!dataUrl) return; ST.photos.push(dataUrl); renderPhotos(); renderSubmit(); }
+    if(typeof window._openSimpleCam==='function'){ window._openSimpleCam(got); }
+    else {
+      var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.capture='environment';
+      inp.onchange=function(){ var f=inp.files&&inp.files[0]; if(!f)return; var r=new FileReader(); r.onload=function(){ got(r.result); }; r.readAsDataURL(f); };
+      inp.click();
+    }
+  }
+  function renderSum(){
+    var box=document.getElementById('rtSum'); if(!box) return;
+    var c=ST.costs;
+    var rows='';
+    rows+='<div class="rt-sr"><span>주행거리 비용'+(c.drivenKm?(' ('+c.billKm+'km × '+won(c.kmRate)+'원)'):'')+'</span><b>'+won(c.distCost)+'원</b></div>';
+    rows+='<div class="rt-sr"><span>하이패스 사용</span><b>'+(c.hipass>0?won(c.hipass)+'원':'미사용')+'</b></div>';
+    rows+='<div class="rt-sr'+(c.penalty>0?' pen':'')+'"><span>반납 지연 패널티'+(c.overdueMin>0?(' (지연 '+fmtOverdue(c.overdueMin)+' · 10분당 '+won(PENALTY_UNIT)+'원)'):'')+'</span><b>'+won(c.penalty)+'원</b></div>';
+    box.innerHTML=rows+'<div class="rt-tot"><span>합계</span><b>'+won(c.total)+'원</b></div>'
+      +((!c.drivenKm&&c.hipass<=0)?'<div class="rt-note">※ 주행거리·하이패스는 디바이스 측정값이 들어오면 자동 합산됩니다.</div>':'');
+  }
+  function parkOk(){ if(ST.park==='spot') return true; var d=document.getElementById('rtDesc'); return !!(d&&d.value.trim())&&ST.photos.length>0; }
+  function renderSubmit(){
+    var btn=document.getElementById('rtSubmit'); if(!btn) return;
+    var ok=ST.checks.every(Boolean)&&parkOk();
+    btn.disabled=!ok;
+    btn.textContent = ST.costs && ST.costs.total>0 ? ('반납 및 결제하기 · '+won(ST.costs.total)+'원') : '반납하기';
+  }
+
+  function openRet(){
+    var res=activeRes(); if(!res){ toast('반납할 차량 정보를 찾을 수 없습니다.'); return; }
+    ST={res:res, checks:[false,false], park:'spot', photos:[], costs:calcCosts(res)};
+    var ov=document.getElementById('caro-ret-ov')||build();
+    renderChecks(); renderPark(); renderPhotos(); renderSum(); renderSubmit();
+    requestAnimationFrame(function(){ ov.classList.add('open'); ov.querySelector('.rt-body').scrollTop=0; });
+  }
+  function closeRet(){ var ov=document.getElementById('caro-ret-ov'); if(ov) ov.classList.remove('open'); }
+
+  function submit(){
+    if(!ST.checks.every(Boolean)){ toast('반납 확인 항목을 모두 체크해 주세요.'); return; }
+    if(!parkOk()){ toast('다른 장소 주차 시 위치 설명과 사진(1장 이상)을 입력해 주세요.'); return; }
+    if(ST.park==='other'){ try{ ST.res.altPark={desc:document.getElementById('rtDesc').value.trim(), photos:ST.photos.length, at:Date.now()}; }catch(e){} }
+    var total=ST.costs.total;
+    if(total>0) openPay(total, function(){ finish(); });
+    else finish();
+  }
+  function finish(){
+    closeRet(); closePay();
+    setTimeout(function(){ try{ if(window.doReturnCar) doReturnCar(); else toast('반납 처리를 찾을 수 없습니다.'); }catch(e){ toast('반납 처리 오류'); } },160);
+  }
+
+  /* ───────── 정산 결제 모달 (등록카드 / 토스) ───────── */
+  var ICON_CARD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>';
+  var ICON_PHONE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3" width="12" height="18" rx="2"/><line x1="10.5" y1="18" x2="13.5" y2="18"/></svg>';
+  var payPending=null;
+  function buildPay(){
+    var ov=document.createElement('div'); ov.id='caro-retpay-ov';
+    ov.innerHTML='<div class="rtp-sheet">'
+      +'<div class="rtp-hd"><button class="rtp-bk" id="rtpBk">\u2039</button><span class="t">결제 수단</span><button class="rtp-x" id="rtpX">\u00D7</button></div>'
+      +'<div class="rtp-amt" id="rtpAmt"></div>'
+      +'<div class="rtp-body">'
+        +'<button class="rtp-opt" id="rtpCard"><span class="rtp-ic">'+ICON_CARD+'</span><span class="rtp-tx"><div class="l1">등록된 카드로 결제</div><div class="l2" id="rtpCardSub"></div></span><span class="arr">\u203A</span></button>'
+        +'<button class="rtp-opt" id="rtpToss"><span class="rtp-ic">'+ICON_PHONE+'</span><span class="rtp-tx"><div class="l1">토스페이먼츠로 결제</div><div class="l2">카드 · 계좌 · 간편결제</div></span><span class="arr">\u203A</span></button>'
+      +'</div></div>';
+    document.body.appendChild(ov);
+    ov.querySelector('#rtpX').addEventListener('click',closePay);
+    ov.querySelector('#rtpBk').addEventListener('click',closePay);
+    ov.addEventListener('click',function(e){ if(e.target===ov) closePay(); });
+    ov.querySelector('#rtpCard').addEventListener('click',payCard);
+    ov.querySelector('#rtpToss').addEventListener('click',payToss);
+    return ov;
+  }
+  function openPay(amount,onCard){
+    payPending={amount:amount,onCard:onCard};
+    var ov=document.getElementById('caro-retpay-ov')||buildPay();
+    document.getElementById('rtpAmt').innerHTML='반납 정산 · <b>'+won(amount)+'원</b>';
+    var cards=window.savedCards||[]; var sub=document.getElementById('rtpCardSub');
+    sub.textContent=cards.length?((cards[0].alias||'카드')+' ····'+(cards[0].last4||'****')):'등록된 카드가 없습니다';
+    requestAnimationFrame(function(){ ov.classList.add('open'); });
+  }
+  function closePay(){ var ov=document.getElementById('caro-retpay-ov'); if(ov) ov.classList.remove('open'); }
+  function payCard(){
+    var cards=window.savedCards||[];
+    if(!cards.length){ toast('등록된 카드가 없습니다. 계정관리 → 결제수단에서 카드를 먼저 등록해 주세요.'); return; }
+    var c=cards[0], onCard=payPending?payPending.onCard:null;
+    closePay(); toast('\u2705 '+(c.alias||'카드')+' ····'+(c.last4||'')+' 결제 완료!'); payPending=null;
+    if(onCard) setTimeout(onCard,150);
+  }
+  function payToss(){
+    if(!payPending) return; var amount=payPending.amount;
+    var res=ST.res||activeRes(); var bookNo=res?res.bookNo:'';
+    try{ localStorage.setItem('caro_ret_pending', JSON.stringify({bookNo:bookNo,amount:amount})); }catch(e){}
+    if(typeof TossPayments!=='function'){ toast('토스페이먼츠를 불러오지 못했습니다.'); return; }
+    try{
+      TossPayments(TOSS_KEY).requestPayment('카드',{
+        amount:amount, orderId:'RT'+Date.now().toString().slice(-8), orderName:'차량 반납 정산',
+        customerName:(window.userInfo&&(userInfo.name||userInfo.id))||'고객',
+        successUrl:location.href.split('?')[0]+'?payment=ret_success',
+        failUrl:location.href.split('?')[0]+'?payment=ret_fail'
+      }).catch(function(err){ if(err&&err.code!=='USER_CANCEL') toast('결제 오류: '+(err.message||'')); });
+    }catch(e){ toast('토스페이먼츠 호출 오류'); }
+  }
+  function handleReturn(){
+    var q=new URLSearchParams(location.search); var pay=q.get('payment');
+    if(pay==='ret_fail'){ try{ history.replaceState(null,'',location.pathname); }catch(e){} return; }
+    if(pay!=='ret_success') return;
+    var raw=null; try{ raw=localStorage.getItem('caro_ret_pending'); }catch(e){}
+    try{ localStorage.removeItem('caro_ret_pending'); }catch(e){}
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    if(!raw) return; var info=null; try{ info=JSON.parse(raw); }catch(e){} if(!info) return;
+    var tries=0; var iv=setInterval(function(){
+      tries++; var list=window.myReservations||[];
+      var r=info.bookNo?list.filter(function(x){return x.bookNo===info.bookNo;})[0]:null;
+      if(r){ clearInterval(iv);
+        r.returned=true; r.returnedAt=new Date();
+        try{ if(window.saveUserData) saveUserData(); }catch(e){}
+        try{ if(window.renderCars) renderCars(); if(window.updateMapMarkers) updateMapMarkers(); }catch(e){}
+        try{ if(window.renderMyReservations) renderMyReservations(); }catch(e){}
+        toast('반납이 완료되었습니다. 이용해 주셔서 감사합니다 \uD83D\uDE97');
+      } else if(tries>30){ clearInterval(iv); }
+    },300);
+  }
+
+  /* ───────── 스타일 ───────── */
+  var st=document.createElement('style');
+  st.textContent=
+    '#caro-ret-ov{position:fixed;inset:0;z-index:1180;background:#f0f3f7;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.22,1,.36,1);visibility:hidden;}'
+   +'#caro-ret-ov.open{transform:translateY(0);visibility:visible;}'
+   +'.rt-head{display:flex;align-items:center;gap:6px;padding:calc(11px + var(--sat,0px)) 10px 11px;background:#f0f3f7;border-bottom:1px solid var(--border-l,#e3e7ec);}'
+   +'.rt-back{width:40px;height:40px;border:none;background:none;font-size:1.65rem;color:#18191c;cursor:pointer;font-family:inherit;}'
+   +'.rt-title{font-size:1.15rem;font-weight:800;color:#18191c;}'
+   +'.rt-body{flex:1;overflow-y:auto;padding:16px 16px 20px;}'
+   +'.rt-sec{margin-bottom:20px;}'
+   +'.rt-lbl{font-size:.8rem;font-weight:700;color:var(--text-2,#44474f);margin:0 2px 10px;}'
+   +'.rt-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1px solid var(--border-l,#e7eaef);border-radius:14px;padding:15px 14px;margin-bottom:9px;cursor:pointer;font-family:inherit;}'
+   +'.rt-box{width:25px;height:25px;flex-shrink:0;border-radius:8px;border:2px solid #c8ccd2;display:flex;align-items:center;justify-content:center;color:#fff;}'
+   +'.rt-box svg{width:15px;height:15px;opacity:0;}'
+   +'.rt-item.on{border-color:#18191c;}.rt-item.on .rt-box{background:#1d7a3a;border-color:#1d7a3a;}.rt-item.on .rt-box svg{opacity:1;}'
+   +'.rt-itl{font-size:.9rem;font-weight:600;color:#18191c;line-height:1.4;}'
+   +'.rt-park{display:grid;grid-template-columns:1fr 1fr;gap:8px;}'
+   +'.rt-pk{padding:13px;border:1px solid var(--border-l,#e7eaef);border-radius:12px;background:#fff;font-size:.88rem;font-weight:700;color:#18191c;cursor:pointer;font-family:inherit;}'
+   +'.rt-pk.on{background:#18191c;color:#fff;border-color:#18191c;}'
+   +'.rt-other{max-height:0;overflow:hidden;transition:max-height .28s ease;}'
+   +'.rt-other.open{max-height:520px;margin-top:10px;}'
+   +'.rt-desc{width:100%;border:1px solid var(--border-l,#e7eaef);border-radius:12px;padding:12px;font-size:.88rem;font-family:inherit;resize:none;box-sizing:border-box;}'
+   +'.rt-photo{margin-top:9px;width:100%;padding:12px;border:1px dashed #c2c7cf;border-radius:12px;background:#fff;font-size:.85rem;font-weight:600;color:#18191c;cursor:pointer;font-family:inherit;}'
+   +'.rt-photos{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;}'
+   +'.rt-photos img{width:60px;height:50px;object-fit:cover;border-radius:9px;border:1px solid var(--border-l,#e7eaef);}'
+   +'.rt-sum{background:#fff;border:1px solid var(--border-l,#e7eaef);border-radius:14px;padding:15px;}'
+   +'.rt-sr{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;font-size:.85rem;color:var(--text-2,#44474f);padding:6px 0;}'
+   +'.rt-sr b{color:#18191c;font-weight:700;white-space:nowrap;}'
+   +'.rt-sr.pen b,.rt-sr.pen span{color:#b23a3a;}'
+   +'.rt-tot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border-l,#e7eaef);margin-top:8px;padding-top:12px;}'
+   +'.rt-tot span{font-size:.85rem;color:var(--text-2,#44474f);}.rt-tot b{font-size:1.3rem;font-weight:800;color:#18191c;}'
+   +'.rt-note{font-size:.72rem;color:var(--text-m);margin-top:10px;line-height:1.5;}'
+   +'.rt-foot{padding:12px 16px calc(14px + var(--sab,0px));background:#f0f3f7;border-top:1px solid var(--border-l,#e3e7ec);}'
+   +'.rt-submit{width:100%;background:linear-gradient(135deg,#20232b,#14151a);color:#fff;border:none;border-radius:14px;padding:16px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;}'
+   +'.rt-submit:disabled{opacity:.4;cursor:default;}'
+   /* 결제 모달 */
+   +'#caro-retpay-ov{position:fixed;inset:0;z-index:1220;background:rgba(20,22,28,.45);display:none;align-items:flex-start;justify-content:center;}'
+   +'#caro-retpay-ov.open{display:flex;}'
+   +'.rtp-sheet{background:#fff;width:min(440px,92%);margin-top:20vh;border-radius:20px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.32);}'
+   +'.rtp-hd{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;border-bottom:1px solid var(--border-l,#e7eaef);}'
+   +'.rtp-hd .t{font-size:1.05rem;font-weight:800;color:#18191c;}'
+   +'.rtp-x,.rtp-bk{border:none;background:none;font-size:1.45rem;color:#888d98;cursor:pointer;width:30px;font-family:inherit;}'
+   +'.rtp-amt{text-align:center;padding:15px 16px;font-size:1rem;color:#18191c;border-bottom:1px solid var(--border-l,#e7eaef);}'
+   +'.rtp-amt b{font-weight:800;}'
+   +'.rtp-body{padding:14px 16px 20px;}'
+   +'.rtp-opt{display:flex;align-items:center;gap:13px;width:100%;text-align:left;background:#fff;border:1px solid var(--border-l,#e7eaef);border-radius:14px;padding:15px;margin-bottom:11px;cursor:pointer;font-family:inherit;}'
+   +'.rtp-ic{width:30px;height:24px;flex-shrink:0;color:#18191c;}'
+   +'.rtp-tx{flex:1;min-width:0;}.rtp-opt .l1{font-size:.95rem;font-weight:700;color:#18191c;}.rtp-opt .l2{font-size:.78rem;color:var(--text-m);margin-top:2px;}.rtp-opt .arr{color:#c8ccd2;font-size:1.25rem;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function boot(){
+    /* 반납 버튼 → 풀스크린 반납 화면 (이전 체크리스트 모달 대체) */
+    function hook(){
+      if(typeof window.openReturnParkModal!=='function') return false;
+      if(window.openReturnParkModal._caroRet2) return true;
+      window.openReturnParkModal=function(){ openRet(); };
+      window.openReturnParkModal._caroRet2=1;
+      return true;
+    }
+    if(!hook()){ var t=0; var iv=setInterval(function(){ if(hook()||++t>40) clearInterval(iv); },300); }
+    handleReturn();
+    console.log('[\uBC18\uB0A9] \u2705 \uD480\uC2A4\uD06C\uB9B0 \uBC18\uB0A9 + \uC815\uC0B0 \uACB0\uC81C');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
