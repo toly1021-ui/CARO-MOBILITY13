@@ -1872,3 +1872,60 @@
   setTimeout(refreshEntry, 1200);
   console.log('[권한] ✅ 직원 권한 연동 2a (admin_accounts 읽기 + 관리자 진입 + 동기화 확장)');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [2c] 관리자 모드(dev-screen) 재디자인 — 청록 → 대시보드 다크+골드(Fleet Control)
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var G='#c8a96e', GS='#dcc28f';            /* gold / gold-soft */
+  var BG='#141518', PANEL='#1b1d21', PANEL2='#1f2228';
+  var BD='#2b2e34', BD2='#34383f', TXT='#e9eaed', MUTED='#868b94', MUTED2='#5e636b';
+
+  var s=document.createElement('style');
+  s.textContent=
+    '#dev-screen{background:'+BG+';}'
+   +'#dev-screen .dev-bg{background:'+BG+' !important;}'
+   /* 헤더 */
+   +'#dev-screen .dev-logo{color:'+G+' !important;text-shadow:0 0 18px rgba(200,169,110,.2) !important;}'
+   +'#dev-screen .dev-sub{color:rgba(220,194,143,.5) !important;}'
+   +'#dev-screen .dev-logout-btn{background:rgba(200,169,110,.08) !important;border-color:rgba(200,169,110,.28) !important;color:'+GS+' !important;}'
+   +'#dev-screen .dev-logout-btn:hover{background:rgba(200,169,110,.16) !important;}'
+   /* 섹션/카드 */
+   +'#dev-screen .dev-section-title{color:rgba(220,194,143,.62) !important;}'
+   +'#dev-screen .dev-card{background:'+PANEL+' !important;border-color:'+BD+' !important;}'
+   +'#dev-screen .dev-row{border-bottom-color:'+BD+' !important;}'
+   +'#dev-screen .dev-label{color:#9aa0aa !important;}'
+   /* 통계 */
+   +'#dev-screen .dev-stat-card{background:'+PANEL+' !important;border-color:'+BD+' !important;}'
+   +'#dev-screen .dev-stat-num{color:'+G+' !important;}'
+   +'#dev-screen .dev-stat-label{color:'+MUTED+' !important;}'
+   +'#dev-screen .dev-stat-highlight{border-color:rgba(200,169,110,.32) !important;background:rgba(200,169,110,.06) !important;}'
+   /* 버튼 */
+   +'#dev-screen .dev-btn{background:rgba(200,169,110,.1) !important;border-color:rgba(200,169,110,.25) !important;color:'+GS+' !important;}'
+   +'#dev-screen .dev-btn:hover{background:rgba(200,169,110,.2) !important;border-color:rgba(200,169,110,.42) !important;}'
+   /* 입력 */
+   +'#dev-screen .dev-input,#dev-screen .dev-select,#dev-screen .dev-textarea{background:'+PANEL2+' !important;border-color:'+BD2+' !important;color:'+TXT+' !important;}'
+   +'#dev-screen .dev-input::placeholder{color:'+MUTED2+' !important;}'
+   +'#dev-screen .dev-input:focus,#dev-screen .dev-select:focus,#dev-screen .dev-textarea:focus{border-color:'+G+' !important;}'
+   +'#dev-screen .dev-select option{background:'+PANEL2+' !important;color:'+TXT+' !important;}'
+   /* 탭 */
+   +'#dev-screen .dev-tab-btn{color:'+MUTED+' !important;}'
+   +'#dev-screen .dev-tab-btn:hover{color:'+GS+' !important;}'
+   +'#dev-screen .dev-tab-active{color:'+G+' !important;border-bottom-color:'+G+' !important;}'
+   /* 삭제 체크박스 */
+   +'#dev-screen .dev-del-chk-box{border-color:rgba(200,169,110,.35) !important;background:rgba(200,169,110,.06) !important;}'
+   +'#dev-screen .dev-del-chk input:checked ~ .dev-del-chk-box{background:'+G+' !important;border-color:'+G+' !important;}'
+   /* 탭 구분선 등 인라인 청록 보더 잔재 톤다운 */
+   +'#dev-screen [style*="91,200,255"]{border-color:'+BD+' !important;}';
+  (document.head||document.documentElement).appendChild(s);
+
+  /* 헤더 텍스트를 대시보드 정체성으로 (기능은 그대로) */
+  function rebrand(){
+    try{
+      var lg=document.querySelector('#dev-screen .dev-logo'); if(lg) lg.textContent='CARO MOBILITY';
+      var sb=document.querySelector('#dev-screen .dev-sub'); if(sb) sb.textContent='관리자 콘솔 · FLEET CONTROL';
+    }catch(e){}
+  }
+  rebrand(); setTimeout(rebrand, 1500);
+  console.log('[관리자모드] ✅ 재디자인 2c (다크+골드 Fleet Control)');
+})();
