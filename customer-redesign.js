@@ -1789,3 +1789,16 @@
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
 })();
+
+/* ═══ 공지·이벤트 상세 팝업(notice-modal) 가운데 정렬 ═══ */
+(function(){ 'use strict';
+  var s=document.createElement('style');
+  s.textContent=
+    '#notice-modal #notice-body{text-align:center;}'
+   +'#notice-modal #notice-body p,#notice-modal #notice-body h4,#notice-modal #notice-body div,#notice-modal #notice-body li,#notice-modal #notice-body span{text-align:center;}'
+   +'#notice-modal #notice-body ul,#notice-modal #notice-body ol{list-style-position:inside;padding-left:0;}'
+   +'#notice-modal .modal-header{position:relative;justify-content:center;}'
+   +'#notice-modal .modal-title{flex:1;text-align:center;padding:0 28px;}'
+   +'#notice-modal .modal-close{position:absolute;right:12px;top:50%;transform:translateY(-50%);}';
+  (document.head||document.documentElement).appendChild(s);
+})();
