@@ -1242,6 +1242,7 @@
         if(end && start && !isNaN(end.getTime()) && now>=start.getTime()){
           var em=end.getTime()-now;
           if(em>0 && em<=30*60000) addNotif('e30-'+r.bookNo, '차량 반납 30분 전입니다', name+' · '+fmtDT(end)+' 반납 예정', now);
+          if(em<=0) addNotif('late-'+r.bookNo, '반납 지연 패널티 부과', name+' · 반납 예정 '+fmtDT(end)+' 경과 — 지연 패널티가 부과됩니다', end.getTime());
         }
       }
     });
@@ -1355,6 +1356,17 @@
         window[nm]._caroNotif=1;
       }
     });
+    /* 차량 제어 카운트다운: '반납 필요' → '반납 지연 패널티 부과' */
+    function watchOverdue(){
+      var el=document.getElementById('home-ctrl-timer'); if(!el) return false;
+      if(el._caroOverdue) return true;
+      el._caroOverdue=1;
+      var fix=function(){ if((el.textContent||'').trim()==='반납 필요'){ el.textContent='반납 지연 패널티 부과'; el.style.color='#b23a3a'; el.style.fontWeight='700'; } };
+      new MutationObserver(fix).observe(el,{childList:true,characterData:true,subtree:true});
+      fix();
+      return true;
+    }
+    if(!watchOverdue()){ var ot=0; var ov=setInterval(function(){ if(watchOverdue()||++ot>40) clearInterval(ov); },500); }
     /* 외부 API */
     window.caroAddNotif=function(title,body){ addNotif('m-'+Date.now(), title, body||'', Date.now()); updateBadge(); };
     console.log('[\uC54C\uB9BC] \u2705 \uC885 \uBC84\uD2BC + \uC608\uC57D/\uC774\uBCA4\uD2B8 \uC54C\uB9BC');
