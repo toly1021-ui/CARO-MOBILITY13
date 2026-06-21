@@ -284,6 +284,7 @@
     <button class="tab" data-tab="price">요금 관리</button>
     <button class="tab" data-tab="resv">예약 관리</button>
     <button class="tab" data-tab="notice">공지·이벤트</button>
+    <button class="tab" data-tab="chat">상담 통계</button>
     <button class="tab" data-tab="set">설정</button>
   </div>
 
@@ -385,6 +386,11 @@
   </section>
 
   <!-- ===================== TAB: SETTINGS ===================== -->
+  <!-- ===================== TAB: 상담 통계 ===================== -->
+  <section id="tab-chat" class="hide">
+    <div id="ssRoot"></div>
+  </section>
+
   <section id="tab-set" class="hide">
     <div class="grid" style="grid-template-columns:1fr 1fr">
       <div class="card">
@@ -776,11 +782,12 @@
     t.addEventListener('click', function(){
       document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
       t.classList.add('active');
-      ['dash','price','resv','notice','set'].forEach(function(id){
-        document.getElementById('tab-'+id).classList.toggle('hide', id!==t.dataset.tab);
+      ['dash','price','resv','notice','chat','set'].forEach(function(id){
+        var el=document.getElementById('tab-'+id); if(el) el.classList.toggle('hide', id!==t.dataset.tab);
       });
       if(t.dataset.tab==='dash') resizeChart();
       if(t.dataset.tab==='price') renderPriceFleet();
+      if(t.dataset.tab==='chat' && window.renderSupportStats) window.renderSupportStats();
     });
   });
 
@@ -974,5 +981,6 @@
 <script src="admin-black.js?v=1"></script>
 <script src="admin-cars.js?v=1"></script>
 <script src="admin-monthly.js?v=8"></script>
+<script src="admin-support-stats.js?v=1"></script>
 </body>
 </html>
