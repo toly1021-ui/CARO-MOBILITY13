@@ -1972,18 +1972,210 @@
     try{ if(window.showToast) showToast('직원 권한은 관제 대시보드 → 설정 → 관리자 계정에서 부여하세요.'); }catch(e){}
   };
 
-  /* 데모 입력행을 안내문으로 교체 */
+  /* 데모 입력행 숨김 (실제 부여는 2d 모듈이 상단에 제공) */
   function fixGrantRow(){
     var inp=document.getElementById('dev-new-dev-id'); if(!inp) return;
     var row=inp.closest('.dev-row'); if(!row || row.dataset.caroFixed) return;
     row.dataset.caroFixed='1';
-    row.style.display='block';
-    row.innerHTML='<div style="font-size:.78rem;color:#9aa0aa;line-height:1.55;">'
-      +'직원 권한 부여·수정은 <b style="color:#dcc28f;">관제 대시보드 → 설정 → 관리자 계정 → + 직원 계정</b>에서 하세요.'
-      +'<br>여기 데모 버튼은 사용하지 않습니다.</div>';
+    row.style.display='none';
   }
   fixGrantRow();
   setTimeout(fixGrantRow, 1200);
   setTimeout(fixGrantRow, 2500);
   console.log('[관리자모드] ✅ 데모 권한버튼 정리 + 청록 글씨 골드화');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [2d] 앱 관리자 모드 — 최고관리자 전용 '직원 권한 부여' (실제 동작, admin_accounts)
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var SUPER='caro.mobility.official@gmail.com';
+  var PERMS=[
+    {key:'cars',label:'차량 관리',sub:'등록·수정·삭제'},
+    {key:'pricing',label:'요금 관리',sub:'시간당·주행·월요금'},
+    {key:'notices',label:'공지·이벤트',sub:'등록·수정·삭제'},
+    {key:'resv',label:'예약 관리',sub:'조회·처리'}
+  ];
+  var PILL={cars:'차량',pricing:'요금',notices:'공지',resv:'예약'};
+  var cache=[], snapStarted=false, editingEmail=null;
+
+  function isSuper(){
+    try{
+      if(window.userInfo && userInfo.id==='CAROMOBILITY') return true;
+      if(window.FB_AUTH && FB_AUTH.currentUser && String(FB_AUTH.currentUser.email||'').toLowerCase()===SUPER) return true;
+    }catch(e){}
+    return false;
+  }
+  function ready(){ return window.FB_DB && window.FB_FN && window.FB_FN.setDoc && window.FB_FN.doc; }
+  function T(m){ try{ if(window.showToast) showToast(m); }catch(e){} }
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+  /* ── 스타일 ── */
+  var st=document.createElement('style');
+  st.textContent=
+    '#caro-staff-mgmt .csm-hd{font-size:.82rem;color:#dcc28f;font-weight:700;padding:6px 2px 10px;}'
+   +'#caro-staff-mgmt .csm-locked{font-size:.8rem;color:#9aa0aa;padding:8px 2px;line-height:1.5;}'
+   +'#caro-staff-list{display:flex;flex-direction:column;gap:7px;margin:8px 0 4px;}'
+   +'.csm-item{border:1px solid #2b2e34;border-radius:11px;background:#1f2228;padding:10px 11px;}'
+   +'.csm-item.off{opacity:.55;}'
+   +'.csm-top{display:flex;align-items:center;gap:8px;}'
+   +'.csm-nm{font-size:.84rem;color:#e9eaed;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'
+   +'.csm-stat{font-size:.6rem;padding:1px 7px;border-radius:20px;}'
+   +'.csm-stat.on{color:#7bb89a;border:1px solid rgba(123,184,154,.4);} .csm-stat.no{color:#d57a68;border:1px solid rgba(213,122,104,.4);}'
+   +'.csm-mail{font-size:.7rem;color:#868b94;margin-top:3px;word-break:break-all;}'
+   +'.csm-perms{display:flex;gap:4px;flex-wrap:wrap;margin-top:7px;}'
+   +'.csm-pill{font-size:.6rem;padding:2px 8px;border-radius:20px;border:1px solid #34383f;color:#c8a96e;}'
+   +'.csm-pill.none{color:#868b94;}'
+   +'.csm-acts{display:flex;gap:6px;margin-top:9px;}'
+   +'.csm-act{flex:1;padding:6px;border-radius:8px;border:1px solid #34383f;background:transparent;color:#9aa0aa;font-size:.72rem;cursor:pointer;font-family:inherit;}'
+   +'.csm-act.del{color:#d57a68;border-color:rgba(213,122,104,.35);}'
+   +'.csm-act.edit{color:#dcc28f;border-color:rgba(200,169,110,.35);}'
+   /* 모달 */
+   +'#csmModal{position:fixed;inset:0;background:rgba(0,0,0,.66);display:none;align-items:center;justify-content:center;z-index:100000;padding:16px;}'
+   +'#csmModal.show{display:flex;}'
+   +'.csm-box{background:#1b1d21;border:1px solid #34383f;border-radius:16px;width:min(440px,94vw);max-height:90vh;overflow:auto;}'
+   +'.csm-bhd{display:flex;justify-content:space-between;align-items:center;padding:15px 17px;border-bottom:1px solid #2b2e34;}'
+   +'.csm-bhd h3{margin:0;font-size:.95rem;color:#e9eaed;}'
+   +'.csm-x{background:none;border:none;color:#868b94;font-size:18px;cursor:pointer;}'
+   +'.csm-bd{padding:15px 17px 4px;}'
+   +'.csm-bd label.l{display:block;font-size:.74rem;color:#868b94;margin:12px 0 6px;}'
+   +'.csm-bd label.l:first-child{margin-top:0;}'
+   +'.csm-bd input.i{width:100%;box-sizing:border-box;background:#1f2228;border:1px solid #34383f;color:#e9eaed;border-radius:9px;padding:10px 12px;font-size:.86rem;font-family:inherit;}'
+   +'.csm-bd input.i:disabled{opacity:.6;}'
+   +'.csm-bd input.i:focus{outline:none;border-color:#c8a96e;}'
+   +'.csm-hint{font-size:.7rem;color:#868b94;margin-top:5px;line-height:1.5;}'
+   +'.csm-pk{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #2b2e34;border-radius:10px;background:#1f2228;margin-top:7px;cursor:pointer;}'
+   +'.csm-pk input{width:17px;height:17px;accent-color:#c8a96e;}'
+   +'.csm-pk .t{font-size:.83rem;color:#e9eaed;} .csm-pk .s{font-size:.68rem;color:#868b94;margin-top:1px;}'
+   +'.csm-ft{display:flex;gap:9px;justify-content:flex-end;padding:13px 17px;border-top:1px solid #2b2e34;}'
+   +'.csm-btn{padding:9px 16px;border-radius:9px;border:1px solid #34383f;background:transparent;color:#cfd3da;font-size:.84rem;cursor:pointer;font-family:inherit;}'
+   +'.csm-btn.gold{background:#c8a96e;border-color:#c8a96e;color:#1a1a1a;font-weight:700;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  /* ── 모달 ── */
+  var modal=document.createElement('div'); modal.id='csmModal';
+  modal.innerHTML=
+    '<div class="csm-box">'
+    +'<div class="csm-bhd"><h3 id="csm-ttl">직원 권한 부여</h3><button class="csm-x" id="csm-close">✕</button></div>'
+    +'<div class="csm-bd">'
+      +'<label class="l">직원 이메일(아이디) *</label>'
+      +'<input class="i" id="csm-email" placeholder="예: staff@caro.app" autocomplete="off"/>'
+      +'<div class="csm-hint">직원이 앱에서 가입한 로그인 이메일과 똑같이 입력하세요.</div>'
+      +'<label class="l">직원 이름 *</label>'
+      +'<input class="i" id="csm-name" placeholder="예: 이현장"/>'
+      +'<label class="l">접근 권한</label>'
+      +PERMS.map(function(p){ return '<label class="csm-pk"><input type="checkbox" data-perm="'+p.key+'"><span><div class="t">'+p.label+'</div><div class="s">'+p.sub+'</div></span></label>'; }).join('')
+      +'<label class="csm-pk" style="margin-top:12px;"><input type="checkbox" id="csm-active" checked><span><div class="t">활성 (재직 중)</div><div class="s">끄면 모든 권한이 차단됩니다.</div></span></label>'
+    +'</div>'
+    +'<div class="csm-ft"><button class="csm-btn" id="csm-cancel">취소</button><button class="csm-btn gold" id="csm-save">저장</button></div>'
+    +'</div>';
+  document.body.appendChild(modal);
+  function closeModal(){ modal.classList.remove('show'); }
+  modal.querySelector('#csm-close').onclick=closeModal;
+  modal.querySelector('#csm-cancel').onclick=closeModal;
+  modal.addEventListener('click',function(e){ if(e.target===modal) closeModal(); });
+
+  function openModal(acct){
+    editingEmail = acct ? (acct.id||acct.email) : null;
+    modal.querySelector('#csm-ttl').textContent = acct?'직원 권한 수정':'직원 권한 부여';
+    var em=modal.querySelector('#csm-email');
+    em.value=acct?(acct.email||acct.id||''):''; em.disabled=!!acct;
+    modal.querySelector('#csm-name').value=acct?(acct.name||''):'';
+    var pm=(acct&&acct.perms)||{};
+    modal.querySelectorAll('.csm-pk input[data-perm]').forEach(function(c){ c.checked=!!pm[c.dataset.perm]; });
+    modal.querySelector('#csm-active').checked = acct?(acct.active!==false):true;
+    modal.classList.add('show');
+  }
+
+  modal.querySelector('#csm-save').onclick=function(){
+    if(!isSuper()){ T('최고관리자만 권한을 부여할 수 있습니다.'); return; }
+    if(!ready()){ T('연결 준비 중입니다'); return; }
+    var email=(editingEmail || modal.querySelector('#csm-email').value.trim().toLowerCase());
+    var name=modal.querySelector('#csm-name').value.trim();
+    if(!email || email.indexOf('@')<0){ T('직원 이메일(아이디)을 정확히 입력하세요'); return; }
+    if(!name){ T('직원 이름을 입력하세요'); return; }
+    if(email===SUPER){ T('최고관리자 계정은 수정할 수 없습니다'); return; }
+    var perms={}; modal.querySelectorAll('.csm-pk input[data-perm]').forEach(function(c){ perms[c.dataset.perm]=!!c.checked; });
+    var active=modal.querySelector('#csm-active').checked;
+    var FN=window.FB_FN, db=window.FB_DB;
+    var data={ email:email, name:name, perms:perms, active:active, updatedAt:new Date().toISOString() };
+    if(!editingEmail) data.createdAt=new Date().toISOString();
+    FN.setDoc(FN.doc(db,'admin_accounts',email), data, {merge:true}).then(function(){
+      T(editingEmail?'권한이 수정되었습니다':'직원 권한이 부여되었습니다'); closeModal();
+    }).catch(function(e){ console.error('[앱권한] 저장 실패',e); T('저장 실패 — 최고관리자만 가능 / 규칙 확인'); });
+  };
+
+  window.caroAppEditStaff=function(email){ var a=cache.filter(function(x){return (x.id||x.email)===email;})[0]; if(a) openModal(a); };
+  window.caroAppDelStaff=function(email){
+    if(!isSuper()||!ready()) return;
+    if(!confirm('이 직원 권한을 삭제할까요?\n('+email+')')) return;
+    var FN=window.FB_FN, db=window.FB_DB;
+    FN.deleteDoc(FN.doc(db,'admin_accounts',email)).then(function(){ T('삭제되었습니다'); }).catch(function(e){ console.error(e); T('삭제 실패'); });
+  };
+  window.caroAppToggleStaff=function(email,next){
+    if(!isSuper()||!ready()) return;
+    var FN=window.FB_FN, db=window.FB_DB;
+    FN.setDoc(FN.doc(db,'admin_accounts',email),{active:!!next},{merge:true}).then(function(){ T(next?'활성화됨':'정지됨'); }).catch(function(e){ console.error(e); T('변경 실패'); });
+  };
+
+  function renderList(){
+    var box=document.getElementById('caro-staff-list'); if(!box) return;
+    if(!cache.length){ box.innerHTML='<div style="font-size:.76rem;color:#868b94;padding:6px 2px;">아직 부여된 직원이 없습니다. 위 버튼으로 추가하세요.</div>'; return; }
+    box.innerHTML=cache.map(function(a){
+      var email=a.id||a.email||''; var on=a.active!==false;
+      var pills=PERMS.filter(function(p){return a.perms&&a.perms[p.key];}).map(function(p){return '<span class="csm-pill">'+PILL[p.key]+'</span>';}).join('') || '<span class="csm-pill none">권한 없음</span>';
+      return '<div class="csm-item'+(on?'':' off')+'">'
+        +'<div class="csm-top"><div class="csm-nm">'+esc(a.name||email)+'</div><span class="csm-stat '+(on?'on':'no')+'">'+(on?'활성':'정지')+'</span></div>'
+        +'<div class="csm-mail">'+esc(email)+'</div>'
+        +'<div class="csm-perms">'+pills+'</div>'
+        +'<div class="csm-acts">'
+        +'<button class="csm-act edit" onclick="caroAppEditStaff(\''+esc(email)+'\')">수정</button>'
+        +'<button class="csm-act" onclick="caroAppToggleStaff(\''+esc(email)+'\','+(on?'false':'true')+')">'+(on?'정지':'활성')+'</button>'
+        +'<button class="csm-act del" onclick="caroAppDelStaff(\''+esc(email)+'\')">삭제</button>'
+        +'</div></div>';
+    }).join('');
+  }
+
+  function startSnap(){
+    if(snapStarted || !isSuper() || !ready() || !window.FB_FN.onSnapshot) return;
+    snapStarted=true;
+    var FN=window.FB_FN, db=window.FB_DB;
+    try{
+      FN.onSnapshot(FN.collection(db,'admin_accounts'), function(snap){
+        var arr=[]; snap.forEach(function(d){ var o=d.data()||{}; o.id=d.id; arr.push(o); });
+        arr.sort(function(x,y){ return (x.name||'').localeCompare(y.name||''); });
+        cache=arr; renderList();
+      }, function(e){ console.warn('[앱권한] 목록 오류', e&&e.code); });
+    }catch(e){ console.warn('[앱권한] 리스너 실패', e); }
+  }
+
+  function findPermCard(){
+    var titles=document.querySelectorAll('#dev-screen .dev-section-title');
+    for(var i=0;i<titles.length;i++){ if(/권한/.test(titles[i].textContent)){ var sec=titles[i].closest('.dev-section'); return sec? sec.querySelector('.dev-card') : null; } }
+    return null;
+  }
+  function inject(){
+    var card=findPermCard(); if(!card) return;
+    var block=document.getElementById('caro-staff-mgmt');
+    var sup=isSuper();
+    if(!block){ block=document.createElement('div'); block.id='caro-staff-mgmt'; card.insertBefore(block, card.firstChild); }
+    var mode=sup?'super':'locked';
+    if(block.dataset.mode===mode){ if(sup) startSnap(); return; }
+    block.dataset.mode=mode;
+    if(sup){
+      block.innerHTML='<div class="csm-hd">👥 직원 권한 관리</div>'
+        +'<button class="dev-btn dev-full-btn" id="caro-staff-add" style="background:rgba(200,169,110,.12);border:1px solid rgba(200,169,110,.3);color:#dcc28f;">+ 직원 권한 부여</button>'
+        +'<div id="caro-staff-list"></div>';
+      var ab=document.getElementById('caro-staff-add'); if(ab) ab.onclick=function(){ openModal(null); };
+      startSnap(); renderList();
+    } else {
+      block.innerHTML='<div class="csm-locked">🔒 직원 권한 부여는 <b style="color:#dcc28f;">최고관리자</b>만 가능합니다.</div>';
+    }
+  }
+
+  /* dev-screen 진입 때마다 주입 (최고관리자 판별이 늦게 되는 경우 대비) */
+  var _rds=window.renderDevScreen;
+  window.renderDevScreen=function(){ try{ if(_rds) _rds.apply(this,arguments); }catch(e){} setTimeout(inject,40); };
+  inject(); setTimeout(inject,1000); setTimeout(inject,2500);
+  console.log('[앱권한] ✅ 최고관리자 직원 권한 부여 2d');
 })();
