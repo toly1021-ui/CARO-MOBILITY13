@@ -162,6 +162,7 @@
       +'<div class="mrm-field"><label>사용 연료</label><input class="mrm-in" id="mrmFuel" list="mrmFuelList" placeholder="예: 가솔린 / 전기 / 디젤"/>'
         +'<datalist id="mrmFuelList"><option value="가솔린"></option><option value="디젤"></option><option value="전기"></option><option value="LPG"></option><option value="하이브리드"></option></datalist></div>'
       +'<div class="mrm-field"><label>월 주행거리 (km)</label><input class="mrm-in" id="mrmMonthlyKm" inputmode="numeric" placeholder="예: 2000 (비우면 무제한)"/></div>'
+      +'<div class="mrm-field"><label>주행요금 (원/km) — 반납 시 주행거리 요금</label><input class="mrm-in" id="mrmKmRate" inputmode="numeric" placeholder="예: 245"/></div>'
       +'<div class="mrm-field"><label>기간별 월 렌트 요금 — 월 금액 / 할인 %</label><div class="mrm-plans">'
         +MR_PERIODS.map(function(p){ return '<div class="mrm-plan"><span class="pl">'+p+'개월</span>'
           +'<input class="mrm-in mrm-pp" data-p="'+p+'" inputmode="numeric" placeholder="월 금액(원)"/>'
@@ -211,6 +212,7 @@
     document.getElementById('mrmName').value=d.name||'';
     document.getElementById('mrmFuel').value=d.fuel||'';
     document.getElementById('mrmMonthlyKm').value=(d.monthlyKm!=null?d.monthlyKm:'');
+    document.getElementById('mrmKmRate').value=(d.kmRate!=null?d.kmRate:'');
     var plans=d.monthlyPlans||{};
     MR_PERIODS.forEach(function(p){
       var pl=plans[String(p)]||{};
@@ -232,6 +234,7 @@
       name:name,
       fuel:(document.getElementById('mrmFuel').value||'').trim(),
       monthlyKm:intv(document.getElementById('mrmMonthlyKm').value),
+      kmRate:intv(document.getElementById('mrmKmRate').value),
       monthlyPlans:gatherPlans(),
       options:document.getElementById('mrmOpts').value||'',
       img:EDIT.img||''
