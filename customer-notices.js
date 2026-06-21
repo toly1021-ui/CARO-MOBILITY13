@@ -13,7 +13,7 @@
   function ready(){ return window.FB_DB && window.FB_FN && typeof window.FB_FN.onSnapshot==='function'; }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function fmtDate(iso){ try{ var d=new Date(iso); if(isNaN(d.getTime())) return ''; var p=function(n){return n<10?'0'+n:n;}; return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate()); }catch(e){ return ''; } }
-  function tagOf(title){ if(/이벤트|할인|혜택|event|sale/i.test(title)) return {label:'이벤트',cls:'notice-tag new-tag'}; return {label:'공지',cls:'notice-tag'}; }
+  function tagOf(n){ var t=(n&&n.type)||''; if(t==='이벤트') return {label:'이벤트',cls:'notice-tag new-tag'}; if(t==='공지') return {label:'공지',cls:'notice-tag'}; if(/이벤트|할인|혜택|event|sale/i.test((n&&n.title)||'')) return {label:'이벤트',cls:'notice-tag new-tag'}; return {label:'공지',cls:'notice-tag'}; }
 
   function setSection(show){
     var nl=document.querySelector('.home-notice-list'); if(!nl) return;
@@ -30,7 +30,7 @@
     if(!notices.length){ nl.innerHTML=''; setSection(false); return; }   /* 공지 0개 → 숨김 */
     nl.innerHTML=notices.map(function(n){
       cache[n.id]=n;
-      var tg=tagOf(n.title);
+      var tg=tagOf(n);
       return '<div class="home-notice-item" onclick="window.openFsNotice(\''+n.id+'\')">'+
         '<span class="'+tg.cls+'">'+tg.label+'</span>'+
         '<span class="notice-text">'+esc(n.title)+'</span>'+
@@ -53,7 +53,7 @@
     var FN=window.FB_FN, db=window.FB_DB;
     try{
       FN.onSnapshot(FN.collection(db,'notices'), function(snap){
-        var arr=[]; snap.forEach(function(d){ var x=d.data()||{}; arr.push({id:d.id, title:x.title||'', body:x.body||'', createdAt:x.createdAt||''}); });
+        var arr=[]; snap.forEach(function(d){ var x=d.data()||{}; arr.push({id:d.id, title:x.title||'', body:x.body||'', type:x.type||'', createdAt:x.createdAt||''}); });
         arr.sort(function(a,b){ return (b.createdAt||'').localeCompare(a.createdAt||''); });
         render(arr);
       }, function(err){ console.warn('[공지] 고객 리스너 오류', (err&&(err.code||err.message))||err); });
