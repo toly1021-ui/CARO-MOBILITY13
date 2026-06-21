@@ -3009,9 +3009,7 @@
   };
 
   function jitter(id){
-    id = id||0;
-    var a=id*2.39996323, r=0.00018+((id*97)%7)*0.00005; // 약 20~55m
-    return { dlat:Math.sin(a)*r, dlng:Math.cos(a)*r*1.26 };
+    return { dlat:0, dlng:0 }; // 흩어짐 없음 — 거점 정중앙으로 모음
   }
   function nearestZone(car){
     var best=null,bd=Infinity;
@@ -3073,6 +3071,9 @@
     }catch(e){}
   }
   window.caroFitZones=fitZones;
+  window.CARO_ZONES=ZONES;
+  window.caroZoneOf=function(car){ if(!car||typeof car.lat!=='number') return null; return (car.region && ZONES[car.region]) ? car.region : nearestZone(car); };
+  window.caroSnapAll=snapAll;
 
   // 카카오 지오코딩(주소→좌표) — services 라이브러리 준비되면 1회 실행
   var geoDone=false, tries=0;
@@ -3104,4 +3105,119 @@
   }, 500);
 
   console.log('[거점] 차량 모으기 모듈 로드 (구월동/송도)');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 거점 와드 마커 (쏘카식 픽업포인트)
+   · 거점마다 와드 핀 1개만 표시 (흰색 위치핀 + 골드 C + 대수 배지)
+   · 와드 누르면 그 거점의 차량 전체가 반화면 시트로 표시 → 바로 예약
+   · 개별 차량 마커/흩어짐 없음
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var ZM=[]; // 거점 와드 오버레이
+
+  function isMaintCar(car){ try{ if(typeof window.isMaint==='function') return !!window.isMaint(car); }catch(e){} return !!car.devDisabled; }
+  function isReservedNow(car){
+    var now=new Date(), hit=false;
+    (window.myReservations||[]).forEach(function(r){
+      if(!r.car || r.car.id!==car.id || !r.start || !r.end) return;
+      if(!r.returned){ if(now < new Date(r.end.getTime()+600000)) hit=true; }
+      else if(r.returnedAt){ if(now < new Date(r.returnedAt.getTime()+600000)) hit=true; }
+    });
+    return hit;
+  }
+  function nm(car){ return window.getCarName?window.getCarName(car):car.name; }
+  function carsInZone(zone){ return (window.CARS_DATA||[]).filter(function(c){ return window.caroZoneOf && window.caroZoneOf(c)===zone; }); }
+
+  // ── 와드 SVG (흰색 위치핀 + 골드 C + 대수 배지) ──
+  function wardSVG(count){
+    return '<svg width="46" height="56" viewBox="0 0 46 56" xmlns="http://www.w3.org/2000/svg">'
+      +'<path d="M23 3 C13.6 3 6 10.6 6 20 C6 31 23 52 23 52 C23 52 40 31 40 20 C40 10.6 32.4 3 23 3 Z" fill="#ffffff" stroke="rgba(0,0,0,.10)" stroke-width="1"/>'
+      +'<text x="23" y="28" text-anchor="middle" font-size="22" font-weight="700" fill="#c8a96e" font-family="Georgia,\'Times New Roman\',serif">C</text>'
+      +'<circle cx="37" cy="11" r="9.5" fill="#18191c" stroke="#ffffff" stroke-width="1.6"/>'
+      +'<text x="37" y="14.6" text-anchor="middle" font-size="10.5" font-weight="700" fill="#ffffff" font-family="-apple-system,sans-serif">'+count+'</text>'
+      +'</svg>';
+  }
+
+  function clearZM(){ ZM.forEach(function(o){ try{o.setMap(null);}catch(e){} }); ZM=[]; }
+
+  function drawZoneWards(){
+    if(!window.caroMap || !window.caroMap.__kakao || !window.kakao || !window.CARO_ZONES) return;
+    clearZM();
+    Object.keys(window.CARO_ZONES).forEach(function(zone){
+      var cars=carsInZone(zone); if(!cars.length) return;
+      var Z=window.CARO_ZONES[zone];
+      var pos=new window.kakao.maps.LatLng(Z.lat, Z.lng);
+      var el=document.createElement('div');
+      el.style.cssText='cursor:pointer;filter:drop-shadow(0 4px 6px rgba(0,0,0,.32));transition:transform .12s;';
+      el.innerHTML=wardSVG(cars.length);
+      el.addEventListener('mousedown',function(){ el.style.transform='scale(.92)'; });
+      el.addEventListener('mouseup',function(){ el.style.transform=''; });
+      el.addEventListener('click',function(e){ e.stopPropagation(); openZoneSheet(zone); });
+      var ov=new window.kakao.maps.CustomOverlay({position:pos,content:el,yAnchor:1,xAnchor:0.5,clickable:true});
+      ov.setMap(window.caroMap); ZM.push(ov);
+    });
+  }
+
+  // ── 지도 마커 동작 교체: 개별차/ BL 마커 대신 거점 와드만 ──
+  window.updateMapMarkers=function(){
+    try{ if(window.caroSnapAll) window.caroSnapAll(); }catch(e){}
+    drawZoneWards();
+  };
+  window.updateMapMarkers.__caroZone=true; window.updateMapMarkers.__caroWard=true;
+  window.initCarBottomSheet=function(){ try{ if(window.updateCarSheetCount) window.updateCarSheetCount(); }catch(e){} };
+  window.initCarBottomSheet.__caroWard=true;
+
+  // ── 거점 차량 시트 ──
+  function ensureZoneSheet(){
+    var screen=document.getElementById('rental-screen'); if(!screen) return;
+    if(document.getElementById('caro-zone-sheet')) return;
+    var bd=document.createElement('div'); bd.className='caro-cat-backdrop'; bd.id='caro-zone-backdrop'; bd.onclick=closeZoneSheet; screen.appendChild(bd);
+    var sh=document.createElement('div'); sh.className='caro-cat-sheet'; sh.id='caro-zone-sheet';
+    sh.innerHTML='<div class="ccs-grip"></div>'
+      +'<div class="ccs-head"><span class="ccs-title" id="czTitle">거점 차량</span><button class="ccs-x" type="button">✕</button></div>'
+      +'<div class="ccs-list" id="czList"></div>';
+    screen.appendChild(sh);
+    sh.querySelector('.ccs-x').onclick=closeZoneSheet;
+  }
+  function carRow(car){
+    var maint=isMaintCar(car), reserved=isReservedNow(car);
+    var avail=car.status==='available' && !maint && !reserved;
+    var label=avail?'이용 가능':(maint?'점검중':'대여 중');
+    var price=(car.pricePerHour||0).toLocaleString();
+    return '<div class="ccs-car">'
+      +'<img class="ccs-thumb" src="'+car.img+'" alt=""/>'
+      +'<div class="ccs-info"><div class="ccs-name">'+nm(car)+'</div>'
+      +'<div class="ccs-meta"><span class="ccs-badge '+(avail?'on':'off')+'">'+label+'</span><span><strong>'+price+'원</strong>/h</span></div></div>'
+      +(avail?'<button class="ccs-rent" data-id="'+car.id+'">예약</button>':'<button class="ccs-rent" disabled>불가</button>')
+      +'</div>';
+  }
+  function openZoneSheet(zone){
+    ensureZoneSheet();
+    var cars=carsInZone(zone);
+    var t=document.getElementById('czTitle'); if(t) t.textContent=zone+' · '+cars.length+'대';
+    var box=document.getElementById('czList');
+    if(box){
+      box.innerHTML = cars.length ? cars.map(carRow).join('') : '<div class="ccs-empty">이 거점에 차량이 없어요.</div>';
+      box.querySelectorAll('.ccs-rent[data-id]').forEach(function(b){
+        b.onclick=function(){ var id=parseInt(b.getAttribute('data-id'),10); closeZoneSheet(); try{ if(window.selectCar) window.selectCar(id); }catch(e){} };
+      });
+    }
+    var bd=document.getElementById('caro-zone-backdrop'), sh=document.getElementById('caro-zone-sheet');
+    if(bd) bd.classList.add('open'); if(sh) sh.classList.add('open');
+  }
+  function closeZoneSheet(){
+    var bd=document.getElementById('caro-zone-backdrop'), sh=document.getElementById('caro-zone-sheet');
+    if(bd) bd.classList.remove('open'); if(sh) sh.classList.remove('open');
+  }
+  window.caroOpenZoneSheet=openZoneSheet;
+
+  // 예약 화면 진입 시 와드 보장
+  if(typeof window.goTo==='function' && !window.goTo.__caroWardWrapped){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='rental-screen'){ setTimeout(function(){ ensureZoneSheet(); if(window.updateMapMarkers) window.updateMapMarkers(); },120); setTimeout(drawZoneWards,520); } return r; };
+    window.goTo.__caroWardWrapped=true; window.goTo.__caroRentalWrapped=true; window.goTo.__caroCatSheetWrapped=true;
+  }
+  setTimeout(ensureZoneSheet, 900);
+  console.log('[거점] ✅ 와드 마커 + 거점 차량 시트 (개별 마커 제거)');
 })();
