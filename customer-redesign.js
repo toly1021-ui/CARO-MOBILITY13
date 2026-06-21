@@ -2775,7 +2775,7 @@
       var map=new kakao.maps.Map(el,{center:new kakao.maps.LatLng(37.4150,126.6820),level:7});
       map.__kakao=true;
       map.invalidateSize=function(){ try{ this.relayout(); }catch(e){} }; // Leaflet 호환 shim
-      try{ map.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.LEFT); }catch(e){}
+      // 줌 컨트롤 제거 — 핀치 줌만 사용 (모바일)
       window.caroMap=map; window.caroMapReady=true;
       kakao.maps.event.addListener(map,'idle',function(){
         try{ if(window.renderCars) window.renderCars(); if(window.updateCarSheetCount) window.updateCarSheetCount(); }catch(e){}
