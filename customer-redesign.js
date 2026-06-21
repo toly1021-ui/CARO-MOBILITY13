@@ -2609,3 +2609,101 @@
   }, true);
   console.log('[FAQ] ✅ 자주 묻는 질문 확장 ('+DATA.reduce(function(n,c){return n+c.items.length;},0)+'개 추가 · 검색 · 카테고리 · 상담 연결)');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 차량 예약 화면 — 지도 여백 제거 + 차종 필터(우측 상단)
+   · 지도(#caro-map)를 차량목록 바로 위까지 꽉 채워 빈 공간 제거
+   · 지도 우측 상단에 차종 칩(전체/경차/소형/중형/대형/SUV)
+   · renderCars 결과를 선택 차종으로 필터(이름 기반 분류)
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  window.caroCatFilter = window.caroCatFilter || '전체';
+  var CATS = ['전체','경차','소형','중형','대형','SUV'];
+
+  function classify(name){
+    var n = String(name||'');
+    if(/모닝|레이|스파크|캐스퍼/.test(n)) return '경차';
+    if(/코나|셀토스|투싼|스포티지|쏘렌토|싼타페|팰리세이드|티볼리|트랙스|트레일블레이저|QM6|니로|쏘울|베뉴|코란도|렉스턴|EV6|아이오닉\s*5|모하비|토레스/.test(n)) return 'SUV';
+    if(/카니발|스타리아|그랜저|K8|K9|K7|G80|G90|EQ900|제네시스|스팅어|SM7|체어맨|아슬란/.test(n)) return '대형';
+    if(/쏘나타|K5|말리부|SM6|아반떼|K3|아이오닉\s*6|i30|스텔라/.test(n)) return '중형';
+    if(/엑센트|프라이드|베르나|리오|클릭|모닝세단|레이밴/.test(n)) return '소형';
+    return '기타';
+  }
+
+  function applyCarFilter(){
+    var f = window.caroCatFilter || '전체';
+    var items = document.querySelectorAll('#car-list .car-item');
+    var shown = 0;
+    items.forEach(function(it){
+      var nmEl = it.querySelector('.car-name');
+      var nm = nmEl ? nmEl.textContent : '';
+      var c = classify(nm);
+      var show = (f === '전체') || (c === f);
+      it.style.display = show ? '' : 'none';
+      if(show) shown++;
+    });
+    var cnt = document.getElementById('car-sheet-count');
+    if(cnt && f !== '전체') cnt.setAttribute('data-filtered', f+' '+shown+'대');
+    // 필터 칩 활성 표시
+    document.querySelectorAll('.caro-catchip').forEach(function(ch){
+      ch.classList.toggle('on', ch.dataset.cat === f);
+    });
+    // 빈 상태 안내
+    var empty = document.getElementById('caro-cat-empty');
+    if(empty) empty.style.display = (shown===0 && f!=='전체') ? 'block' : 'none';
+  }
+  window.caroApplyCarFilter = applyCarFilter;
+
+  // renderCars 래핑 → 그릴 때마다 필터 재적용
+  if(typeof window.renderCars === 'function' && !window.renderCars.__caroWrapped){
+    var _rc = window.renderCars;
+    window.renderCars = function(){ var r; try{ r=_rc.apply(this,arguments);}catch(e){} try{ applyCarFilter(); }catch(e){} return r; };
+    window.renderCars.__caroWrapped = true;
+  }
+
+  // ── CSS: 지도 꽉 채우기 + 칩 ──
+  var st=document.createElement('style'); st.id='caro-rental-css';
+  st.textContent=
+    '#rental-screen{position:relative;}'
+   +'#caro-map{position:absolute!important;top:52px!important;left:0!important;right:0!important;bottom:0!important;height:auto!important;}'
+   +'.car-bottom-strip{z-index:20;}'
+   +'.caro-catbar{position:absolute;top:62px;right:10px;z-index:25;display:flex;flex-direction:column;gap:6px;align-items:flex-end;}'
+   +'.caro-catchip{background:rgba(255,255,255,.96);border:1px solid rgba(0,0,0,.12);color:#18191c;border-radius:18px;padding:6px 13px;font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15);white-space:nowrap;transition:all .15s;}'
+   +'.caro-catchip.on{background:#18191c;border-color:#18191c;color:#fff;}'
+   +'.caro-catchip:active{transform:scale(.96);}'
+   +'#caro-cat-empty{display:none;text-align:center;color:#888d98;font-size:.85rem;padding:18px 12px;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function mountFilter(){
+    var screen = document.getElementById('rental-screen');
+    if(!screen) return;
+    if(!document.querySelector('.caro-catbar')){
+      var bar=document.createElement('div'); bar.className='caro-catbar';
+      CATS.forEach(function(c){
+        var b=document.createElement('button'); b.className='caro-catchip'+(c===window.caroCatFilter?' on':''); b.dataset.cat=c; b.textContent=c;
+        b.onclick=function(){ window.caroCatFilter=c; applyCarFilter(); };
+        bar.appendChild(b);
+      });
+      screen.appendChild(bar);
+    }
+    // 빈 상태 안내(목록 안)
+    var list=document.getElementById('car-list');
+    if(list && !document.getElementById('caro-cat-empty')){
+      var e=document.createElement('div'); e.id='caro-cat-empty'; e.textContent='이 차종은 현재 표시할 차량이 없어요.';
+      list.parentNode.insertBefore(e, list.nextSibling);
+    }
+    // 지도 크기 갱신(여백 방지)
+    try{ if(window.caroMap && window.caroMap.invalidateSize){ setTimeout(function(){ window.caroMap.invalidateSize(); },120); setTimeout(function(){ window.caroMap.invalidateSize(); },450); } }catch(e){}
+    applyCarFilter();
+  }
+
+  // goTo 래핑 → 예약 화면 진입 시 필터 마운트 + 지도 갱신
+  if(typeof window.goTo === 'function' && !window.goTo.__caroRentalWrapped){
+    var _goTo = window.goTo;
+    window.goTo = function(id){ var r=_goTo.apply(this,arguments); if(id==='rental-screen'){ setTimeout(mountFilter,60); setTimeout(mountFilter,400); } return r; };
+    window.goTo.__caroRentalWrapped = true;
+  }
+  // 최초 1회(이미 예약 화면일 수도)
+  setTimeout(mountFilter, 800);
+  console.log('[예약화면] ✅ 지도 여백 제거 + 차종 필터(전체/경차/소형/중형/대형/SUV)');
+})();
