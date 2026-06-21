@@ -2625,8 +2625,8 @@
     if(/모닝|레이|스파크|캐스퍼/.test(n)) return '경차';
     if(/코나|셀토스|투싼|스포티지|쏘렌토|싼타페|팰리세이드|티볼리|트랙스|트레일블레이저|QM6|니로|쏘울|베뉴|코란도|렉스턴|EV6|아이오닉\s*5|모하비|토레스/.test(n)) return 'SUV';
     if(/카니발|스타리아|그랜저|K8|K9|K7|G80|G90|EQ900|제네시스|스팅어|SM7|체어맨|아슬란/.test(n)) return '대형';
-    if(/쏘나타|K5|말리부|SM6|아반떼|K3|아이오닉\s*6|i30|스텔라/.test(n)) return '중형';
-    if(/엑센트|프라이드|베르나|리오|클릭|모닝세단|레이밴/.test(n)) return '소형';
+    if(/쏘나타|K5|말리부|SM6|아이오닉\s*6|스텔라/.test(n)) return '중형';
+    if(/엑센트|프라이드|베르나|리오|클릭|아반떼|K3|i30|모닝세단|레이밴/.test(n)) return '소형';
     return '기타';
   }
 
@@ -2859,8 +2859,8 @@
     if(/모닝|레이|스파크|캐스퍼/.test(n)) return '경차';
     if(/코나|셀토스|투싼|스포티지|쏘렌토|싼타페|팰리세이드|티볼리|트랙스|트레일블레이저|QM6|니로|쏘울|베뉴|코란도|렉스턴|EV6|아이오닉\s*5|모하비|토레스/.test(n)) return 'SUV';
     if(/카니발|스타리아|그랜저|K8|K9|K7|G80|G90|EQ900|제네시스|스팅어|SM7|체어맨|아슬란/.test(n)) return '대형';
-    if(/쏘나타|K5|말리부|SM6|아반떼|K3|아이오닉\s*6|i30|스텔라/.test(n)) return '중형';
-    if(/엑센트|프라이드|베르나|리오|클릭/.test(n)) return '소형';
+    if(/쏘나타|K5|말리부|SM6|아이오닉\s*6|스텔라/.test(n)) return '중형';
+    if(/엑센트|프라이드|베르나|리오|클릭|아반떼|K3|i30/.test(n)) return '소형';
     return '기타';
   }
   function curF(){ return window.caroCatFilter||'전체'; }
@@ -2993,4 +2993,115 @@
   setTimeout(ensureCatUI, 900);
   window.caroOpenCatSheet=openSheet;
   console.log('[예약화면] ✅ 차종 버튼 + 반화면 시트(차종별 차량 배치)');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 차량 거점(존) 정리 — 구월동 / 송도 두 곳으로 모으기
+   · 구월동 차량(region '구월동') → 인천문화예술회관 공영주차장
+   · 송도 차량(region '송도')   → 송도1 공영주차장
+   · 카카오 지오코딩으로 주소→좌표 정확히 (실패 시 근사 좌표 폴백)
+   · 같은 거점 차량은 주차장 위에 ~25~50m 살짝 흩어 핀이 다 보이게
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var ZONES={
+    '구월동':{ addr:'인천 남동구 구월동 1408-2', lat:37.4476, lng:126.7007 },
+    '송도':  { addr:'인천 연수구 송도동 9-9',   lat:37.3846, lng:126.6500 }
+  };
+
+  function jitter(id){
+    id = id||0;
+    var a=id*2.39996323, r=0.00018+((id*97)%7)*0.00005; // 약 20~55m
+    return { dlat:Math.sin(a)*r, dlng:Math.cos(a)*r*1.26 };
+  }
+  function nearestZone(car){
+    var best=null,bd=Infinity;
+    Object.keys(ZONES).forEach(function(z){
+      var dx=car.lat-ZONES[z].lat, dy=car.lng-ZONES[z].lng, d=dx*dx+dy*dy;
+      if(d<bd){ bd=d; best=z; }
+    });
+    return best;
+  }
+  function snapCar(car){
+    if(!car || typeof car.lat!=='number' || typeof car.lng!=='number') return;
+    var z=(car.region && ZONES[car.region]) ? car.region : nearestZone(car);
+    if(!z) return;
+    var j=jitter(car.id||0);
+    car.lat=ZONES[z].lat + j.dlat;
+    car.lng=ZONES[z].lng + j.dlng;
+  }
+  function snapAll(){ try{ (window.CARS_DATA||[]).forEach(snapCar); }catch(e){} }
+  function snapBL(){ try{ (window.BL_CARS||[]).forEach(snapCar); }catch(e){} }
+
+  // 향후 차량 추가/이동도 거점에 모이도록 INCHEON_AREAS 갱신(있으면)
+  function applyToAreas(){
+    try{
+      if(!window.INCHEON_AREAS) return;
+      ['구월동','송도'].forEach(function(z){
+        if(window.INCHEON_AREAS[z]){
+          window.INCHEON_AREAS[z].lat=ZONES[z].lat;
+          window.INCHEON_AREAS[z].lng=ZONES[z].lng;
+          window.INCHEON_AREAS[z].spread=0.0004; // ~40m 만 흩어짐
+        }
+      });
+    }catch(e){}
+  }
+  applyToAreas();
+
+  // 지도 함수 래핑 → 항상 거점으로 스냅 후 동작
+  if(typeof window.updateMapMarkers==='function' && !window.updateMapMarkers.__caroZone){
+    var _um=window.updateMapMarkers;
+    window.updateMapMarkers=function(){ snapAll(); return _um.apply(this,arguments); };
+    window.updateMapMarkers.__caroZone=true;
+  }
+  if(typeof window.initCarBottomSheet==='function' && !window.initCarBottomSheet.__caroZone){
+    var _cb=window.initCarBottomSheet;
+    window.initCarBottomSheet=function(){ snapAll(); snapBL(); return _cb.apply(this,arguments); };
+    window.initCarBottomSheet.__caroZone=true;
+  }
+  if(typeof window.isCarInMapBounds==='function' && !window.isCarInMapBounds.__caroZone){
+    var _ib=window.isCarInMapBounds;
+    window.isCarInMapBounds=function(car){ snapCar(car); return _ib.apply(this,arguments); };
+    window.isCarInMapBounds.__caroZone=true;
+  }
+
+  function fitZones(){
+    var map=window.caroMap; if(!map || !map.__kakao || !window.kakao) return;
+    try{
+      var b=new window.kakao.maps.LatLngBounds();
+      Object.keys(ZONES).forEach(function(z){ b.extend(new window.kakao.maps.LatLng(ZONES[z].lat,ZONES[z].lng)); });
+      map.setBounds(b, 40, 40, 230, 40); // 하단 바텀시트 가림 고려해 아래 여백 크게
+    }catch(e){}
+  }
+  window.caroFitZones=fitZones;
+
+  // 카카오 지오코딩(주소→좌표) — services 라이브러리 준비되면 1회 실행
+  var geoDone=false, tries=0;
+  function geocodeZones(){
+    if(geoDone) return;
+    if(!(window.kakao && kakao.maps && kakao.maps.services)) return;
+    geoDone=true;
+    var g=new kakao.maps.services.Geocoder();
+    Object.keys(ZONES).forEach(function(z){
+      g.addressSearch(ZONES[z].addr, function(res,status){
+        try{
+          if(status===kakao.maps.services.Status.OK && res && res[0]){
+            ZONES[z].lat=parseFloat(res[0].y);
+            ZONES[z].lng=parseFloat(res[0].x);
+            applyToAreas();
+            if(window.updateMapMarkers) window.updateMapMarkers();
+            if(window.renderCars) window.renderCars();
+            fitZones();
+            console.log('[거점] '+z+' 좌표 확정:', ZONES[z].lat, ZONES[z].lng);
+          }
+        }catch(e){}
+      });
+    });
+  }
+  var poll=setInterval(function(){
+    tries++;
+    if(window.kakao && kakao.maps && kakao.maps.services){ geocodeZones(); fitZones(); clearInterval(poll); }
+    if(tries>40) clearInterval(poll);
+  }, 500);
+
+  console.log('[거점] 차량 모으기 모듈 로드 (구월동/송도)');
 })();
