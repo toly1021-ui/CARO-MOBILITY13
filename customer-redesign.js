@@ -2179,3 +2179,433 @@
   inject(); setTimeout(inject,1000); setTimeout(inject,2500);
   console.log('[앱권한] ✅ 최고관리자 직원 권한 부여 2d');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [완성도] 회사 정보(사업자 정보) — 마이페이지에 추가 (전자상거래법 표시 의무)
+   ※ 아래 BIZ 값을 실제 정보로 채우세요. 빈 값은 '준비 중'으로 표시됩니다.
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  /* ▼▼▼ 실제 회사 정보 입력 ▼▼▼ */
+  var BIZ={
+    name:'(주)카로 모빌리티',
+    ceo:'',            /* 대표자명 */
+    bizNo:'',          /* 사업자등록번호 (000-00-00000) */
+    mailOrderNo:'',    /* 통신판매업 신고번호 (제0000-지역-0000호) */
+    addr:'',           /* 사업장 주소 */
+    tel:'',            /* 고객센터 전화 */
+    hours:'평일 09:00~18:00 (주말·공휴일 휴무)',
+    email:'',          /* 고객센터 이메일 */
+    privacyOfficer:'', /* 개인정보 보호책임자 */
+    host:'Google Firebase'  /* 호스팅 제공 */
+  };
+  /* ▲▲▲ 여기까지 ▲▲▲ */
+
+  function val(x){ return (x && String(x).trim()) ? esc(x) : '<span style="color:#b6b9c0;">준비 중</span>'; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  var st=document.createElement('style');
+  st.textContent=
+    '#caro-biz-ov{position:fixed;inset:0;background:rgba(20,22,28,.5);z-index:99998;display:none;align-items:flex-end;justify-content:center;}'
+   +'#caro-biz-ov.show{display:flex;}'
+   +'#caro-biz-sheet{background:#fff;width:100%;max-width:480px;max-height:88vh;overflow:auto;border-radius:20px 20px 0 0;padding:0 0 28px;animation:caroBizUp .26s ease;}'
+   +'@keyframes caroBizUp{from{transform:translateY(100%);}to{transform:translateY(0);}}'
+   +'.caro-biz-hd{position:sticky;top:0;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid #f0f1f3;}'
+   +'.caro-biz-hd h3{margin:0;font-size:17px;color:#18191c;font-weight:700;}'
+   +'.caro-biz-x{background:none;border:none;font-size:20px;color:#9aa0aa;cursor:pointer;line-height:1;}'
+   +'.caro-biz-body{padding:6px 20px 0;}'
+   +'.caro-biz-row{display:flex;padding:13px 0;border-bottom:1px solid #f4f5f7;font-size:14px;}'
+   +'.caro-biz-row .k{flex:0 0 122px;color:#868b94;}'
+   +'.caro-biz-row .v{flex:1;color:#18191c;word-break:break-all;}'
+   +'.caro-biz-note{margin:16px 0 0;font-size:12px;color:#9aa0aa;line-height:1.7;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  var ov=document.createElement('div'); ov.id='caro-biz-ov';
+  ov.innerHTML=
+    '<div id="caro-biz-sheet">'
+    +'<div class="caro-biz-hd"><h3>회사 정보</h3><button class="caro-biz-x" id="caro-biz-x">✕</button></div>'
+    +'<div class="caro-biz-body">'
+      +'<div class="caro-biz-row"><span class="k">상호</span><span class="v">'+val(BIZ.name)+'</span></div>'
+      +'<div class="caro-biz-row"><span class="k">대표자</span><span class="v">'+val(BIZ.ceo)+'</span></div>'
+      +'<div class="caro-biz-row"><span class="k">사업자등록번호</span><span class="v">'+val(BIZ.bizNo)+'</span></div>'
+      +'<div class="caro-biz-row"><span class="k">통신판매업 신고</span><span class="v">'+val(BIZ.mailOrderNo)+'</span></div>'
+      +'<div class="caro-biz-row"><span class="k">사업장 주소</span><span class="v">'+val(BIZ.addr)+'</span></div>'
+      +'<div class="caro-biz-row"><span class="k">고객센터</span><span class="v">'+val(BIZ.tel)+(BIZ.hours?'<br><span style="color:#868b94;font-size:12.5px;">'+esc(BIZ.hours)+'</span>':'')+'</span></div>'
+      +'<div class="caro-biz-row"><span class="k">이메일</span><span class="v">'+val(BIZ.email)+'</span></div>'
+      +'<div class="caro-biz-row"><span class="k">개인정보 보호책임자</span><span class="v">'+val(BIZ.privacyOfficer)+'</span></div>'
+      +'<div class="caro-biz-row"><span class="k">호스팅 제공</span><span class="v">'+val(BIZ.host)+'</span></div>'
+      +'<p class="caro-biz-note">카로 모빌리티는 「여객자동차 운수사업법」에 따른 자동차대여사업자로서 차량 대여 서비스를 직접 제공합니다. 본 정보는 「전자상거래 등에서의 소비자보호에 관한 법률」에 따라 표시됩니다.</p>'
+      +'<p class="caro-biz-note">© 2026 CARO MOBILITY. All rights reserved.</p>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+  function close(){ ov.classList.remove('show'); }
+  function open(){ ov.classList.add('show'); }
+  ov.querySelector('#caro-biz-x').onclick=close;
+  ov.addEventListener('click',function(e){ if(e.target===ov) close(); });
+
+  function injectMenu(){
+    if(document.getElementById('caro-bizinfo-item')) return;
+    var items=document.querySelectorAll('#mypage-screen .mpn-item');
+    for(var i=0;i<items.length;i++){
+      if(/약관 및 정책/.test(items[i].textContent)){
+        var it=document.createElement('div'); it.className='mpn-item'; it.id='caro-bizinfo-item';
+        it.innerHTML='<span class="mpn-item-label">회사 정보</span><span class="mpn-item-arrow">›</span>';
+        it.onclick=open;
+        items[i].parentNode.insertBefore(it, items[i]);
+        return;
+      }
+    }
+  }
+  injectMenu(); setTimeout(injectMenu,1500); setTimeout(injectMenu,3000);
+  console.log('[완성도] ✅ 회사 정보(사업자) 페이지 추가');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [완성도] 완전면책 전면 제거 (데이터 + 고객센터 표기)
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  try{
+    if(Array.isArray(window.INSURANCE)){
+      window.INSURANCE = window.INSURANCE.filter(function(i){ return !/완전면책|premium/i.test((i&&(i.name||i.id))||''); });
+    }
+  }catch(e){}
+  function hideFullCoverage(){
+    try{
+      var lis=document.querySelectorAll('#cs-detail-screen li, #cs-screen li, .csd-info-box, li');
+      document.querySelectorAll('li,strong,p').forEach(function(el){
+        if(el.children.length===0 && /완전면책/.test(el.textContent)){
+          var li=el.closest('li'); if(li) li.style.display='none'; else el.style.display='none';
+        }
+      });
+    }catch(e){}
+  }
+  hideFullCoverage(); setTimeout(hideFullCoverage,1500); setTimeout(hideFullCoverage,3000);
+})();
+
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] CARO 상담봇 v2 — 100% 앱 내부(외부 AI/전송 없음)
+   · 카셰어링 필수 FAQ 전면 확장 / 기본 카로 톤(차콜) / 상담사 연결 상시
+   · 모든 상담을 support_chats 에 기록 (관리자 통계)
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  function now(){ return new Date().toISOString(); }
+
+  var CATS=[
+    {key:'use',    label:'🚗 대여·이용 방법'},
+    {key:'resv',   label:'📅 예약·변경·취소'},
+    {key:'ret',    label:'🔄 반납·연장'},
+    {key:'pay',    label:'💳 결제·요금'},
+    {key:'acc',    label:'🛡️ 보험·사고'},
+    {key:'car',    label:'🔧 차량 문제·긴급'},
+    {key:'member', label:'👤 회원·가입·인증'},
+    {key:'app',    label:'🐞 앱 오류·기타'}
+  ];
+  var FLOW={
+    use:{ a:'카로 이용 방법을 안내해 드릴게요. 무엇이 궁금하세요?', subs:[
+      {q:'처음 이용하는 방법',a:'① 회원가입 + 운전면허 등록 → ② 지도에서 가까운 카로존·차량 선택 → ③ 시간 선택 후 예약·결제 → ④ 차량 앞에서 앱으로 문 열기 → ⑤ 이용 후 지정 장소에 반납. 가입·면허 인증만 끝내면 바로 빌릴 수 있어요.'},
+      {q:'차량 찾기(카로존)',a:'홈 지도에 내 주변 카로존과 이용 가능한 차량이 표시돼요. 차량을 누르면 요금·옵션을 확인하고 예약할 수 있어요.'},
+      {q:'문 열기 / 잠그기',a:'예약한 차량 앞에서 앱의 차량 제어로 “열기/잠그기”를 누르세요. 네트워크가 약하면 1~2분 후 재시도하면 됩니다.'},
+      {q:'주행 전 사진 촬영',a:'이용 시작 후 10분 이내에 차량 외관 사진을 촬영해 주세요. 기존 파손을 기록해 두면 책임 분쟁을 막을 수 있어요.'},
+      {q:'월 렌트는 어떻게 하나요?',a:'장기 이용은 “월 렌트”에서 1·3·6·9·12개월 단위로 신청해요. 기간이 길수록 할인율이 커지고, 월 주행거리와 운전자 연령 조건이 적용돼요.'},
+      {q:'카로 더 블랙이 뭔가요?',a:'카로 더 블랙은 프리미엄 차량 + 전담 컨시어지 서비스예요. 일반 카로와 별도로 운영되며 홈의 더 블랙 메뉴에서 확인할 수 있어요.'}
+    ]},
+    resv:{ a:'예약·변경·취소 관련 안내예요.', subs:[
+      {q:'예약하는 방법',a:'차량 선택 → 대여 시작/종료 시간 선택 → 보험 선택 → 결제수단 확인 → 예약 완료. “지금”으로 두면 즉시 대여도 돼요.'},
+      {q:'예약 변경',a:'이용 시작 전이라면 예약 내역에서 시간·차량을 변경할 수 있어요.'},
+      {q:'예약 취소',a:'예약 내역에서 취소할 수 있어요. 취소 시점에 따라 수수료가 적용돼요(아래 “취소 수수료” 참고).'},
+      {q:'취소 수수료',a:'이용 시작 충분히 전 취소는 전액 환불, 임박한 취소는 일부 수수료가 부과돼요. 정확한 기준은 고객센터 “취소 수수료 안내”에 있어요.'},
+      {q:'즉시 대여',a:'지금 바로 이용하려면 차량 선택 후 시작 시간을 “지금”으로 두고 예약하면 돼요.'}
+    ]},
+    ret:{ a:'반납·연장 관련 안내예요.', subs:[
+      {q:'반납하는 방법',a:'지정 주차구역에 주차 → 앱 “반납하기” → 체크리스트(분실물·파손) 확인 → 정산(주행요금·하이패스·연장·지연)을 등록 카드로 결제 → 반납 완료.'},
+      {q:'반납 장소',a:'기본은 대여했던 카로존(지정 주차구역)이에요. 부득이하게 다른 곳에 주차하면 “다른 장소”를 선택해 위치 설명과 사진을 남겨 주세요.'},
+      {q:'시간 연장',a:'이용 중 “시간 연장”에서 일/시간/분 단위로 연장할 수 있어요. 다음 예약이 있으면 그 시각까지만 가능하고, 연장 요금은 즉시 결제돼요.'},
+      {q:'반납 지연되면?',a:'반납 예정 시간을 넘기면 10분당 패널티가 부과돼요. 늦어질 것 같으면 미리 “시간 연장”을 이용해 주세요.'},
+      {q:'분실물',a:'반납 시 두고 내린 물건이 없는지 체크해 주세요. 이미 반납했다면 차량명·시간과 함께 문의해 주세요.'}
+    ]},
+    pay:{ a:'결제·요금 관련 안내예요.', subs:[
+      {q:'요금이 어떻게 구성되나요?',a:'반납 정산 = 주행요금(주행거리×차량별 km요금, 무료주행 초과분) + 하이패스 통행료 + (지연 시)패널티. 예약 시 대여료·보험료는 따로 결제돼요.'},
+      {q:'카드 등록 / 변경',a:'계정관리 → 결제수단에서 카드를 등록·변경할 수 있어요. 반납 정산은 등록 카드로 자동 결제돼요.'},
+      {q:'결제가 안돼요',a:'카드 유효성·한도·잔액을 확인하고 카드를 다시 등록해 보세요. 계속되면 결제 시각과 차량명을 알려 주세요.'},
+      {q:'환불',a:'예약 취소 환불은 취소 시점 수수료 규정에 따라, 정산 오류 환불은 확인 후 영업일 기준으로 처리돼요.'},
+      {q:'요금이 이상해요',a:'이용내역에서 상세 정산을 확인해 주세요. 특정 건이 이상하면 차량명과 이용 시각을 알려 주시면 확인해 드릴게요.'},
+      {q:'영수증 / 세금계산서',a:'이용내역에서 결제 내역을 확인할 수 있어요. 세금계산서·현금영수증이 필요하면 사업자 정보와 함께 요청해 주세요.'}
+    ]},
+    acc:{ a:'사고가 나셨군요. 침착하게 대처해 주세요.<br><br>1) <b>안전 확보</b>(비상등·삼각대)<br>2) <b>부상자 있으면 119</b><br>3) <b>사진 촬영</b>(차량·번호판·현장)<br>4) <b>사고 접수</b><br><br>자기부담금은 가입한 면책 상품 기준으로 적용돼요. 아래에서 바로 접수하거나 항목을 선택해 주세요.',
+      action:{label:'🚨 사고 접수하기',go:'accident-screen'}, subs:[
+      {q:'면책 상품 종류',a:'일반면책(자기부담 30만원)과 기본면책(자기부담 70만원)이 있어요. 상품에 따라 사고 시 자기부담금이 달라져요.'},
+      {q:'자기부담금',a:'사고 시 가입한 면책 상품 기준으로 자기부담금이 적용돼요. 자세한 보상 범위는 사고 접수 후 안내해 드려요.'},
+      {q:'고장·긴급출동',a:'주행 중 고장이면 안전한 곳에 정차 후 차량명·위치를 알려 주세요. 긴급출동을 안내해 드릴게요.'}
+    ]},
+    car:{ a:'차량 이용 중 어떤 문제가 있으셨나요?', subs:[
+      {q:'시동이 안 걸려요',a:'브레이크를 끝까지 밟고 시동 버튼을 눌러 주세요. 전자식 키는 차 안에 있어야 해요. 계속 안 되면 차량명·위치를 알려 주세요.'},
+      {q:'문이 안 열려요 / 안 잠겨요',a:'앱 차량 제어에서 다시 시도하고, 네트워크가 약하면 1~2분 후 재시도하세요. 계속되면 차량명을 알려 주세요.'},
+      {q:'하이패스 문제',a:'통행료는 회사 카드로 먼저 결제된 뒤 반납 시 주행요금과 함께 정산돼요. 단말기 미인식 시 통행 영수증을 보관해 주세요.'},
+      {q:'연료 · 충전',a:'차량 내 비치된 주유/충전 카드를 사용하세요. 전기차는 충전 후 케이블을 정리해 주세요. 무료주행 초과분만 반납 시 정산돼요.'},
+      {q:'청결 · 파손 발견',a:'주행 시작 10분 이내에 사진을 촬영해 접수하면 이전 이용자 책임으로 확인돼요.'}
+    ]},
+    member:{ a:'회원·가입·인증 관련 안내예요.', subs:[
+      {q:'가입 방법',a:'이메일로 회원가입 → 운전면허 등록·인증 → 결제수단 등록이면 이용 준비 완료예요.'},
+      {q:'운전면허 인증',a:'본인 명의 운전면허를 등록하면 진위·자격이 자동 확인돼요.'},
+      {q:'이용 자격',a:'만 21세 이상 + 운전면허 취득 1년 이상 + 본인 명의 결제수단이 필요해요(여객자동차 운수사업법 기준).'},
+      {q:'비밀번호 재설정',a:'로그인 화면의 “아이디/비밀번호 찾기”에서 가입 이메일로 재설정할 수 있어요.'},
+      {q:'회원 탈퇴',a:'계정관리 → 회원 탈퇴에서 가능해요. 진행 중인 예약이 없어야 해요.'}
+    ]},
+    app:{ a:'앱 오류·기타 문의 안내예요.', subs:[
+      {q:'앱이 멈춰요 / 오류',a:'앱 완전 종료 후 재실행 → 네트워크 확인 → 최신 버전 확인 순으로 시도해 주세요. 계속되면 기기·화면명을 알려 주세요.'},
+      {q:'로그인이 안돼요',a:'이메일/비밀번호를 확인하고, 비밀번호는 “찾기”로 재설정할 수 있어요.'},
+      {q:'알림이 안 와요',a:'휴대폰 설정에서 카로 앱 알림 권한이 켜져 있는지 확인해 주세요.'},
+      {q:'위치 / 지도 문제',a:'위치 권한을 허용해 주세요. 실내 등 GPS가 약한 곳에서는 정확도가 떨어질 수 있어요.'},
+      {q:'기타 문의',a:'그 외 내용을 입력해 주시면 접수해 순차적으로 답변드릴게요.'}
+    ]}
+  };
+  function route(text){ var t=String(text||'');
+    if(/사고|충돌|박았|긁|접촉/.test(t)) return 'acc';
+    if(/시동|문|잠|하이패스|연료|충전|청결|파손|냄새|고장|긴급/.test(t)) return 'car';
+    if(/반납|연장|지연|분실/.test(t)) return 'ret';
+    if(/예약|취소|변경/.test(t)) return 'resv';
+    if(/결제|요금|환불|카드|영수증|청구|세금계산서/.test(t)) return 'pay';
+    if(/가입|면허|인증|자격|비밀번호|탈퇴|로그인/.test(t)) return 'member';
+    if(/오류|버그|멈|안돼|안 돼|에러|튕|하얘|안떠|알림|위치|지도/.test(t)) return 'app';
+    if(/이용|방법|문 열|카로존|월 렌트|더 블랙/.test(t)) return 'use';
+    return 'app';
+  }
+
+  var chatId=null, msgs=[], curCat=null;
+  function fbReady(){ return window.FB_DB && window.FB_FN && window.FB_FN.setDoc && window.FB_FN.doc; }
+  function meUid(){ try{ return (window.FB_AUTH&&FB_AUTH.currentUser&&FB_AUTH.currentUser.uid)||''; }catch(e){ return ''; } }
+  function meEmail(){ try{ return (window.FB_AUTH&&FB_AUTH.currentUser&&FB_AUTH.currentUser.email)||''; }catch(e){ return ''; } }
+  function logSave(resolved){
+    if(!fbReady()||!meUid()) return;
+    var FN=window.FB_FN, db=window.FB_DB;
+    try{
+      var isNew=!chatId;
+      if(isNew){ var ref=FN.doc(FN.collection(db,'support_chats')); chatId=ref.id; }
+      var data={ userId:meUid(), email:meEmail(), category:curCat||'',
+        categoryLabel:(CATS.filter(function(c){return c.key===curCat;})[0]||{}).label||'',
+        messages:msgs.slice(-40), resolved:(resolved==null?null:!!resolved), updatedAt:now() };
+      if(isNew) data.createdAt=now();
+      FN.setDoc(FN.doc(db,'support_chats',chatId), data, {merge:true}).catch(function(e){ console.warn('[상담] 기록 실패', e&&e.code); });
+    }catch(e){}
+  }
+
+  var st=document.createElement('style');
+  st.textContent=
+    '#caro-bot{position:fixed;inset:0;z-index:100050;background:#f5f6f8;display:none;flex-direction:column;max-width:480px;margin:0 auto;}'
+   +'#caro-bot.show{display:flex;}'
+   +'.cbot-hd{display:flex;align-items:center;gap:10px;padding:14px 14px;background:#18191c;color:#fff;flex-shrink:0;}'
+   +'.cbot-hd .ic{width:30px;height:30px;border-radius:9px;background:#2e3138;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;}'
+   +'.cbot-hd .t{flex:1;font-weight:700;font-size:15px;} .cbot-hd .t small{display:block;font-weight:400;font-size:11px;color:#aab0b8;}'
+   +'.cbot-agent{background:#2e3138;border:1px solid #4a4f57;color:#e7e9ec;border-radius:18px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap;}'
+   +'.cbot-x{background:none;border:none;color:#cfd3da;font-size:20px;cursor:pointer;padding:0 4px;}'
+   +'.cbot-body{flex:1;overflow-y:auto;padding:16px 14px 8px;}'
+   +'.cbot-msg{max-width:86%;padding:11px 14px;border-radius:15px;font-size:14px;line-height:1.6;margin-bottom:10px;word-break:break-word;}'
+   +'.cbot-bot{background:#fff;color:#18191c;border:1px solid #eceef1;border-top-left-radius:4px;}'
+   +'.cbot-me{background:#18191c;color:#fff;margin-left:auto;border-top-right-radius:4px;}'
+   +'.cbot-qr{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 14px;}'
+   +'.cbot-qbtn{background:#fff;border:1px solid #d4d6da;color:#18191c;border-radius:20px;padding:8px 14px;font-size:13px;cursor:pointer;font-family:inherit;}'
+   +'.cbot-qbtn:active{background:#f0f1f3;}'
+   +'.cbot-qbtn.go{background:#18191c;border-color:#18191c;color:#fff;font-weight:700;}'
+   +'.cbot-foot{flex-shrink:0;display:flex;gap:8px;padding:10px 12px;background:#fff;border-top:1px solid #eceef1;}'
+   +'.cbot-in{flex:1;border:1px solid #dfe1e5;border-radius:22px;padding:10px 15px;font-size:14px;outline:none;font-family:inherit;}'
+   +'.cbot-in:focus{border-color:#18191c;}'
+   +'.cbot-send{background:#18191c;color:#fff;border:none;border-radius:22px;padding:0 18px;font-size:14px;font-weight:700;cursor:pointer;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  var bot=document.createElement('div'); bot.id='caro-bot';
+  bot.innerHTML=
+    '<div class="cbot-hd"><span class="ic">C</span><span class="t">카로 상담<small>앱 내 자동 상담 · 보통 즉시 응답</small></span>'
+    +'<button class="cbot-agent" id="cbot-agent">🙋 상담사 연결</button>'
+    +'<button class="cbot-x" id="cbot-x">✕</button></div>'
+    +'<div class="cbot-body" id="cbot-body"></div>'
+    +'<div class="cbot-foot"><input class="cbot-in" id="cbot-in" placeholder="문의 내용을 입력하세요" autocomplete="off"/><button class="cbot-send" id="cbot-send">전송</button></div>';
+  document.body.appendChild(bot);
+
+  var body=bot.querySelector('#cbot-body');
+  function scrollDown(){ body.scrollTop=body.scrollHeight; }
+  function addBot(html){ var d=document.createElement('div'); d.className='cbot-msg cbot-bot'; d.innerHTML=html; body.appendChild(d); scrollDown(); msgs.push({role:'bot',text:d.textContent,at:now()}); }
+  function addMe(text){ var d=document.createElement('div'); d.className='cbot-msg cbot-me'; d.textContent=text; body.appendChild(d); scrollDown(); msgs.push({role:'user',text:text,at:now()}); }
+  function quick(btns){ var wrap=document.createElement('div'); wrap.className='cbot-qr';
+    btns.forEach(function(b){ var x=document.createElement('button'); x.className='cbot-qbtn'+(b.go?' go':''); x.textContent=b.label; x.onclick=function(){ wrap.remove(); b.onClick(); }; wrap.appendChild(x); });
+    body.appendChild(wrap); scrollDown(); }
+
+  function escalate(){
+    addBot('상담사에게 연결해 드릴게요. “간편 문의”로 내용을 남겨 주시면 순차적으로 직접 답변드려요. 접수 내역은 안전하게 기록됩니다.');
+    logSave(false);
+    quick([{label:'📝 간편 문의 접수', go:true, onClick:function(){ try{ close(); if(window.goTo) goTo('inquiry-screen'); }catch(e){} }},
+           {label:'카테고리 다시 보기', onClick:showCats}]);
+  }
+  function resolveButtons(){
+    quick([{label:'✅ 해결됐어요', onClick:function(){ addMe('해결됐어요'); addBot('도움이 되어 다행이에요! 또 궁금한 점 있으면 언제든 다시 찾아주세요. 🚗'); logSave(true); }},
+           {label:'🙋 상담사 연결', onClick:function(){ addMe('상담사 연결을 원해요'); escalate(); }}]);
+  }
+  function showCats(){ curCat=null;
+    addBot('어떤 도움이 필요하세요? 아래에서 골라 주시거나, 바로 입력해 주셔도 돼요.');
+    quick(CATS.map(function(c){ return {label:c.label, onClick:function(){ pickCat(c.key,c.label); }}; })); }
+  function renderCat(key){ var f=FLOW[key]; addBot(f.a); logSave(null);
+    if(f.action){ quick([{label:f.action.label, go:true, onClick:function(){ try{ close(); if(window.goTo) goTo(f.action.go);}catch(e){} }},{label:'다른 항목 보기',onClick:showCats}]); }
+    if(f.subs&&f.subs.length){ quick(f.subs.map(function(s){ return {label:s.q, onClick:function(){ addMe(s.q); addBot(s.a); logSave(null); resolveButtons(); }}; })); }
+    else if(!f.action){ resolveButtons(); } }
+  function pickCat(key,label){ curCat=key; addMe(label.replace(/^[^\s]+\s/,'')); renderCat(key); }
+
+  function handleInput(){ var inp=bot.querySelector('#cbot-in'); var t=(inp.value||'').trim(); if(!t) return; inp.value='';
+    addMe(t); curCat=route(t); renderCat(curCat); }
+
+  function open(){ bot.classList.add('show');
+    if(!body.childElementCount){ addBot('안녕하세요, <b>카로 상담</b>입니다 🚗<br>이용 중 궁금하거나 불편한 점을 도와드릴게요. 답이 부족하면 언제든 위의 <b>상담사 연결</b>을 눌러 주세요.'); showCats(); } }
+  function close(){ bot.classList.remove('show'); }
+  bot.querySelector('#cbot-x').onclick=close;
+  bot.querySelector('#cbot-agent').onclick=function(){ addMe('상담사 연결'); escalate(); };
+  bot.querySelector('#cbot-send').onclick=handleInput;
+  bot.querySelector('#cbot-in').addEventListener('keydown',function(e){ if(e.key==='Enter') handleInput(); });
+
+  function wireEntry(){
+    document.querySelectorAll('.cs-chat, #cs-screen button').forEach(function(b){
+      if(/채팅 상담|AI 상담/.test(b.textContent) && !b.dataset.caroBot){ b.dataset.caroBot='1'; b.removeAttribute('onclick'); b.textContent='💬 카로 상담'; b.onclick=open; }
+    });
+  }
+  wireEntry(); setTimeout(wireEntry,1500); setTimeout(wireEntry,3000);
+  window.caroOpenBot=open;
+  console.log('[상담] ✅ CARO 상담봇 v2 (앱 내부 전용 · FAQ 확장 · 상담사 연결 · 기록)');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] FAQ 대폭 확장 — 고객센터 '자주 묻는 질문' 탭
+   · 검색 + 카테고리 + 다수 Q&A + "답이 없으면 카로 상담" CTA
+   · 기존 csToggleFAQ / csd-faq 구조 그대로 사용 (기본 카로 톤)
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var DATA=[
+    {c:'회원·가입·인증', items:[
+      {q:`운전면허는 어떻게 등록·인증하나요?`, a:`가입 시 본인 명의 운전면허증을 등록하면 진위·운전자격이 자동으로 확인됩니다. 면허 정보가 바뀌면 계정관리에서 다시 등록해 주세요.`},
+      {q:`해외(외국) 운전면허로도 이용할 수 있나요?`, a:`국내에서 인정되는 유효한 운전면허가 필요합니다. 외국 면허만으로는 이용이 제한될 수 있으니, 이용 전 고객센터로 확인해 주세요.`},
+      {q:`비밀번호를 잊어버렸어요.`, a:`로그인 화면의 「아이디·비밀번호 찾기」에서 가입 이메일로 재설정할 수 있습니다.`},
+      {q:`회원 탈퇴는 어떻게 하나요?`, a:`계정관리 → 회원 탈퇴에서 가능합니다. 진행 중인 예약이나 미정산 금액이 없어야 탈퇴할 수 있습니다.`}
+    ]},
+    {c:'예약·이용', items:[
+      {q:`지금 바로 즉시 대여할 수 있나요?`, a:`네. 차량 선택 후 시작 시간을 「지금」으로 두면 즉시 대여됩니다. 가까운 카로존의 이용 가능 차량을 바로 빌릴 수 있어요.`},
+      {q:`예약을 여러 건 동시에 할 수 있나요?`, a:`이용 중 예약과 별개로 미래 예약을 잡을 수 있습니다. 다만 이용 시간이 서로 겹치는 예약은 불가합니다.`},
+      {q:`카로존(CARO ZONE)이 뭔가요?`, a:`카로 차량을 픽업·반납하는 지정 주차 거점입니다. 지도에서 내 주변 카로존과 이용 가능한 차량을 확인할 수 있어요.`},
+      {q:`예약한 차량을 못 찾겠어요.`, a:`예약 내역의 지도에서 차량 위치·주차 구역·차량 번호를 확인하세요. 그래도 못 찾으면 차량 번호와 함께 고객센터로 문의해 주세요.`}
+    ]},
+    {c:'대여 시작·차량 제어', items:[
+      {q:`차 문은 어떻게 열고 잠그나요?`, a:`차량 앞에서 앱의 차량 제어로 「열기/잠그기」를 누르면 됩니다. 네트워크가 약하면 1~2분 후 다시 시도해 주세요.`},
+      {q:`스마트키(앱 제어)가 작동하지 않아요.`, a:`앱에서 재시도 → 네트워크 확인 → 차량과 가까이에서 시도해 주세요. 계속되면 차량 번호와 함께 문의해 주세요.`},
+      {q:`주행 시작 전에 꼭 해야 할 게 있나요?`, a:`이용 시작 후 10분 이내에 차량 외관을 촬영해 두세요. 기존 흠집·오염이 기록되어 책임 분쟁을 예방할 수 있습니다.`},
+      {q:`차에 흠집·오염이 있어요.`, a:`주행 시작 10분 이내에 사진을 촬영해 접수하면 이전 이용자 책임으로 확인됩니다. 출발 전에 꼭 확인해 주세요.`}
+    ]},
+    {c:'운행 중·차량 문제', items:[
+      {q:`시동이 걸리지 않아요.`, a:`브레이크를 끝까지 밟고 시동 버튼을 눌러 주세요. 전자식 키는 차 안에 있어야 합니다. 그래도 안 되면 차량 번호·위치와 함께 문의해 주세요.`},
+      {q:`하이패스는 어떻게 처리되나요?`, a:`통행료는 회사 카드로 먼저 결제된 뒤 반납 정산 시 합산 청구됩니다. 단말기 미인식 시 통행 영수증을 보관해 주세요.`},
+      {q:`주유·전기차 충전은 어떻게 하나요?`, a:`차량에 비치된 주유·충전 카드를 사용하세요. 전기차는 충전 후 케이블을 정리해 주세요. 무료 주행거리 초과분만 정산됩니다.`},
+      {q:`주행 중 고장이 났어요. 긴급출동은요?`, a:`안전한 곳에 정차한 뒤 차량 번호·위치와 증상을 알려 주세요. 긴급출동(견인 등)을 안내해 드립니다.`}
+    ]},
+    {c:'반납·연장', items:[
+      {q:`반납은 어디에 어떻게 하나요?`, a:`지정 카로존에 주차 → 앱 「반납하기」 → 분실물·파손 체크 → 정산 결제 → 반납 완료입니다.`},
+      {q:`대여했던 곳이 아닌 다른 곳에 반납해도 되나요?`, a:`기본은 대여했던 카로존입니다. 부득이하면 「다른 장소」를 선택해 위치 설명과 사진을 남겨 주세요. 별도 비용이 발생할 수 있습니다.`},
+      {q:`이용 시간을 연장하고 싶어요.`, a:`이용 중 「시간 연장」에서 연장할 수 있고, 연장 요금은 즉시 결제됩니다. 반납이 늦어질 것 같으면 미리 연장해 주세요.`},
+      {q:`다음 예약이 있으면 연장이 안 되나요?`, a:`바로 다음 예약이 있는 차량은 그 시작 시각까지만 연장됩니다. 더 필요하면 반납 후 다른 차량을 이용해 주세요.`}
+    ]},
+    {c:'결제·요금', items:[
+      {q:`요금은 어떻게 구성되나요?`, a:`예약 시 대여료·보험료가 결제되고, 반납 시 주행요금 + 하이패스 통행료 + (지연 시)패널티가 등록 카드로 정산됩니다.`},
+      {q:`주행요금은 어떻게 계산되나요?`, a:`주행거리 중 무료 주행거리를 초과한 부분에 차량별 km당 요금을 곱해 계산됩니다. 차량마다 km요금과 무료거리가 다를 수 있어요.`},
+      {q:`결제 카드는 어떻게 등록·변경하나요?`, a:`계정관리 → 결제수단에서 등록·변경할 수 있습니다. 반납 정산은 등록된 카드로 자동 결제됩니다.`},
+      {q:`결제가 실패했어요.`, a:`카드 유효기간·한도·잔액을 확인하고 다시 등록해 주세요. 계속되면 결제 시각과 차량 번호를 알려 주세요.`},
+      {q:`영수증·세금계산서를 받고 싶어요.`, a:`이용내역에서 결제 내역을 확인할 수 있습니다. 세금계산서·현금영수증은 사업자 정보와 함께 요청해 주세요.`}
+    ]},
+    {c:'보험·사고', items:[
+      {q:`면책 상품(보험)은 어떤 게 있나요?`, a:`일반면책(자기부담 30만원)과 기본면책(자기부담 70만원)이 있습니다. 예약 시 선택한 상품 기준으로 사고 시 자기부담금이 적용됩니다.`},
+      {q:`자기부담금이 뭔가요?`, a:`사고 시 가입한 면책 상품 한도 내에서 이용자가 부담하는 금액입니다. 면책 미가입이나 이용 수칙 위반 시 전액을 부담할 수 있습니다.`},
+      {q:`휴차보상료가 뭔가요?`, a:`사고·고장으로 차량을 수리하는 동안 운행하지 못한 기간에 대해 청구되는 영업 손실 보상입니다.`}
+    ]},
+    {c:'월 렌트', items:[
+      {q:`월 렌트는 어떻게 신청하나요?`, a:`「월 렌트」 메뉴에서 차량과 기간(1·3·6·9·12개월)을 선택해 신청합니다.`},
+      {q:`월 렌트 요금과 주행거리는 어떻게 되나요?`, a:`기간이 길수록 할인율이 커지며, 월 주행거리 한도와 운전자 연령 조건이 적용됩니다. 한도 초과 주행은 별도 정산됩니다.`}
+    ]},
+    {c:'카로 더 블랙', items:[
+      {q:`카로 더 블랙은 무엇인가요?`, a:`프리미엄 차량과 전담 컨시어지를 제공하는 카로의 상위 서비스입니다. 홈의 더 블랙 메뉴에서 확인할 수 있어요.`},
+      {q:`더 블랙은 어떻게 이용하나요?`, a:`일반 카로와 별도로 운영되며, 더 블랙 전용 차량을 예약해 이용합니다.`}
+    ]},
+    {c:'앱·기타', items:[
+      {q:`앱이 자꾸 오류가 나요.`, a:`앱 완전 종료 후 재실행 → 네트워크 확인 → 최신 버전 업데이트 순으로 시도해 주세요. 계속되면 기기와 증상을 알려 주세요.`},
+      {q:`로그인이 안 돼요.`, a:`이메일·비밀번호를 확인하고, 비밀번호는 「찾기」로 재설정해 주세요.`},
+      {q:`위치(지도)가 정확하지 않아요.`, a:`휴대폰 위치 권한을 허용해 주세요. 실내·지하 등에서는 GPS 정확도가 떨어질 수 있습니다.`},
+      {q:`알림이 오지 않아요.`, a:`휴대폰 설정에서 카로 앱 알림 권한이 켜져 있는지 확인해 주세요.`}
+    ]}
+  ];
+
+  var st=document.createElement('style');
+  st.textContent=
+    '.caro-faq-search{display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:11px 14px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:var(--r,12px);}'
+   +'.caro-faq-search input{flex:1;border:none;background:none;outline:none;font-family:var(--font);font-size:.85rem;color:var(--text-1);}'
+   +'.caro-faq-search .ic{color:var(--text-m);font-size:.9rem;}'
+   +'.caro-faq-cat{margin:18px 0 8px;font-family:var(--font);font-size:.72rem;font-weight:700;letter-spacing:.1em;color:var(--text-m);display:flex;align-items:center;gap:8px;}'
+   +'.caro-faq-cat::before{content:"";width:14px;height:2px;background:var(--accent);border-radius:2px;}'
+   +'.caro-faq-none{display:none;text-align:center;color:var(--text-m);font-size:.82rem;padding:24px 0;}'
+   +'.caro-faq-cta{margin:22px 0 8px;padding:16px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:var(--r,12px);text-align:center;}'
+   +'.caro-faq-cta p{margin:0 0 12px;font-size:.84rem;color:var(--text-2);line-height:1.6;}'
+   +'.caro-faq-cta button{width:100%;padding:13px;background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r,12px);font-family:var(--font);font-weight:700;font-size:.88rem;cursor:pointer;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function itemHTML(q,a){
+    return '<div class="csd-faq-item">'
+      +'<button class="csd-faq-q" onclick="csToggleFAQ(this)"><span class="csd-q-mark">Q</span><span class="csd-faq-text">'+q+'</span><span class="csd-faq-arr">∨</span></button>'
+      +'<div class="csd-faq-a"><div class="csd-faq-a-inner">'+a+'</div></div></div>';
+  }
+  function buildFaq(){
+    var pane=document.getElementById('cs-pane-faq');
+    if(!pane || pane.dataset.caroFaq) return;
+    pane.dataset.caroFaq='1';
+
+    var firstExisting=pane.firstElementChild;
+    // 기존 7개 항목 위에 "자주 찾는 질문" 헤더
+    var head0=document.createElement('div'); head0.className='caro-faq-cat'; head0.textContent='자주 찾는 질문';
+    pane.insertBefore(head0, firstExisting);
+    // 검색창 (맨 위)
+    var search=document.createElement('div'); search.className='caro-faq-search';
+    search.innerHTML='<span class="ic">🔍</span><input type="text" placeholder="궁금한 내용을 검색하세요 (예: 반납, 사고, 요금)"/>';
+    pane.insertBefore(search, head0);
+
+    // 카테고리별 항목 추가
+    var frag=document.createElement('div');
+    DATA.forEach(function(cat){
+      var h='<div class="caro-faq-cat">'+cat.c+'</div>';
+      cat.items.forEach(function(it){ h+=itemHTML(it.q,it.a); });
+      frag.insertAdjacentHTML('beforeend', h);
+    });
+    // CTA
+    frag.insertAdjacentHTML('beforeend',
+      '<div class="caro-faq-none">검색 결과가 없어요. 아래 「카로 상담」으로 물어보세요.</div>'
+      +'<div class="caro-faq-cta"><p>원하는 답을 찾지 못하셨나요?<br>카로 상담으로 바로 물어보거나 상담사에게 연결해 드려요.</p>'
+      +'<button id="caro-faq-ask">💬 카로 상담 열기</button></div>');
+    while(frag.firstChild){ pane.appendChild(frag.firstChild); }
+
+    var noneEl=pane.querySelector('.caro-faq-none');
+    var inp=search.querySelector('input');
+    inp.addEventListener('input', function(){
+      var q=(this.value||'').trim().toLowerCase(); var anyVisible=false;
+      pane.querySelectorAll('.csd-faq-item').forEach(function(it){
+        var show=(!q || it.textContent.toLowerCase().indexOf(q)>=0);
+        it.style.display=show?'':'none'; if(show) anyVisible=true;
+      });
+      pane.querySelectorAll('.caro-faq-cat').forEach(function(hd){
+        var any=false,n=hd.nextElementSibling;
+        while(n && !n.classList.contains('caro-faq-cat') && !n.classList.contains('caro-faq-none')){
+          if(n.classList.contains('csd-faq-item') && n.style.display!=='none'){ any=true; break; }
+          n=n.nextElementSibling;
+        }
+        hd.style.display=any?'':'none';
+      });
+      if(noneEl) noneEl.style.display=(q && !anyVisible)?'block':'none';
+    });
+
+    var askBtn=pane.querySelector('#caro-faq-ask');
+    if(askBtn) askBtn.onclick=function(){ try{ if(window.caroOpenBot) window.caroOpenBot(); else if(window.goTo) goTo('chat-screen'); }catch(e){} };
+  }
+  buildFaq(); setTimeout(buildFaq,1200); setTimeout(buildFaq,2500);
+  document.addEventListener('click', function(e){
+    var t=e.target.closest && e.target.closest('[onclick*="csSwitchTab"]');
+    if(t) setTimeout(buildFaq,60);
+  }, true);
+  console.log('[FAQ] ✅ 자주 묻는 질문 확장 ('+DATA.reduce(function(n,c){return n+c.items.length;},0)+'개 추가 · 검색 · 카테고리 · 상담 연결)');
+})();
