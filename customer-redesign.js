@@ -1802,3 +1802,73 @@
    +'#notice-modal .modal-close{position:absolute;right:12px;top:50%;transform:translateY(-50%);}';
   (document.head||document.documentElement).appendChild(s);
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [2a] 직원 권한 연동 — admin_accounts 권한 읽기 + 관리자 모드 진입 + 동기화 활성화
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var perms=null, isStaff=false;
+  var SUPER_EMAIL='caro.mobility.official@gmail.com';
+
+  function isSuper(){ try{ return window.userInfo && userInfo.id==='CAROMOBILITY'; }catch(e){ return false; } }
+
+  /* 권한 체크 API: 최고관리자=전부, 직원=부여받은 것만 */
+  window.caroCan=function(p){ if(isSuper()) return true; return !!(isStaff && perms && perms[p]); };
+  window.caroIsAdmin=function(){ return isSuper() || isStaff; };
+  window.caroMyPerms=function(){ return isSuper()? {cars:true,pricing:true,notices:true,resv:true} : (perms||{}); };
+
+  /* ★ isDevUser 확장 — 직원도 포함 → 차량 저장/삭제/상태 동기화가 직원에게도 동작
+     (실제 쓰기 허용 여부는 Firestore 규칙 can(...) 이 최종 판단) */
+  window.isDevUser=function(){ return isSuper() || isStaff; };
+
+  function loadPerms(email){
+    if(!email || !window.FB_DB || !window.FB_FN || !window.FB_FN.getDoc){ perms=null; isStaff=false; refreshEntry(); return; }
+    var FN=window.FB_FN, db=window.FB_DB;
+    try{
+      FN.getDoc(FN.doc(db,'admin_accounts',String(email).toLowerCase())).then(function(snap){
+        var ex = snap && (typeof snap.exists==='function' ? snap.exists() : snap.exists);
+        if(ex){
+          var d=snap.data()||{};
+          var pm=d.perms||{};
+          var hasAny=['cars','pricing','notices','resv'].some(function(k){ return pm[k]; });
+          if(d.active!==false && hasAny){ perms=pm; isStaff=true; }
+          else { perms=null; isStaff=false; }
+        } else { perms=null; isStaff=false; }
+        refreshEntry();
+      }).catch(function(e){ console.warn('[권한] 로드 실패', e&&e.code); perms=null; isStaff=false; refreshEntry(); });
+    }catch(e){ perms=null; isStaff=false; refreshEntry(); }
+  }
+
+  function watchAuth(tries){
+    tries=tries||0;
+    if(window.FB_AUTH && window.FB_FN && window.FB_FN.onAuthStateChanged){
+      window.FB_FN.onAuthStateChanged(window.FB_AUTH, function(u){
+        if(u && u.email){
+          if(String(u.email).toLowerCase()===SUPER_EMAIL){ perms=null; isStaff=false; refreshEntry(); }
+          else loadPerms(u.email);
+        } else { perms=null; isStaff=false; refreshEntry(); }
+      });
+    } else if(tries<40){ setTimeout(function(){ watchAuth(tries+1); },400); }
+  }
+
+  /* 햄버거 메뉴에 '관리자 모드' 항목 (직원/관리자만) */
+  function refreshEntry(){
+    var logout=document.querySelector('.hmenu-logout');
+    var existing=document.getElementById('caro-admin-entry');
+    var divider=document.getElementById('caro-admin-entry-div');
+    if(!window.caroIsAdmin()){ if(existing) existing.remove(); if(divider) divider.remove(); return; }
+    if(existing) return;
+    if(!logout || !logout.parentNode) return;
+    var dv=document.createElement('div'); dv.className='hmenu-divider'; dv.id='caro-admin-entry-div';
+    var b=document.createElement('button');
+    b.id='caro-admin-entry'; b.className='hmenu-item'; b.type='button';
+    b.innerHTML='<span class="hmenu-item-icon">🛠️</span><span class="hmenu-item-label">관리자 모드</span><span class="hmenu-item-arrow">›</span>';
+    b.onclick=function(){ try{ if(window.closeHomeMenu) closeHomeMenu(); }catch(e){} try{ if(window.goTo) goTo('dev-screen'); }catch(e){} };
+    logout.parentNode.insertBefore(dv, logout);
+    logout.parentNode.insertBefore(b, logout);
+  }
+
+  watchAuth();
+  setTimeout(refreshEntry, 1200);
+  console.log('[권한] ✅ 직원 권한 연동 2a (admin_accounts 읽기 + 관리자 진입 + 동기화 확장)');
+})();
