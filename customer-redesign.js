@@ -1957,3 +1957,33 @@
   };
   console.log('[관리자모드] ✅ 진입 전환화면 CARO ADMIN(골드)');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [2c-3] 앱 관리자 모드 정리 — 데모 "권한 부여" 비활성 + 안내, 인라인 청록 글씨 골드화
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  /* 인라인 rgba(91,200,255) 글씨도 골드로 */
+  var s=document.createElement('style');
+  s.textContent='#dev-screen [style*="91,200,255"]{color:#dcc28f !important;}';
+  (document.head||document.documentElement).appendChild(s);
+
+  /* 데모 권한부여 버튼 무력화 → 대시보드로 안내 */
+  window.devGrantAccess=function(){
+    try{ if(window.showToast) showToast('직원 권한은 관제 대시보드 → 설정 → 관리자 계정에서 부여하세요.'); }catch(e){}
+  };
+
+  /* 데모 입력행을 안내문으로 교체 */
+  function fixGrantRow(){
+    var inp=document.getElementById('dev-new-dev-id'); if(!inp) return;
+    var row=inp.closest('.dev-row'); if(!row || row.dataset.caroFixed) return;
+    row.dataset.caroFixed='1';
+    row.style.display='block';
+    row.innerHTML='<div style="font-size:.78rem;color:#9aa0aa;line-height:1.55;">'
+      +'직원 권한 부여·수정은 <b style="color:#dcc28f;">관제 대시보드 → 설정 → 관리자 계정 → + 직원 계정</b>에서 하세요.'
+      +'<br>여기 데모 버튼은 사용하지 않습니다.</div>';
+  }
+  fixGrantRow();
+  setTimeout(fixGrantRow, 1200);
+  setTimeout(fixGrantRow, 2500);
+  console.log('[관리자모드] ✅ 데모 권한버튼 정리 + 청록 글씨 골드화');
+})();
