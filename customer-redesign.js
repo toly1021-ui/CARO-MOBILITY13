@@ -3352,3 +3352,37 @@
   setTimeout(ensureZoneSheet, 900);
   console.log('[거점] ✅ 와드 마커 + 거점 차량 시트 (개별 마커 제거)');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 회원가입 비밀번호 규칙 강화 (대문자 포함 명시)
+   · 안내 문구: 영문+숫자+특수문자+대문자 8~20자
+   · 검증: 대문자 + 소문자 + 숫자 + 특수문자 + 8~20자 모두 필수
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  // 안내 문구 갱신
+  function setPwHint(){
+    var el=document.getElementById('su-pw');
+    if(el) el.placeholder='영문+숫자+특수문자+대문자 8~20자';
+  }
+  setPwHint(); setTimeout(setPwHint,500); setTimeout(setPwHint,1500); setTimeout(setPwHint,3000);
+
+  // 검증 강화 (validateInfo 교체)
+  window.validateInfo=function(){
+    function gv(id){ var e=document.getElementById(id); return e?(e.value||''):''; }
+    function toast(m){ try{ if(window.showToast) showToast(m); }catch(e){} }
+    var id=gv('su-email').toLowerCase(), pw=gv('su-pw'), pw2=gv('su-pw2');
+    if(!id){ toast('이메일을 입력해 주세요.'); return false; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id)){ toast('올바른 이메일 형식으로 입력해 주세요.'); return false; }
+    if(!pw){ toast('비밀번호를 입력해 주세요.'); return false; }
+    if(pw.length<8 || pw.length>20){ toast('비밀번호는 8~20자로 입력해 주세요.'); return false; }
+    if(!/[A-Z]/.test(pw)){ toast('비밀번호에 영문 대문자를 포함해 주세요.'); return false; }
+    if(!/[a-z]/.test(pw)){ toast('비밀번호에 영문 소문자를 포함해 주세요.'); return false; }
+    if(!/[0-9]/.test(pw)){ toast('비밀번호에 숫자를 포함해 주세요.'); return false; }
+    if(!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(pw)){ toast('비밀번호에 특수문자를 포함해 주세요.'); return false; }
+    if(pw!==pw2){ toast('비밀번호가 일치하지 않습니다.'); return false; }
+    var hint=document.getElementById('id-hint');
+    if(!hint || hint.style.color!=='rgb(29, 122, 58)'){ toast('이메일 중복 확인을 먼저 해 주세요.'); return false; }
+    return true;
+  };
+  console.log('[가입] ✅ 비밀번호 규칙 강화: 대문자+소문자+숫자+특수문자+8~20자');
+})();
