@@ -118,19 +118,28 @@
   }
   window.renderSupportStats=render;
 
-  function start(tries){
-    tries=tries||0;
-    if(!ready()){ if(tries>60) return; return void setTimeout(function(){start(tries+1);},500); }
+  var subscribed=false;
+  function subscribe(){
+    if(subscribed) return; subscribed=true;
     var db=window.FB_DB, FN=window.FB_FN;
     try{
       FN.onSnapshot(FN.collection(db,'support_chats'), function(snap){
         cache=[]; snap.forEach(function(d){ var o=d.data()||{}; o._id=d.id; cache.push(o); });
         render();
-      }, function(e){ console.warn('[상담통계] support_chats 구독 실패', e&&e.code);
+      }, function(e){ console.warn('[상담통계] support_chats 구독 실패', e&&e.code); subscribed=false;
         var root=document.getElementById('ssRoot');
         if(root && !cache.length) root.innerHTML='<div class="card"><div class="ss-empty"><div class="ic">🔒</div>상담 기록을 불러올 수 없습니다.<br><span style="font-size:12px;color:var(--muted2)">Firestore 규칙(support_chats)과 로그인 계정을 확인해 주세요.</span></div></div>';
       });
-    }catch(e){ console.warn('[상담통계] 오류', e); }
+    }catch(e){ console.warn('[상담통계] 오류', e); subscribed=false; }
+  }
+
+  function start(tries){
+    tries=tries||0;
+    // FB 준비 + 인증(관리자 로그인) 완료까지 대기 — 로그인 전 구독 시 권한거부
+    if(!ready() || !window.FB_AUTH || !window.FB_FN.onAuthStateChanged){ if(tries>120) return; return void setTimeout(function(){start(tries+1);},500); }
+    var A=window.FB_AUTH, FN=window.FB_FN;
+    FN.onAuthStateChanged(A, function(u){ if(u) subscribe(); });
+    if(A.currentUser) subscribe();
   }
   start();
   // 탭 열릴 때 재렌더
