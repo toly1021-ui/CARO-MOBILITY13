@@ -3066,15 +3066,14 @@
     });
   }
   function carRow(car){
-    var maint=isMaintCar(car), reserved=isReservedNow(car);
-    var avail=car.status==='available' && !maint && !reserved;
-    var label=avail?'이용 가능':(maint?'점검중':(reserved?'대여 중':'대여 중'));
+    var s=window.caroCarState?window.caroCarState(car):{ok:car.status==='available',label:car.status==='available'?'이용 가능':'대여중',cls:'rented'};
     var price=(car.pricePerHour||0).toLocaleString();
-    return '<div class="ccs-car">'
+    var btn=s.ok?'<button class="ccs-rent" data-id="'+car.id+'">예약</button>':'<button class="ccs-rent" disabled>'+(s.cls==='maint'?'점검중':'대여중')+'</button>';
+    return '<div class="ccs-car'+(s.ok?'':' busy')+'">'
       +'<img class="ccs-thumb" src="'+car.img+'" alt=""/>'
       +'<div class="ccs-info"><div class="ccs-name">'+nm(car)+'</div>'
-      +'<div class="ccs-meta"><span class="ccs-badge '+(avail?'on':'off')+'">'+label+'</span><span><strong>'+price+'원</strong>/h</span></div></div>'
-      +(avail?'<button class="ccs-rent" data-id="'+car.id+'">예약</button>':'<button class="ccs-rent" disabled>불가</button>')
+      +'<div class="ccs-meta"><span class="ccs-badge '+(s.ok?'on':s.cls)+'">'+s.label+'</span><span><strong>'+price+'원</strong>/h</span></div></div>'
+      +btn
       +'</div>';
   }
   function renderList(){
@@ -3312,19 +3311,19 @@
     sh.querySelector('.ccs-x').onclick=closeZoneSheet;
   }
   function carRow(car){
-    var maint=isMaintCar(car), reserved=isReservedNow(car);
-    var avail=car.status==='available' && !maint && !reserved;
-    var label=avail?'이용 가능':(maint?'점검중':'대여 중');
+    var s=window.caroCarState?window.caroCarState(car):{ok:car.status==='available',label:car.status==='available'?'이용 가능':'대여중',cls:'rented'};
     var price=(car.pricePerHour||0).toLocaleString();
-    return '<div class="ccs-car">'
+    var btn=s.ok?'<button class="ccs-rent" data-id="'+car.id+'">예약</button>':'<button class="ccs-rent" disabled>'+(s.cls==='maint'?'점검중':'대여중')+'</button>';
+    return '<div class="ccs-car'+(s.ok?'':' busy')+'">'
       +'<img class="ccs-thumb" src="'+car.img+'" alt=""/>'
       +'<div class="ccs-info"><div class="ccs-name">'+nm(car)+'</div>'
-      +'<div class="ccs-meta"><span class="ccs-badge '+(avail?'on':'off')+'">'+label+'</span><span><strong>'+price+'원</strong>/h</span></div></div>'
-      +(avail?'<button class="ccs-rent" data-id="'+car.id+'">예약</button>':'<button class="ccs-rent" disabled>불가</button>')
+      +'<div class="ccs-meta"><span class="ccs-badge '+(s.ok?'on':s.cls)+'">'+s.label+'</span><span><strong>'+price+'원</strong>/h</span></div></div>'
+      +btn
       +'</div>';
   }
   function openZoneSheet(zone){
     ensureZoneSheet();
+    window.caroCurrentZone=zone;
     var cars=carsInZone(zone);
     var t=document.getElementById('czTitle'); if(t) t.textContent=zone+' · '+cars.length+'대';
     var box=document.getElementById('czList');
@@ -3422,21 +3421,21 @@
   st.textContent=
     '.car-bottom-strip{display:none !important;}'              /* 하단 차량목록 제거 */
    +'.caro-cat-btn{display:none !important;}'                  /* 기존 떠있던 차종버튼 숨김 */
-   +'.caro-rental-controls{position:absolute;top:52px;left:0;right:0;z-index:24;background:#f2f3f5;padding:9px 12px 11px;box-sizing:border-box;border-bottom:1px solid #e3e5e8;}'
-   +'.caro-timebar{display:flex;align-items:center;background:#fff;border:1px solid #e6e8eb;border-radius:13px;padding:7px 4px;box-shadow:0 1px 4px rgba(0,0,0,.05);}'
+   +'.caro-rental-controls{position:absolute;top:52px;left:0;right:0;z-index:24;padding:9px 12px 0;box-sizing:border-box;background:transparent;pointer-events:none;}'
+   +'.caro-timebar{pointer-events:auto;display:flex;align-items:center;background:rgba(255,255,255,.97);border:1px solid rgba(0,0,0,.06);border-radius:13px;padding:7px 4px;box-shadow:0 3px 12px rgba(0,0,0,.16);}'
    +'.ctb-field{flex:1;background:none;border:none;text-align:center;font-family:inherit;cursor:pointer;padding:4px 6px;border-radius:9px;}'
    +'.ctb-field:active{background:#f0f1f3;}'
    +'.ctb-label{display:block;font-size:11px;color:#888d98;margin-bottom:3px;}'
    +'.ctb-val{display:block;font-size:13.5px;font-weight:700;color:#18191c;white-space:nowrap;}'
    +'.ctb-arrow{color:#b0b4bb;font-size:15px;padding:0 2px;flex:0 0 auto;}'
-   +'.crt-cat-btn{margin-top:9px;display:inline-flex;align-items:center;gap:6px;background:#18191c;color:#fff;border:none;border-radius:18px;padding:8px 15px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18);}'
-   +'.crt-cat-btn:active{transform:scale(.97);}'
-   +'.crt-cat-btn .ic{font-size:15px;line-height:1;}';
+   +'.crt-cat-row{display:flex;justify-content:flex-end;margin-top:10px;pointer-events:none;}'
+   +'.crt-cat-btn{pointer-events:auto;width:46px;height:46px;border-radius:50%;background:#6b7280;color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);}'
+   +'.crt-cat-btn:active{transform:scale(.94);}';
   (document.head||document.documentElement).appendChild(st);
 
   function syncMapTop(){
-    var panel=document.querySelector('.caro-rental-controls'), map=document.getElementById('caro-map');
-    if(panel && map){ map.style.setProperty('top',(52+panel.offsetHeight)+'px','important'); }
+    var map=document.getElementById('caro-map');
+    if(map){ map.style.setProperty('top','52px','important'); } // 헤더 바로 아래부터 지도가 채움(컨트롤은 위에 떠있음)
     try{ if(window.caroMap && window.caroMap.invalidateSize) window.caroMap.invalidateSize(); }catch(e){}
   }
   window.caroSyncMapTop=syncMapTop;
@@ -3451,7 +3450,7 @@
         +'<span class="ctb-arrow">→</span>'
         +'<button class="ctb-field" type="button" data-which="end"><span class="ctb-label">반납 예정</span><span class="ctb-val" id="ctb-end">—</span></button>'
         +'</div>'
-        +'<button class="crt-cat-btn" type="button"><span class="ic">☰</span><span>차종 선택</span></button>';
+        +'<div class="crt-cat-row"><button class="crt-cat-btn" type="button" aria-label="차종 선택"><svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.04 3H5.81l1.04-3zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg></button></div>';
       screen.appendChild(panel);
       panel.querySelectorAll('.ctb-field').forEach(function(b){
         b.onclick=function(){ try{ if(window.openDrumPicker) openDrumPicker(b.getAttribute('data-which')); }catch(e){} };
@@ -3477,7 +3476,7 @@
   // 드럼 확인 후 시간바 갱신
   if(typeof window.confirmDrumPicker==='function' && !window.confirmDrumPicker.__caroBar){
     var _conf=window.confirmDrumPicker;
-    window.confirmDrumPicker=function(){ var r=_conf.apply(this,arguments); try{ refreshTimeBar(); }catch(e){} return r; };
+    window.confirmDrumPicker=function(){ var r=_conf.apply(this,arguments); try{ refreshTimeBar(); if(window.caroRefreshOpenSheets) window.caroRefreshOpenSheets(); }catch(e){} return r; };
     window.confirmDrumPicker.__caroBar=true;
   }
 
@@ -3490,4 +3489,57 @@
   window.addEventListener('resize', function(){ syncMapTop(); });
   setTimeout(ensureRentalLayout, 1000);
   console.log('[예약화면] ✅ 상단 시간바+차종버튼 / 지도 전체 / 와드로 차량선택');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 시간대별 가용성 + 대여중 회색 처리 (전역)
+   · 선택한 시간(res-start~res-end)에 겹치는 예약이 있으면 대여중
+   · window.globalActiveReservations(전체 활성 예약) 기준
+   · 대여중 차량은 시트에서 회색(grayscale)+"대여중" 표시, 예약 불가
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  function selWindow(){
+    var s=document.getElementById('res-start'), e=document.getElementById('res-end');
+    var S=(s&&s.value)?new Date(s.value):new Date();
+    if(isNaN(S.getTime())) S=new Date();
+    var E=(e&&e.value)?new Date(e.value):new Date(S.getTime()+3600000);
+    if(isNaN(E.getTime())) E=new Date(S.getTime()+3600000);
+    return {S:S,E:E};
+  }
+  function carBusy(car){
+    var w=selWindow(), res=window.globalActiveReservations||[];
+    for(var i=0;i<res.length;i++){
+      var r=res[i];
+      if(r && r.car && r.car.id===car.id && r.start && r.end && r.start < w.E && r.end > w.S) return true;
+    }
+    return false;
+  }
+  window.caroCarState=function(car){
+    if(!car) return {ok:false,label:'대여중',cls:'rented'};
+    if(car.devDisabled || (car.status && car.status!=='available')) return {ok:false,label:'점검중',cls:'maint'};
+    if(carBusy(car)) return {ok:false,label:'대여중',cls:'rented'};
+    return {ok:true,label:'이용 가능',cls:'ok'};
+  };
+  window.caroCarBusy=carBusy;
+
+  window.caroRefreshOpenSheets=function(){
+    try{
+      var zs=document.getElementById('caro-zone-sheet');
+      if(zs && zs.classList.contains('open') && window.caroCurrentZone && window.caroOpenZoneSheet){ window.caroOpenZoneSheet(window.caroCurrentZone); }
+      var cs=document.getElementById('caro-cat-sheet');
+      if(cs && cs.classList.contains('open') && window.caroOpenCatSheet){ window.caroOpenCatSheet(); }
+    }catch(e){}
+  };
+
+  // 대여중 회색 처리 CSS
+  var st=document.createElement('style'); st.id='caro-busy-css';
+  st.textContent=
+    '.ccs-car.busy .ccs-thumb{filter:grayscale(1);opacity:.5;}'
+   +'.ccs-car.busy .ccs-name{color:#9aa0a8;}'
+   +'.ccs-badge.rented{background:#eceef1;color:#7a818b;}'
+   +'.ccs-badge.maint{background:#f3e6d6;color:#b5781f;}'
+   +'.ccs-rent:disabled{background:#cfd2d7;color:#fff;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  console.log('[가용성] ✅ 시간대별 대여 가능/대여중(회색) 판정 활성화');
 })();
