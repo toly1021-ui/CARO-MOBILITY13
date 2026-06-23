@@ -2448,8 +2448,139 @@
     else if(!f.action){ resolveButtons(); } }
   function pickCat(key,label){ curCat=key; addMe(label.replace(/^[^\s]+\s/,'')); renderCat(key); }
 
+  // ── 자유 입력: 공감형 대화 엔진 (의도 인식 → 자연스러운 응대 → 막히면 상담사 연결) ──
+  var missCount=0;
+  function step(node){
+    if(!node) return;
+    if(node.say) { addBot(node.say); logSave(null); }
+    if(node.go){
+      quick([{label:node.goLabel||'바로가기', go:true, onClick:function(){ try{ close(); if(window.goTo) goTo(node.go);}catch(e){} }},
+             {label:'🙋 상담사 연결', onClick:function(){ addMe('상담사 연결'); escalate(); }}]);
+      return;
+    }
+    if(node.quick && node.quick.length){
+      quick(node.quick.map(function(o){
+        return { label:o.label, go:!!o.go, onClick:function(){ addMe(o.label);
+          if(o.node) step(o.node);
+          else if(o.screen){ try{ close(); if(window.goTo) goTo(o.screen);}catch(e){} }
+          else resolveButtons(); } };
+      }));
+      return;
+    }
+    if(node.end==='escalate'){ escalate(); return; }
+    if(node.end==='none'){ return; }
+    resolveButtons();
+  }
+
+  var N={
+    smell:{ say:'차량 내부 냄새·청결로 불편을 드려 죄송합니다. 🙏 먼저 확인할게요 — 지금 <b>차량 이용은 가능한 상태</b>이신가요?', quick:[
+      {label:'이용은 가능해요', node:{say:'알려주셔서 감사해요. 잠깐 환기해 주시고, 가능하면 <b>주행 시작 10분 이내에 내부 사진을 촬영해 접수</b>해 주세요. 이전 이용자 책임으로 확인되면 회원님께 불이익이 없도록 처리하고, 청결 보상도 안내해 드려요.', end:'resolve'}},
+      {label:'냄새가 심해 이용이 어려워요', node:{say:'많이 불편하셨겠어요. 이런 경우 <b>차량 교체 또는 예약 취소·환불</b>을 도와드릴 수 있어요. 바로 상담사에게 연결해 확인해 드릴게요.', end:'escalate'}},
+      {label:'사진으로 접수할게요', node:{say:'좋아요. 사진은 “간편 문의”에서 이미지와 함께 남겨 주시면 가장 빠르게 처리돼요.', go:'inquiry-screen', goLabel:'📝 간편 문의로 접수'}}
+    ]},
+    acc:{ say:'사고가 나셨군요. 무엇보다 안전이 우선이에요. 혹시 다친 곳은 없으신가요?', quick:[
+      {label:'크게 다치진 않았어요', node:{say:'다행이에요. 침착하게 ① 비상등·삼각대로 안전 확보 ② 차량·번호판·현장 사진 촬영 ③ 사고 접수 순으로 진행해 주세요. 자기부담금은 가입한 면책 상품 기준으로 적용돼요.', go:'accident-screen', goLabel:'🚨 사고 접수하기'}},
+      {label:'부상자가 있어요', node:{say:'먼저 <b>119</b>에 신고해 안전부터 확보해 주세요. 그다음 사고 접수를 도와드릴게요. 상담사도 함께 연결해 드릴게요.', end:'escalate'}},
+      {label:'상대 차량과 접촉했어요', node:{say:'상대 차량 번호·연락처·보험사를 확인하고 현장 사진을 남겨 주세요. 이후 사고 접수에서 진행하시면 돼요.', go:'accident-screen', goLabel:'🚨 사고 접수하기'}}
+    ]},
+    control:{ say:'차량 제어가 안 되면 당황스러우시죠. 바로 도와드릴게요. 어떤 상황에 가까우세요?', quick:[
+      {label:'시동이 안 걸려요', node:{say:'브레이크를 <b>끝까지 밟은 채</b> 시동 버튼을 눌러 주세요(전자식 키는 차 안에 있어야 해요). 기어가 P인지도 확인해 주세요.', quick:[
+        {label:'그래도 안 돼요', node:{say:'확인했습니다. 차량 점검이 필요하니 상담사에게 바로 연결해 드릴게요.', end:'escalate'}},
+        {label:'됐어요!', node:{say:'다행이에요! 안전 운전하세요 🚗', end:'resolve'}}]}},
+      {label:'문이 안 열려요 / 안 잠겨요', node:{say:'앱의 <b>차량 제어</b>에서 다시 시도해 주세요. 네트워크가 약하면 1~2분 후 재시도가 도움돼요.', quick:[
+        {label:'계속 안 돼요', node:{say:'상담사에게 연결해 빠르게 도와드릴게요.', end:'escalate'}},
+        {label:'해결됐어요', node:{say:'좋아요! 즐거운 이용 되세요 🙂', end:'resolve'}}]}}
+    ]},
+    breakdown:{ say:'주행 중 문제라면 안전이 가장 중요해요. <b>안전한 곳에 정차</b>하고 비상등을 켜 주세요. 지금 안전한 곳에 계신가요?', quick:[
+      {label:'네, 안전해요', node:{say:'다행이에요. 차량 증상과 현재 위치를 알려 주시면 긴급출동을 안내해 드릴게요. 바로 상담사에게 연결할게요.', end:'escalate'}},
+      {label:'도로 위라 위험해요', node:{say:'우선 가드레일 밖 등 안전한 곳으로 대피하고, 위급하면 <b>112/119</b>에 도움을 요청해 주세요. 동시에 상담사에게 바로 연결해 드릴게요.', end:'escalate'}}
+    ]},
+    lost:{ say:'차량과 관련해 분실물이 있으시군요. 바로 도와드릴게요. 어느 쪽에 가까우세요?', quick:[
+      {label:'내 물건을 두고 내렸어요', node:{say:'분실물은 “간편 문의”에 물건·차량명·이용 시각을 남겨 주시면 차량 확인 후 안내해 드려요.', go:'inquiry-screen', goLabel:'📝 분실물 접수'}},
+      {label:'차에서 남의 물건을 발견했어요', node:{say:'알려주셔서 감사해요! 발견하신 물건을 사진과 함께 “간편 문의”로 접수해 주시면 회수 안내를 드릴게요.', go:'inquiry-screen', goLabel:'📝 발견물 접수'}}
+    ]},
+    ret:{ say:'반납 관련해서 도와드릴게요. 무엇이 궁금하세요?', quick:[
+      {label:'반납 장소가 어디예요?', node:{say:'<b>대여했던 카로존(거점)에 그대로 반납</b>하시면 돼요. 지정 주차 구역에 주차한 뒤 앱에서 반납을 완료해 주세요.', end:'resolve'}},
+      {label:'반납하는 방법', node:{say:'주차 → 시동 OFF·창문 닫기·라이트 OFF 확인 → 앱에서 <b>반납하기</b> → 정산 확인이면 끝이에요.', end:'resolve'}},
+      {label:'반납이 안 돼요', node:{say:'지정 구역 밖이거나 네트워크 문제일 수 있어요. 위치를 확인하고 1~2분 후 재시도해 주세요. 계속되면 바로 연결해 드릴게요.', end:'escalate'}}
+    ]},
+    extend:{ say:'대여 시간을 연장하고 싶으신 거죠? 다음 예약이 없으면 <b>이용 중 화면에서 연장</b>이 가능해요. 어떤 상황이세요?', quick:[
+      {label:'연장하고 싶어요', node:{say:'이용 중 화면의 <b>연장</b> 버튼으로 원하는 시간을 추가하면 돼요. 다음 예약이 있으면 연장이 제한될 수 있어요.', end:'resolve'}},
+      {label:'연장이 안 돼요 / 반납이 늦어져요', node:{say:'다음 예약이 잡혀 있으면 연장이 막힐 수 있어요. 지연 시 추가요금·다음 이용자 피해가 생길 수 있으니, 상황을 확인하도록 바로 상담사에게 연결할게요.', end:'escalate'}}
+    ]},
+    pay:{ say:'결제·요금으로 불편을 드렸다면 죄송해요. 어떤 상황에 가까우세요?', quick:[
+      {label:'요금이 많이/이상하게 나왔어요', node:{say:'<b>이용내역</b>에서 상세 정산(주행요금·하이패스·페널티 등)을 확인하실 수 있어요. 특정 건이 이상하면 차량명과 이용 시각을 알려 주시면 확인해 드릴게요.', quick:[
+        {label:'확인했는데도 이상해요', node:{say:'정확한 확인이 필요하니 상담사에게 연결해 드릴게요.', end:'escalate'}},
+        {label:'확인했어요', node:{say:'도움이 되었길 바라요 🙂', end:'resolve'}}]}},
+      {label:'이중/중복 결제됐어요', node:{say:'이중 결제로 보이는 건은 확인 후 환불 처리해 드려요. 바로 상담사에게 연결해 확인할게요.', end:'escalate'}},
+      {label:'영수증/세금계산서가 필요해요', node:{say:'이용내역에서 결제 내역을 확인할 수 있어요. 세금계산서·현금영수증은 사업자 정보와 함께 “간편 문의”로 요청해 주세요.', go:'inquiry-screen', goLabel:'📝 요청 남기기'}}
+    ]},
+    resv:{ say:'예약 변경·취소를 도와드릴게요. 어떤 걸 원하세요?', quick:[
+      {label:'예약을 취소하고 싶어요', node:{say:'<b>예약 확인</b>에서 해당 예약을 선택해 취소할 수 있어요. 이용 시작 전 취소 시점에 따라 수수료가 다를 수 있어요.', end:'resolve'}},
+      {label:'예약 시간을 바꾸고 싶어요', node:{say:'예약 변경은 차량 여유 상황에 따라 가능해요. 예약 확인에서 시도해 보시고, 안 되면 바로 연결해 드릴게요.', quick:[
+        {label:'변경이 안 돼요', node:{say:'상담사에게 연결해 도와드릴게요.', end:'escalate'}},
+        {label:'됐어요', node:{say:'좋아요! 🙂', end:'resolve'}}]}},
+      {label:'취소 수수료가 궁금해요', node:{say:'취소 수수료는 이용 시작까지 남은 시간에 따라 달라져요. 정확한 금액은 예약 취소 화면에서 안내돼요.', end:'resolve'}}
+    ]},
+    member:{ say:'회원·가입·인증 관련해서 도와드릴게요. 무엇이 궁금하세요?', quick:[
+      {label:'가입/면허 인증 방법', node:{say:'이메일 가입 → 본인 명의 운전면허 등록·인증 → 결제수단 등록이면 이용 준비 완료예요. 면허는 등록 시 진위·자격이 자동 확인돼요.', end:'resolve'}},
+      {label:'이용 자격(나이/경력)', node:{say:'만 21세 이상 + 운전면허 취득 1년 이상 + 본인 명의 결제수단이 필요해요(여객자동차 운수사업법 기준).', end:'resolve'}},
+      {label:'로그인/비밀번호 문제', node:{say:'로그인 화면의 “아이디/비밀번호 찾기”에서 가입 이메일로 재설정할 수 있어요.', quick:[
+        {label:'그래도 안 돼요', node:{say:'상담사에게 연결해 드릴게요.', end:'escalate'}},
+        {label:'해결됐어요', node:{say:'다행이에요 🙂', end:'resolve'}}]}}
+    ]},
+    app:{ say:'앱이 불편하게 동작했다면 죄송해요. 우선 <b>앱 완전 종료 후 재실행 · 네트워크 확인 · 최신 버전 확인</b>을 시도해볼게요. 증상이 어떤가요?', quick:[
+      {label:'앱이 멈추거나 튕겨요', node:{say:'앱을 완전히 종료했다가 다시 열어 주세요. 반복되면 기기 종류와 어떤 화면에서 그런지 알려 주시면 빠르게 확인해 드릴게요.', quick:[
+        {label:'계속 그래요', node:{say:'상담사에게 연결해 자세히 확인할게요.', end:'escalate'}},
+        {label:'괜찮아졌어요', node:{say:'다행이에요 🙂', end:'resolve'}}]}},
+      {label:'지도/위치가 이상해요', node:{say:'위치 권한을 허용해 주시고, 실내 등 GPS가 약한 곳에서는 정확도가 떨어질 수 있어요. 잠시 후 다시 시도해 주세요.', end:'resolve'}},
+      {label:'알림이 안 와요', node:{say:'휴대폰 설정에서 카로 앱 <b>알림 권한</b>이 켜져 있는지 확인해 주세요.', end:'resolve'}}
+    ]},
+    use:{ say:'이용 방법을 안내해 드릴게요. 무엇이 궁금하세요?', quick:[
+      {label:'차량 빌리는 방법', node:{say:'지도에서 거점(카로존)을 골라 차량 선택 → 이용 시간 설정 → 결제 → 차량 앞에서 앱으로 문 열기면 출발이에요.', end:'resolve'}},
+      {label:'보험/면책이 궁금해요', node:{say:'일반면책(자기부담 30만원)과 기본면책(자기부담 70만원)이 있어요. 예약 시 선택할 수 있고, 사고 시 자기부담금이 달라져요.', end:'resolve'}},
+      {label:'월 렌트 / 더 블랙', node:{say:'장기 이용은 <b>월 렌트</b>, 프리미엄 차량은 <b>카로 더 블랙</b>에서 확인하실 수 있어요.', end:'resolve'}}
+    ]},
+    thanks:{ say:'따뜻한 말씀 감사해요! 😊 더 도와드릴 게 있으면 언제든 편하게 말씀해 주세요.', end:'none'}
+  };
+
+  var INTENTS=[
+    {key:'car', test:/냄새|악취|쾌쾌|퀴퀴|찌든|담배|흡연|토|구토|더럽|더러|지저분|청결|얼룩|쓰레기|오염|벌레/, node:N.smell},
+    {key:'acc', test:/사고|충돌|박았|박음|들이받|긁힘|긁었|긁힘|접촉|추돌|찌그/, node:N.acc},
+    {key:'car', test:/시동|안 ?걸|걸리지|문이? ?안|안 ?열|안 ?잠|스마트키|차키|차 ?키|키가|제어가? ?안|잠금/, node:N.control},
+    {key:'car', test:/고장|멈춰 ?섰|서버렸|연기|경고등|타이어|펑크|긴급|출동|배터리|시동꺼|시동 ?꺼|퍼졌/, node:N.breakdown},
+    {key:'ret', test:/분실|두고 ?내|놓고 ?내|잃어|놓고 ?왔|두고 ?왔|주웠|발견.*물건|물건.*발견/, node:N.lost},
+    {key:'ret', test:/반납/, node:N.ret},
+    {key:'ret', test:/연장|더 ?타|시간 ?늘|늦을|늦어|반납 ?늦/, node:N.extend},
+    {key:'pay', test:/결제|요금|청구|환불|이중|중복|영수증|세금계산서|정산|비싸|많이 ?나|돈이|과금/, node:N.pay},
+    {key:'resv', test:/예약|취소|변경|바꾸|날짜 ?바|시간 ?바/, node:N.resv},
+    {key:'member', test:/가입|면허|인증|자격|나이|경력|비밀번호|비번|로그인|아이디|탈퇴|회원/, node:N.member},
+    {key:'app', test:/오류|버그|에러|튕|멈춰|하얘|안 ?떠|안떠|안 ?나와|알림|지도|위치|gps|느려|업데이트|화면/, node:N.app},
+    {key:'use', test:/이용 ?방법|어떻게.*(이용|빌|타|예약)|카로존|거점|월 ?렌트|장기|더 ?블랙|블랙라벨|보험|면책/, node:N.use},
+    {key:null, test:/^\s*(고마|감사|좋아|최고|만족|친절|잘 ?쓰|굿|👍|❤)/, node:N.thanks}
+  ];
+
+  function fallbackReply(){
+    missCount++;
+    if(missCount>=2){
+      addBot('제가 정확히 이해하지 못한 것 같아요. 😥 바로 상담사에게 연결해 드릴까요? 아니면 아래 주제 중에서 골라주셔도 좋아요.');
+      logSave(null);
+      quick([{label:'🙋 상담사 연결', go:true, onClick:function(){ escalate(); }},{label:'주제에서 고르기', onClick:showCats}]);
+    } else {
+      addBot('조금만 더 자세히 알려주실 수 있을까요? 예) “차량에서 냄새가 나요”, “반납 장소가 어디예요?”, “결제가 이중으로 됐어요”. 아래에서 골라주셔도 돼요.');
+      logSave(null);
+      showCats();
+    }
+  }
+
   function handleInput(){ var inp=bot.querySelector('#cbot-in'); var t=(inp.value||'').trim(); if(!t) return; inp.value='';
-    addMe(t); curCat=route(t); renderCat(curCat); }
+    addMe(t);
+    if(/상담사|상담원|직원|사람.*연결|연결.*사람|콜센터|전화 ?연결|진짜 ?사람/.test(t)){ escalate(); return; }
+    var hit=null;
+    for(var i=0;i<INTENTS.length;i++){ if(INTENTS[i].test.test(t)){ hit=INTENTS[i]; break; } }
+    if(hit){ missCount=0; if(hit.key) curCat=hit.key; step(hit.node); }
+    else { fallbackReply(); }
+  }
 
   function open(){ bot.classList.add('show');
     if(!body.childElementCount){ addBot('안녕하세요, <b>카로 상담</b>입니다 🚗<br>이용 중 궁금하거나 불편한 점을 도와드릴게요. 답이 부족하면 언제든 위의 <b>상담사 연결</b>을 눌러 주세요.'); showCats(); } }
