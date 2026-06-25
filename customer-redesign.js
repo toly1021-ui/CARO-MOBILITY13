@@ -3259,13 +3259,11 @@
   function nm(car){ return window.getCarName?window.getCarName(car):car.name; }
   function carsInZone(zone){ return (window.CARS_DATA||[]).filter(function(c){ return window.caroZoneOf && window.caroZoneOf(c)===zone; }); }
 
-  // ── 와드 SVG (흰색 위치핀 + 골드 C + 대수 배지) ──
+  // ── 와드 SVG (흰색 위치핀 + 골드 C) ──
   function wardSVG(count){
     return '<svg width="46" height="56" viewBox="0 0 46 56" xmlns="http://www.w3.org/2000/svg">'
       +'<path d="M23 3 C13.6 3 6 10.6 6 20 C6 31 23 52 23 52 C23 52 40 31 40 20 C40 10.6 32.4 3 23 3 Z" fill="#ffffff" stroke="rgba(0,0,0,.10)" stroke-width="1"/>'
       +'<text x="23" y="28" text-anchor="middle" font-size="22" font-weight="700" fill="#c8a96e" font-family="Georgia,\'Times New Roman\',serif">C</text>'
-      +'<circle cx="37" cy="11" r="9.5" fill="#18191c" stroke="#ffffff" stroke-width="1.6"/>'
-      +'<text x="37" y="14.6" text-anchor="middle" font-size="10.5" font-weight="700" fill="#ffffff" font-family="-apple-system,sans-serif">'+count+'</text>'
       +'</svg>';
   }
 
@@ -3542,4 +3540,39 @@
   (document.head||document.documentElement).appendChild(st);
 
   console.log('[가용성] ✅ 시간대별 대여 가능/대여중(회색) 판정 활성화');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 예약 화면 드럼 제거 — 지도에서 정한 시간을 '표시 전용'으로
+   · 예약 화면의 대여 시작/반납 예정 필드: 드럼 안 뜨게(클릭 비활성)
+   · 값은 지도 상단 시간바에서 정한 res-start/res-end 그대로 표시
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  function killResDrum(){
+    ['res-start-display','res-end-display'].forEach(function(id){
+      var disp=document.getElementById(id); if(!disp) return;
+      var col=disp.closest ? disp.closest('.dt-col') : disp.parentNode;
+      if(col){
+        col.onclick=null;
+        col.removeAttribute('onclick');
+        col.style.cursor='default';
+        col.classList.add('caro-dt-readonly');
+      }
+    });
+    // 값 동기화(지도에서 정한 시간 표시)
+    try{ if(window.syncDateDisplay){ syncDateDisplay('start'); syncDateDisplay('end'); } }catch(e){}
+  }
+  // 살짝 "지도에서 선택" 느낌의 표시 (선택칸 강조 제거)
+  var st=document.createElement('style'); st.id='caro-dt-readonly-css';
+  st.textContent='.caro-dt-readonly{cursor:default !important;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  killResDrum(); setTimeout(killResDrum,600); setTimeout(killResDrum,1500);
+
+  if(typeof window.goTo==='function' && !window.goTo.__caroResDrumKill){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='reservation-screen'){ setTimeout(killResDrum,40); setTimeout(killResDrum,300); } return r; };
+    window.goTo.__caroResDrumKill=true;
+  }
+  console.log('[예약화면] ✅ 드럼 제거 — 지도에서 정한 시간 표시 전용');
 })();
