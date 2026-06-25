@@ -2260,25 +2260,25 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   [완성도] 완전면책 전면 제거 (데이터 + 고객센터 표기)
+   [수정] 단기렌트 면책 3종(70/30/5만원) 복원 + 법적 기준 명시
+   · 기존 완전면책(자부담 5만원) 제거 로직 비활성화 → 70/30/5만원 모두 표시
    ─────────────────────────────────────────────────────────── */
 (function(){ 'use strict';
-  try{
-    if(Array.isArray(window.INSURANCE)){
-      window.INSURANCE = window.INSURANCE.filter(function(i){ return !/완전면책|premium/i.test((i&&(i.name||i.id))||''); });
-    }
-  }catch(e){}
-  function hideFullCoverage(){
-    try{
-      var lis=document.querySelectorAll('#cs-detail-screen li, #cs-screen li, .csd-info-box, li');
-      document.querySelectorAll('li,strong,p').forEach(function(el){
-        if(el.children.length===0 && /완전면책/.test(el.textContent)){
-          var li=el.closest('li'); if(li) li.style.display='none'; else el.style.display='none';
-        }
-      });
-    }catch(e){}
+  function legalNote(){
+    var list=document.getElementById('insurance-list'); if(!list) return;
+    if(document.getElementById('caro-ins-legal')) return;
+    var p=document.createElement('div'); p.id='caro-ins-legal';
+    p.style.cssText='margin:11px 4px 2px;font-size:.72rem;line-height:1.55;color:var(--text-m,#888d98);';
+    p.innerHTML='※ 대인·대물 배상은 「자동차손해배상 보장법」상 의무보험이 적용되며, 면책 상품은 자차(자기차량) 손해의 <b>자기부담금</b>을 낮추는 임의 상품입니다. 자기부담금은 70만원(기본)·30만원(일반)·5만원(완전) 중 선택할 수 있습니다. (「여객자동차 운수사업법」상 자동차대여사업 기준)';
+    list.parentNode.insertBefore(p, list.nextSibling);
   }
-  hideFullCoverage(); setTimeout(hideFullCoverage,1500); setTimeout(hideFullCoverage,3000);
+  legalNote(); setTimeout(legalNote,1500); setTimeout(legalNote,3000);
+  if(typeof window.goTo==='function' && !window.goTo.__caroInsNote){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='reservation-screen'){ setTimeout(legalNote,80); } return r; };
+    window.goTo.__caroInsNote=true;
+  }
+  console.log('[면책] ✅ 단기 면책 3종(70/30/5만) 복원 + 법적 기준 표기');
 })();
 
 
@@ -3575,4 +3575,87 @@
     window.goTo.__caroResDrumKill=true;
   }
   console.log('[예약화면] ✅ 드럼 제거 — 지도에서 정한 시간 표시 전용');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [수정] ① 예약 시간칸 클릭 테두리 제거 ② 뒤로 버튼 크기=결제 버튼
+          ③ 로그인 뒤로 화살표 제거 ④ 자동 로그인 보강(저장+복원)
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  // ── CSS: 시간칸 테두리 강조 제거 + 뒤로 버튼을 결제 버튼 크기로 ──
+  var st=document.createElement('style'); st.id='caro-misc-fixes-css';
+  st.textContent=
+    /* ① 표시전용 시간칸: hover/active 테두리 진해짐 제거 */
+    '.caro-dt-readonly .res-date-display,.caro-dt-readonly:hover .res-date-display,.caro-dt-readonly:active .res-date-display,.caro-dt-readonly:focus .res-date-display{border-color:var(--border) !important;}'
+   +'.caro-dt-readonly .res-date-display{outline:none !important;box-shadow:none !important;}'
+    /* ② 모든 뒤로 버튼 크기 = 결제하기(res-submit-btn): padding16/1rem/700/라운드 */
+   +'.back-bottom-btn,.mpn-back-btn,.mpd-back-btn{padding:16px !important;font-size:1rem !important;font-weight:700 !important;border-radius:var(--r) !important;min-height:0 !important;box-sizing:border-box !important;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  // ── ③ 로그인 화면 뒤로 버튼 화살표 제거 ──
+  function fixLoginBack(){
+    var ls=document.getElementById('login-screen'); if(!ls) return;
+    var b=ls.querySelector('.back-bottom-btn'); if(!b) return;
+    b.removeAttribute('data-i18n');           // i18n 덮어쓰기 방지
+    b.textContent='뒤로';                      // 화살표 제거
+  }
+  fixLoginBack(); setTimeout(fixLoginBack,600); setTimeout(fixLoginBack,1800);
+
+  // ── ④ 자동 로그인 보강 ──
+  // (저장) 로그인 시 '자동 로그인' 체크돼 있으면, 로그인 성공 후 확실히 플래그 저장
+  if(typeof window.handleLogin==='function' && !window.handleLogin.__caroAuto){
+    var _hl=window.handleLogin;
+    window.handleLogin=function(){
+      var chk=document.getElementById('auto-login'); var want=!!(chk&&chk.checked);
+      var r=_hl.apply(this,arguments);
+      if(want){
+        var tries=0;
+        var iv=setInterval(function(){ tries++;
+          if(window.userInfo && window.userInfo.id){
+            try{
+              localStorage.setItem('caro_auto_login','1');
+              localStorage.setItem('caro_auto_id', window.userInfo.id);
+              localStorage.setItem('caro_auto_name', window.userInfo.name||window.userInfo.id);
+            }catch(e){}
+            clearInterval(iv);
+          }
+          if(tries>40) clearInterval(iv);
+        },150);
+      }
+      return r;
+    };
+    window.handleLogin.__caroAuto=true;
+  }
+
+  // (복원) 앱 시작 시 플래그 있으면 강제로 홈 진입 (스플래시/메인/로그인 화면일 때만)
+  function activeScreenId(){ var a=document.querySelector('.screen.active'); return a?a.id:''; }
+  function tryAutoLogin(){
+    try{
+      if(window.userInfo && window.userInfo.id) return;        // 이미 로그인됨
+      var al=localStorage.getItem('caro_auto_login');
+      var aid=localStorage.getItem('caro_auto_id');
+      if(al!=='1' || !aid) return;                             // 자동로그인 아님(로그아웃 시 플래그 삭제됨)
+      var as=activeScreenId();
+      if(as && as!=='splash-screen' && as!=='main-screen' && as!=='login-screen') return; // 다른 화면이면 방해 안 함
+      var aname=localStorage.getItem('caro_auto_name')||aid;
+      window.userInfo.id=aid; window.userInfo.name=aname;
+      var wn=document.getElementById('home-welcome-name'); if(wn) wn.textContent=aname+' 님, 안녕하세요 👋';
+      var hn=document.getElementById('hmenu-name'); if(hn) hn.textContent=aname;
+      var hi=document.getElementById('hmenu-id'); if(hi) hi.textContent=aid;
+      try{ if(window.startSessionTimer) startSessionTimer(); }catch(e){}
+      try{ if(window.loadUserData) loadUserData(aid); }catch(e){}
+      try{ if(window.goTo) goTo('home-screen', true); }catch(e){}
+      setTimeout(function(){
+        try{ if(window.showHomeCtrlSwitch) showHomeCtrlSwitch(); }catch(e){}
+        try{ if(window.renderMyReservations) renderMyReservations(); }catch(e){}
+        try{ if(window.renderCars) renderCars(); }catch(e){}
+        var mb=document.getElementById('home-menu-btn'); if(mb) mb.classList.remove('hidden');
+      },150);
+      console.log('[자동로그인] ✅ 복원 → 홈 진입:', aid);
+    }catch(e){ console.warn('[자동로그인] 복원 오류', e); }
+  }
+  setTimeout(tryAutoLogin, 1600);
+  setTimeout(tryAutoLogin, 2800);
+
+  console.log('[수정] ✅ 시간칸 테두리/뒤로버튼 크기/로그인 화살표/자동로그인 보강');
 })();
