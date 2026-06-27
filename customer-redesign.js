@@ -1631,9 +1631,10 @@
   }
   function closeRet(){ var ov=document.getElementById('caro-ret-ov'); if(ov) ov.classList.remove('open'); }
 
-  /* 정산 결제가 안 된 금액 → 미결제(채권) 기록 ('미결제 내역' 화면 caro_apd_unpaid 와 동일 구조) */
-  function recordDebt(amount, res){
+  /* 정산 결제가 안 된 금액 → 미결제(채권) 기록 (로컬 + Firestore) */
+  function recordDebt(amount, res, costs){
     if(!(amount>0)) return;
+    var entry=null;
     try{
       var key='caro_apd_unpaid', list=[];
       try{ list=JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ list=[]; }
@@ -1643,10 +1644,14 @@
       var car=(res&&res.car)||{};
       var carName=(window.getCarName?window.getCarName(car):car.name)||'차량';
       var carNumber=car.carNumber||car.plate||car.number||'';
-      list.unshift({ id:'debt_'+Date.now(), title:'차량 반납 정산 미결제 — '+carName, date:date, ts:Date.now(),
-                     amount:amount, bookNo:(res&&res.bookNo)||'', carNumber:carNumber, carName:carName });
+      var bd=costs?{distCost:+costs.distCost||0,hipass:+costs.hipass||0,penalty:+costs.penalty||0}:null;
+      entry={ id:'debt_'+Date.now(), title:'차량 반납 정산 미결제 — '+carName, date:date, ts:Date.now(),
+              amount:amount, bookNo:(res&&res.bookNo)||'', carNumber:carNumber, carName:carName, breakdown:bd };
+      list.unshift(entry);
       localStorage.setItem(key, JSON.stringify(list));
     }catch(e){}
+    /* Firestore 기록 (관제 대시보드) */
+    try{ if(entry && window.caroDebtFS && window.caroDebtFS.writeDebt) window.caroDebtFS.writeDebt(entry); }catch(e){}
   }
 
   function submit(){
@@ -1662,7 +1667,7 @@
         var c=cards[0];
         toast('\u2705 '+(c.alias||'카드')+' ····'+(c.last4||'')+' '+won(total)+'원 결제 완료');
       } else {
-        recordDebt(total, ST.res);
+        recordDebt(total, ST.res, ST.costs);
         toast('등록된 카드가 없어 정산 '+won(total)+'원이 미결제(채권)로 처리됩니다. 반납은 정상 완료됩니다.');
       }
     }
@@ -4060,6 +4065,99 @@
     return 'lic:'+lic+'|id:'+id;
   }
 
+  /* ── Firestore 연동 (관제 대시보드용) ── */
+  function fsReady(){ return !!(window.FB_DB && window.FB_FN && window.FB_FN.setDoc && window.FB_FN.doc); }
+  function userIdentity(){
+    var lic='';
+    try{ var L=JSON.parse(localStorage.getItem('caro_license')||'null'); if(L&&L.number) lic=String(L.number); }catch(e){}
+    var ui=window.userInfo||{};
+    var uid=(window.FB_AUTH&&FB_AUTH.currentUser&&FB_AUTH.currentUser.uid)||ui.uid||'';
+    return { uid:uid, idName:ui.id||'', userName:ui.name||ui.id||'', email:ui.email||'', license:lic };
+  }
+  window.caroDebtFS={
+    /* 미납(채권) 1건 기록 → unpaid_debts/{id} */
+    writeDebt:function(entry){
+      if(!fsReady()||!entry) return;
+      try{
+        var db=window.FB_DB, fn=window.FB_FN, u=userIdentity();
+        if(!u.uid) return;
+        var id=entry.id||('debt_'+Date.now());
+        fn.setDoc(fn.doc(db,'unpaid_debts',id),{
+          id:id, userId:u.uid, idName:u.idName, userName:u.userName, email:u.email, license:u.license,
+          bookNo:entry.bookNo||'', carName:entry.carName||'', carNumber:entry.carNumber||'',
+          amount:+entry.amount||0,
+          breakdown: entry.breakdown?{distCost:+entry.breakdown.distCost||0,hipass:+entry.breakdown.hipass||0,penalty:+entry.breakdown.penalty||0}:null,
+          status:'unpaid', createdAt:new Date(entry.ts||Date.now()).toISOString(), createdTs:entry.ts||Date.now(), paidAt:null
+        },{merge:true});
+      }catch(e){}
+    },
+    /* 본인 미납 전부 납부처리 */
+    markAllPaid:function(){
+      if(!fsReady()) return;
+      try{
+        var db=window.FB_DB, fn=window.FB_FN, u=userIdentity();
+        if(!u.uid||!fn.getDocs||!fn.query||!fn.where) return;
+        var q=fn.query(fn.collection(db,'unpaid_debts'),fn.where('userId','==',u.uid),fn.where('status','==','unpaid'));
+        fn.getDocs(q).then(function(snap){ snap.forEach(function(d){
+          fn.setDoc(fn.doc(db,'unpaid_debts',d.id),{status:'paid',paidAt:new Date().toISOString()},{merge:true});
+        }); }).catch(function(){});
+      }catch(e){}
+    },
+    /* 이용 정지 기록 → suspensions/{uid} */
+    writeSuspension:function(until,reason){
+      if(!fsReady()) return;
+      try{
+        var db=window.FB_DB, fn=window.FB_FN, u=userIdentity();
+        if(!u.uid) return;
+        fn.setDoc(fn.doc(db,'suspensions',u.uid),{
+          userId:u.uid, idName:u.idName, userName:u.userName, license:u.license,
+          until:new Date(until).toISOString(), untilTs:until,
+          reason:reason||'장기 미납', createdAt:new Date().toISOString(), active:true
+        },{merge:true});
+      }catch(e){}
+    }
+  };
+
+  /* ── 관리자 처리결과를 고객 앱에 반영 (FS → 로컬 동기화) ── */
+  function startDebtSync(){
+    if(!fsReady()) return;
+    var fn=window.FB_FN, db=window.FB_DB, u=userIdentity();
+    if(!u.uid||!fn.onSnapshot) return;
+    /* 미납 동기화 (FS를 진실원본으로) */
+    try{
+      if(fn.query&&fn.where){
+        var q=fn.query(fn.collection(db,'unpaid_debts'),fn.where('userId','==',u.uid),fn.where('status','==','unpaid'));
+        fn.onSnapshot(q,function(snap){
+          var list=[];
+          snap.forEach(function(d){ var x=d.data()||{};
+            list.push({ id:x.id||d.id, title:'차량 반납 정산 미결제 — '+(x.carName||'차량'),
+              date:(x.createdAt||'').slice(0,10).replace(/-/g,'.'), ts:x.createdTs||Date.parse(x.createdAt)||Date.now(),
+              amount:+x.amount||0, bookNo:x.bookNo||'', carNumber:x.carNumber||'', carName:x.carName||'', breakdown:x.breakdown||null }); });
+          list.sort(function(a,b){ return b.ts-a.ts; });
+          try{ localStorage.setItem(UNPAID_KEY, JSON.stringify(list)); }catch(e){}
+          syncUnpaidBar();
+          try{ if(window.renderCars) renderCars(); }catch(e){}
+        },function(){});
+      }
+    }catch(e){}
+    /* 정지 동기화 (관리자 해제 시 로컬도 해제) */
+    try{
+      fn.onSnapshot(fn.doc(db,'suspensions',u.uid),function(ds){
+        var s=(ds&&ds.exists)?ds.data():null;
+        if(!s || s.active===false || !(s.untilTs>Date.now())){
+          var cur=readSusp(); if(cur && cur.sig===userSig()){ try{ localStorage.removeItem(SUSP_KEY); }catch(e){} }
+        } else {
+          try{ localStorage.setItem(SUSP_KEY, JSON.stringify({ sig:userSig(), until:s.untilTs, at:Date.parse(s.createdAt)||Date.now() })); }catch(e){}
+        }
+        syncUnpaidBar();
+        try{ if(window.renderCars) renderCars(); }catch(e){}
+      },function(){});
+    }catch(e){}
+  }
+  (function waitAuth(){ var t=0; var iv=setInterval(function(){ t++;
+    if(fsReady() && window.FB_AUTH && FB_AUTH.currentUser){ clearInterval(iv); startDebtSync(); }
+    else if(t>60){ clearInterval(iv); } },500); })();
+
   /* ── 이용 정지 ── */
   function readSusp(){ try{ return JSON.parse(localStorage.getItem(SUSP_KEY)||'null'); }catch(e){ return null; } }
   function suspendedUntil(){
@@ -4073,13 +4171,8 @@
     var until=Date.now()+days*DAY;
     var rec={ sig:userSig(), until:until, at:Date.now() };
     try{ localStorage.setItem(SUSP_KEY, JSON.stringify(rec)); }catch(e){}
-    /* Firestore best-effort (users/{uid}.suspendedUntil) */
-    try{
-      var db=window.FB_DB, fn=window.FB_FN, uid=(window.FB_AUTH&&FB_AUTH.currentUser&&FB_AUTH.currentUser.uid);
-      if(db&&fn&&fn.setDoc&&fn.doc&&uid){
-        fn.setDoc(fn.doc(db,'users',uid),{ suspendedUntil:new Date(until).toISOString(), suspendedAt:new Date().toISOString() },{merge:true});
-      }
-    }catch(e){}
+    /* Firestore: suspensions/{uid} (관제 대시보드 연동) */
+    try{ if(window.caroDebtFS&&window.caroDebtFS.writeSuspension) window.caroDebtFS.writeSuspension(until,'장기 미납(3주 이상) 납부'); }catch(e){}
     return until;
   }
 
@@ -4100,6 +4193,7 @@
     var longOverdue=oldestUnpaidDays()>=LONG_DAYS;
     /* (데모) 등록 카드로 결제 처리 — 실제 PG 연동 시 성공 콜백에서 아래 실행 */
     clearUnpaid();
+    try{ if(window.caroDebtFS&&window.caroDebtFS.markAllPaid) window.caroDebtFS.markAllPaid(); }catch(e){}  /* Firestore 납부처리 */
     if(longOverdue){
       var until=applySuspension(SUSPEND_DAYS);
       toast('미납금 '+won(total)+'원이 납부되었습니다. 다만 장기(3주 이상) 미납으로 '+SUSPEND_DAYS+'일간 이용이 정지됩니다. (해제 '+fmtDay(until)+')');
