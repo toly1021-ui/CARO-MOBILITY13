@@ -3763,6 +3763,18 @@
     window.goTo.__caroDrumGuard2=true;
   }
 
+  /* 1.5) openDrumPicker 자체 차단 — 허용 화면(예약/대여)이 아니면 아예 열지 않음
+     → 이벤트·홈 등에서 로고/배너 등으로 드럼이 뜨는 문제 원천 차단 */
+  if(typeof window.openDrumPicker==='function' && !window.openDrumPicker.__caroDrumGuard){
+    var _od=window.openDrumPicker;
+    window.openDrumPicker=function(){
+      var id=activeScreenId();
+      if(!ALLOW[id]){ forceClose(); return; }
+      return _od.apply(this,arguments);
+    };
+    window.openDrumPicker.__caroDrumGuard=true;
+  }
+
   /* 2) 뒤로가기(popstate) */
   window.addEventListener('popstate', function(){ setTimeout(closeIfWrong, 0); setTimeout(closeIfWrong, 300); });
 
@@ -3778,7 +3790,7 @@
   setTimeout(watchScreens, 1500);  /* 늦게 추가되는 화면(월렌트 등) 대비 */
 
   /* 4) 백업 인터벌 (드럼이 잘못된 화면에 떠 있으면 닫기) */
-  setInterval(closeIfWrong, 1200);
+  setInterval(closeIfWrong, 500);
 
   console.log('[수정] ✅ 시간 드럼 자동 닫기 v2 (허용 화면 외 강제 닫기)');
 })();
