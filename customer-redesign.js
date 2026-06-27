@@ -1631,21 +1631,42 @@
   }
   function closeRet(){ var ov=document.getElementById('caro-ret-ov'); if(ov) ov.classList.remove('open'); }
 
+  /* 정산 결제가 안 된 금액 → 미결제(채권) 기록 ('미결제 내역' 화면 caro_apd_unpaid 와 동일 구조) */
+  function recordDebt(amount, res){
+    if(!(amount>0)) return;
+    try{
+      var key='caro_apd_unpaid', list=[];
+      try{ list=JSON.parse(localStorage.getItem(key)||'[]'); }catch(e){ list=[]; }
+      if(!Array.isArray(list)) list=[];
+      var d=new Date();
+      var date=d.getFullYear()+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+('0'+d.getDate()).slice(-2);
+      var car=(res&&res.car)||{};
+      var carName=(window.getCarName?window.getCarName(car):car.name)||'차량';
+      var carNumber=car.carNumber||car.plate||car.number||'';
+      list.unshift({ id:'debt_'+Date.now(), title:'차량 반납 정산 미결제 — '+carName, date:date, ts:Date.now(),
+                     amount:amount, bookNo:(res&&res.bookNo)||'', carNumber:carNumber, carName:carName });
+      localStorage.setItem(key, JSON.stringify(list));
+    }catch(e){}
+  }
+
   function submit(){
     if(!ST.checks.every(Boolean)){ toast('반납 확인 항목을 모두 체크해 주세요.'); return; }
     if(!parkOk()){ toast('다른 장소 주차 시 위치 설명과 사진(1장 이상)을 입력해 주세요.'); return; }
     if(ST.park==='other'){ try{ ST.res.altPark={desc:document.getElementById('rtDesc').value.trim(), photos:ST.photos.length, at:Date.now()}; }catch(e){} }
     var total=ST.costs.total;
     if(total>0){
-      /* 쏘카 방식: 앱에 등록된 카드로 즉시 결제 (토스 없음) */
+      /* 등록 카드로 정산 결제 시도. 결제가 안 되면(카드 없음 등) 미결제(채권)로 넘기고
+         반납은 그대로 완료한다 — 반납이 결제 때문에 막히면 안 됨 (분실물 회수 위해 10분 유예 후 차량 재사용). */
       var cards=window.savedCards||[];
-      if(!cards.length){ toast('등록된 카드가 없습니다. 계정관리 → 결제수단에서 카드를 먼저 등록해 주세요.'); return; }
-      var c=cards[0];
-      toast('\u2705 '+(c.alias||'카드')+' ····'+(c.last4||'')+' '+won(total)+'원 결제 완료');
-      finish();
-    } else {
-      finish();
+      if(cards.length){
+        var c=cards[0];
+        toast('\u2705 '+(c.alias||'카드')+' ····'+(c.last4||'')+' '+won(total)+'원 결제 완료');
+      } else {
+        recordDebt(total, ST.res);
+        toast('등록된 카드가 없어 정산 '+won(total)+'원이 미결제(채권)로 처리됩니다. 반납은 정상 완료됩니다.');
+      }
     }
+    finish();   /* 결제 성공/실패와 무관하게 반납은 항상 완료 */
   }
   function finish(){
     closeRet(); closePay();
@@ -2883,7 +2904,7 @@
     var now=new Date(), rm={};
     (window.myReservations||[]).forEach(function(r){
       if(r.start && r.end){
-        if(!r.returned){ var rt=new Date(r.end.getTime()+600000); if(now<rt) rm[r.car.id]={until:rt}; }
+        if(!r.returned){ rm[r.car.id]={until:null}; }
         else if(r.returnedAt){ var rtr=new Date(r.returnedAt.getTime()+600000); if(now<rtr && !rm[r.car.id]) rm[r.car.id]={until:rtr}; }
       }
     });
@@ -3001,7 +3022,7 @@
     var now=new Date(), hit=false;
     (window.myReservations||[]).forEach(function(r){
       if(!r.car || r.car.id!==car.id || !r.start || !r.end) return;
-      if(!r.returned){ if(now < new Date(r.end.getTime()+600000)) hit=true; }
+      if(!r.returned){ hit=true; }
       else if(r.returnedAt){ if(now < new Date(r.returnedAt.getTime()+600000)) hit=true; }
     });
     return hit;
@@ -3251,7 +3272,7 @@
     var now=new Date(), hit=false;
     (window.myReservations||[]).forEach(function(r){
       if(!r.car || r.car.id!==car.id || !r.start || !r.end) return;
-      if(!r.returned){ if(now < new Date(r.end.getTime()+600000)) hit=true; }
+      if(!r.returned){ hit=true; }
       else if(r.returnedAt){ if(now < new Date(r.returnedAt.getTime()+600000)) hit=true; }
     });
     return hit;
@@ -3512,10 +3533,33 @@
     }
     return false;
   }
+  /* 지금 차가 나가 있는가? — 미반납(시작 후, 연체 포함) 또는 반납 후 10분 유예 */
+  function carOutNow(car){
+    var now=Date.now();
+    var lists=[window.globalActiveReservations||[], window.myReservations||[]];
+    for(var k=0;k<lists.length;k++){
+      var arr=lists[k];
+      for(var i=0;i<arr.length;i++){
+        var r=arr[i];
+        if(!r||!r.car||r.car.id!==car.id||!r.start) continue;
+        var st=(r.start instanceof Date)?r.start.getTime():new Date(r.start).getTime();
+        if(isNaN(st)) continue;
+        if(!r.returned){
+          if(now>=st) return true;                 /* 시작 후 미반납 = 대여중/연체 → 나가있음 */
+        } else if(r.returnedAt){
+          var rt=(r.returnedAt instanceof Date)?r.returnedAt.getTime():new Date(r.returnedAt).getTime();
+          if(!isNaN(rt) && now < rt+600000) return true;   /* 반납 후 10분 유예 */
+        }
+      }
+    }
+    return false;
+  }
+  window.caroCarOutNow=carOutNow;
   window.caroCarState=function(car){
     if(!car) return {ok:false,label:'대여중',cls:'rented'};
     if(car.devDisabled || (car.status && car.status!=='available')) return {ok:false,label:'점검중',cls:'maint'};
-    if(carBusy(car)) return {ok:false,label:'대여중',cls:'rented'};
+    if(carOutNow(car)) return {ok:false,label:'대여중',cls:'rented'};   /* 미반납·연체 → 절대 대여 불가 */
+    if(carBusy(car)) return {ok:false,label:'대여중',cls:'rented'};     /* 선택 시간대 겹침 */
     return {ok:true,label:'이용 가능',cls:'ok'};
   };
   window.caroCarBusy=carBusy;
@@ -3658,4 +3702,525 @@
   setTimeout(tryAutoLogin, 2800);
 
   console.log('[수정] ✅ 시간칸 테두리/뒤로버튼 크기/로그인 화살표/자동로그인 보강');
+})();
+
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 시간 드럼 자동 닫기 v2 (강화)
+   ───────────────────────────────────────────────────────────
+   · 증상: 시간 드럼(drum-overlay)이 예약/대여 화면 외(이벤트·홈 등)에서 뜸.
+   · 원칙: 드럼은 '대여 화면(rental)·예약 화면(reservation)'에서만 떠야 함.
+           그 외 화면이 활성화되면 무조건 닫는다.
+   · 방어: goTo 직후 + popstate + 화면 class 변경 감시(MutationObserver) + 백업 인터벌.
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  var ALLOW={ 'rental-screen':1, 'reservation-screen':1 };
+  function activeScreenId(){ var a=document.querySelector('.screen.active'); return a?a.id:''; }
+  function forceClose(){
+    var ov=document.getElementById('drum-overlay');
+    if(ov && ov.classList.contains('open')){
+      try{ if(typeof window.closeDrumPicker==='function'){ window.closeDrumPicker(); } }catch(e){}
+      ov.classList.remove('open');         /* 확실히 제거 */
+    }
+  }
+  /* 지금 화면이 드럼 허용 화면이 아니면 닫는다 */
+  function closeIfWrong(){
+    var id=activeScreenId();
+    if(!ALLOW[id]) forceClose();
+  }
+  window.caroCloseDrum=forceClose;
+
+  /* 1) goTo 래핑 — 전환 직전·직후 모두 점검 */
+  if(typeof window.goTo==='function' && !window.goTo.__caroDrumGuard2){
+    var _g=window.goTo;
+    window.goTo=function(id){
+      try{ forceClose(); }catch(e){}                 /* 떠나기 전 닫기 */
+      var r=_g.apply(this,arguments);
+      try{ if(!ALLOW[id]) forceClose(); }catch(e){}  /* 목적지가 허용화면 아니면 닫기 */
+      setTimeout(closeIfWrong, 60);                  /* 애니메이션 후 한 번 더 */
+      setTimeout(closeIfWrong, 420);
+      return r;
+    };
+    window.goTo.__caroDrumGuard2=true;
+  }
+
+  /* 2) 뒤로가기(popstate) */
+  window.addEventListener('popstate', function(){ setTimeout(closeIfWrong, 0); setTimeout(closeIfWrong, 300); });
+
+  /* 3) 화면 class(active) 변경 감시 — 어떤 경로로 화면이 바뀌든 대응 */
+  function watchScreens(){
+    if(!window.MutationObserver) return;
+    var obs=new MutationObserver(function(){ closeIfWrong(); });
+    document.querySelectorAll('.screen').forEach(function(s){
+      obs.observe(s,{attributes:true,attributeFilter:['class']});
+    });
+  }
+  watchScreens();
+  setTimeout(watchScreens, 1500);  /* 늦게 추가되는 화면(월렌트 등) 대비 */
+
+  /* 4) 백업 인터벌 (드럼이 잘못된 화면에 떠 있으면 닫기) */
+  setInterval(closeIfWrong, 1200);
+
+  console.log('[수정] ✅ 시간 드럼 자동 닫기 v2 (허용 화면 외 강제 닫기)');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 차량 제어 '스마트키' 바텀시트 v2 (쏘카 디자인)
+   ───────────────────────────────────────────────────────────
+   · 접힘: '스마트키 OFF/ON' + 4버튼 가로행(반납하기·비상등·문잠금·문열기)
+   · 펼침: 쏘카식 비대칭 그리드
+       [비상등|주차위치] (좌상단 2분할) / 반납하기(좌하단 큰 카드)
+       문잠금(우 상단 세로) / 문열기(우 하단 세로)
+   · 쏘카에 없는 CARO 버튼(주행전 사진·시간 연장·사고 신고)은
+     시트 밖, 차량 제어 페이지 본문(연료 아래 '차량 이용')에 배치
+   · 모든 버튼은 element 자체를 이동 → onclick·id·활성화 게이팅 100% 보존
+═══════════════════════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  var st=document.createElement('style'); st.id='caro-smartkey-v2-css';
+  st.textContent=[
+    '#home-ctrl-modal .ctrl-btn-wrap{display:none !important;}',
+    /* 차량 제어 모달 열렸을 때만 시트/스크림 노출 (그 외 화면 완전 숨김) */
+    '#home-ctrl-modal:not(.open) #caro-sk-sheet,#home-ctrl-modal:not(.open) #caro-sk-scrim{display:none !important;}',
+    /* 본문 하단 여백 (접힌 시트에 안 가리게) */
+    '#home-ctrl-modal .home-ctrl-box{padding-bottom:calc(180px + var(--sab)) !important;}',
+
+    /* ── 시트 밖 본문 '차량 이용' (주행전 사진·시간 연장·사고 신고) ── */
+    '#caro-ctrl-extra{padding:2px 16px 8px;}',
+    '#caro-ctrl-extra .cce-label{font-size:.72rem;font-weight:700;color:var(--text-m);margin:14px 2px 9px;letter-spacing:.02em;}',
+    '#caro-ctrl-extra .cce-row{display:flex;gap:9px;}',
+    '#caro-ctrl-extra .cce-row > .ctrl-sq-btn{flex:1;background:#fff !important;border:1px solid var(--border-l) !important;border-radius:16px !important;padding:15px 8px !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;box-shadow:0 1px 2px rgba(20,22,28,.05) !important;width:auto !important;position:relative;}',
+    '#caro-ctrl-extra .ctrl-sq-btn:disabled{opacity:.4 !important;}',
+    '#caro-ctrl-extra .ctrl-sq-icon{font-size:0 !important;line-height:0;margin-bottom:5px !important;color:var(--accent-2);}',
+    '#caro-ctrl-extra .ctrl-sq-icon svg{width:25px;height:25px;display:block;}',
+    '#caro-ctrl-extra .ctrl-sq-label{font-size:.78rem !important;font-weight:600 !important;color:var(--text-1) !important;margin-top:0 !important;}',
+    '#caro-ctrl-extra .ctrl-sq-badge{position:absolute;top:6px;right:8px;} #caro-ctrl-extra .ctrl-sq-badge:empty{display:none;}',
+
+    /* ── 스크림 ── */
+    '#caro-sk-scrim{position:fixed;inset:0;z-index:29;background:rgba(18,20,26,.34);opacity:0;pointer-events:none;transition:opacity .3s ease;}',
+    '#home-ctrl-modal.caro-sk-open #caro-sk-scrim{opacity:1;pointer-events:auto;}',
+
+    /* ── 시트 ── */
+    '#caro-sk-sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;width:100%;max-width:520px;margin:0 auto;background:#fff;',
+      'border-top-left-radius:26px;border-top-right-radius:26px;box-shadow:0 -10px 34px -12px rgba(20,22,28,.26);',
+      'padding:8px 18px calc(20px + var(--sab));box-sizing:border-box;}',
+    '.sk-handle{width:42px;height:5px;border-radius:3px;background:#d3d8e0;margin:5px auto 4px;}',
+    '.sk-head{display:flex;align-items:center;gap:9px;cursor:pointer;padding:8px 4px 14px;user-select:none;-webkit-tap-highlight-color:transparent;}',
+    '.sk-title{font-size:1.05rem;font-weight:800;color:var(--text-1);letter-spacing:-.01em;}',
+    '.sk-state{font-size:.86rem;font-weight:800;letter-spacing:.05em;}',
+    '.sk-state.on{color:#1d7a3a;} .sk-state.off{color:#aeb4bf;}',
+    '.sk-chev{margin-left:auto;color:var(--text-m);display:flex;transition:transform .34s ease;}',
+    '.sk-chev svg{width:22px;height:22px;}',
+    '#home-ctrl-modal.caro-sk-open .sk-chev{transform:rotate(180deg);}',
+
+    /* 공통 버튼 카드(시트 안) */
+    '#caro-sk-sheet .ctrl-sq-btn{background:#eef1f6 !important;border:1px solid transparent !important;border-radius:18px !important;',
+      'display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;',
+      'box-shadow:none !important;width:auto !important;position:relative;padding:16px 8px !important;transition:background .15s;}',
+    '#caro-sk-sheet .ctrl-sq-btn:active{background:#e4e9f0 !important;}',
+    '#caro-sk-sheet .ctrl-sq-btn:disabled{opacity:.45 !important;}',
+    '#caro-sk-sheet .ctrl-sq-icon{font-size:0 !important;line-height:0;margin-bottom:7px !important;color:var(--accent-2);}',
+    '#caro-sk-sheet .ctrl-sq-icon svg{width:27px;height:27px;display:block;}',
+    '#caro-sk-sheet .ctrl-sq-label{font-size:.82rem !important;font-weight:600 !important;color:var(--text-1) !important;margin-top:0 !important;}',
+    '#caro-sk-sheet .ctrl-sq-badge{position:absolute;top:7px;right:9px;} #caro-sk-sheet .ctrl-sq-badge:empty{display:none;}',
+
+    /* 스테이지 높이 전환 */
+    '.sk-stage{overflow:hidden;transition:max-height .42s ease;}',
+    '.sk-stage-collapsed{max-height:130px;}',
+    '.sk-stage-expanded{max-height:400px;}',
+
+    /* 접힘: 4개 가로행 */
+    '.sk-stage-collapsed .sk-collap-row{display:flex;gap:9px;}',
+    '.sk-stage-collapsed .sk-collap-row > .ctrl-sq-btn{flex:1;padding:13px 6px !important;background:#f3f5f9 !important;}',
+    '.sk-stage-collapsed #ctrl-btn-locate{display:none !important;}',
+    '.sk-stage-collapsed .ctrl-sq-icon svg{width:23px;height:23px;}',
+    '.sk-stage-collapsed .ctrl-sq-label{font-size:.76rem !important;color:var(--text-2) !important;}',
+
+    /* 펼침: 쏘카식 비대칭 그리드 */
+    '.sk-stage-expanded{display:flex;gap:12px;height:clamp(252px,40vh,330px);animation:skFade .34s ease;}',
+    '@keyframes skFade{from{opacity:.3;}to{opacity:1;}}',
+    '.sk-stage-expanded .sk-left{flex:1.18;display:flex;flex-direction:column;gap:12px;min-width:0;}',
+    '.sk-stage-expanded .sk-right{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0;}',
+    '.sk-stage-expanded .sk-quick{display:flex;align-items:stretch;background:#eef1f6;border-radius:18px;overflow:hidden;flex-shrink:0;}',
+    '.sk-stage-expanded .sk-quick > .ctrl-sq-btn{flex:1;background:transparent !important;border-radius:0 !important;padding:15px 6px !important;}',
+    '.sk-stage-expanded .sk-quick > .ctrl-sq-btn:first-child{border-right:1px solid rgba(140,148,160,.22) !important;}',
+    '.sk-stage-expanded .sk-return-wrap{flex:1;display:flex;}',
+    '.sk-stage-expanded .sk-return-wrap > .ctrl-sq-btn{flex:1;}',
+    '.sk-stage-expanded .sk-rcell{flex:1;display:flex;}',
+    '.sk-stage-expanded .sk-rcell > .ctrl-sq-btn{flex:1;}',
+
+    /* 반납(return) — 시트 안에선 밝은 큰 카드 + 새로고침 아이콘 (다크 강조 해제) */
+    '#caro-sk-sheet #ctrl-btn-return{background:#eef1f6 !important;border-color:transparent !important;}',
+    '#caro-sk-sheet #ctrl-btn-return .ctrl-sq-icon{display:flex !important;color:var(--accent-2) !important;margin-bottom:8px !important;}',
+    '#caro-sk-sheet #ctrl-btn-return .ctrl-sq-icon svg{width:30px;height:30px;}',
+    '#caro-sk-sheet #ctrl-btn-return .ctrl-sq-label{color:var(--text-1) !important;font-weight:700 !important;font-size:.9rem !important;}'
+  ].join('');
+  (document.head||document.documentElement).appendChild(st);
+
+  var CHEV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>';
+  var REFRESH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>';
+
+  function byId(id){ return document.getElementById(id); }
+
+  var B={};
+  function grabButtons(){
+    B.unlock=byId('ctrl-btn-unlock'); B.lock=byId('ctrl-btn-lock');
+    B.hazard=byId('ctrl-btn-hazard'); B.photo=byId('ctrl-photo-toggle');
+    B.locate=byId('ctrl-btn-locate'); B.ext=byId('ctrl-btn-extend');
+    B.ret=byId('ctrl-btn-return'); B.acc=byId('caro-btn-acc');
+    return !!(B.unlock && B.lock && B.ret);
+  }
+
+  var skExpanded=false;
+
+  function buildSheet(){
+    var modal=byId('home-ctrl-modal'); if(!modal) return;
+    var box=modal.querySelector('.home-ctrl-box'); if(!box) return;
+    if(!byId('caro-sk-scrim')){
+      var scrim=document.createElement('div'); scrim.id='caro-sk-scrim';
+      scrim.onclick=function(){ collapse(); };
+      modal.appendChild(scrim);
+    }
+    if(!byId('caro-sk-sheet')){
+      var sheet=document.createElement('div'); sheet.id='caro-sk-sheet';
+      sheet.innerHTML=
+        '<div class="sk-handle"></div>'+
+        '<div class="sk-head" id="sk-head"><span class="sk-title">스마트키</span>'+
+          '<span class="sk-state off" id="sk-state">OFF</span>'+
+          '<span class="sk-chev">'+CHEV+'</span></div>'+
+        '<div class="sk-stage sk-stage-collapsed" id="sk-stage"></div>';
+      box.appendChild(sheet);
+      byId('sk-head').onclick=function(){ toggle(); };
+    }
+  }
+
+  /* 시트 밖 본문 '차량 이용' (주행전 사진·시간 연장·사고 신고) */
+  function buildExtra(){
+    var box=document.querySelector('#home-ctrl-modal .home-ctrl-box'); if(!box) return;
+    var extra=byId('caro-ctrl-extra');
+    if(!extra){
+      extra=document.createElement('div'); extra.id='caro-ctrl-extra';
+      extra.innerHTML='<div class="cce-label">차량 이용</div><div class="cce-row" id="cce-row"></div>';
+      var anchor=byId('caro-ctrl-fuel')||document.querySelector('#home-ctrl-modal .ctrl-info-section');
+      if(anchor && anchor.parentNode){ anchor.parentNode.insertBefore(extra, anchor.nextSibling); }
+      else { box.appendChild(extra); }
+    }
+    var row=byId('cce-row');
+    if(row){ [B.photo,B.ext,B.acc].forEach(function(b){ if(b) row.appendChild(b); }); }
+  }
+
+  function styleReturn(){
+    if(!B.ret) return;
+    var ic=B.ret.querySelector('.ctrl-sq-icon');
+    if(ic && !ic.querySelector('svg')) ic.innerHTML=REFRESH;
+    var lb=B.ret.querySelector('.ctrl-sq-label');
+    if(lb && lb.textContent.trim()==='반납') lb.textContent='반납하기';
+  }
+
+  function renderStage(expanded){
+    var stage=byId('sk-stage'); if(!stage) return;
+    if(expanded){
+      stage.className='sk-stage sk-stage-expanded';
+      stage.innerHTML=
+        '<div class="sk-left"><div class="sk-quick" id="sk-q"></div><div class="sk-return-wrap" id="sk-r"></div></div>'+
+        '<div class="sk-right"><div class="sk-rcell" id="sk-l"></div><div class="sk-rcell" id="sk-u"></div></div>';
+      var q=byId('sk-q'); if(q){ if(B.hazard)q.appendChild(B.hazard); if(B.locate)q.appendChild(B.locate); }
+      var r=byId('sk-r'); if(r&&B.ret) r.appendChild(B.ret);
+      var l=byId('sk-l'); if(l&&B.lock) l.appendChild(B.lock);
+      var u=byId('sk-u'); if(u&&B.unlock) u.appendChild(B.unlock);
+    } else {
+      stage.className='sk-stage sk-stage-collapsed';
+      stage.innerHTML='<div class="sk-collap-row" id="sk-cr"></div>';
+      var cr=byId('sk-cr');
+      if(cr){ [B.ret,B.hazard,B.lock,B.unlock,B.locate].forEach(function(b){ if(b) cr.appendChild(b); }); }
+    }
+    styleReturn();
+  }
+
+  function syncState(){
+    var stEl=byId('sk-state'); if(!stEl) return;
+    var on=!!(B.unlock && !B.unlock.disabled);
+    stEl.textContent=on?'ON':'OFF';
+    stEl.className='sk-state '+(on?'on':'off');
+  }
+
+  function setExpanded(v){
+    skExpanded=v;
+    var m=byId('home-ctrl-modal'); if(m) m.classList.toggle('caro-sk-open', v);
+    renderStage(v); syncState();
+  }
+  function toggle(){ setExpanded(!skExpanded); }
+  function collapse(){ setExpanded(false); }
+  window.caroSmartKeyCollapse=collapse;
+
+  function rebuild(){ if(!grabButtons()) return false; buildSheet(); buildExtra(); setExpanded(false); return true; }
+
+  function onOpen(){
+    var tries=0;
+    var iv=setInterval(function(){ tries++; if(rebuild()||tries>25) clearInterval(iv); },50);
+    setTimeout(rebuild, 320);
+  }
+
+  /* openHomeCtrl 한 번 더 래핑 (기존 enhanceCtrlPage 뒤에 실행) */
+  if(typeof window.openHomeCtrl==='function' && !window.openHomeCtrl.__caroSK2){
+    var _o=window.openHomeCtrl;
+    window.openHomeCtrl=function(){ var r; try{ r=_o.apply(this,arguments); }catch(e){} onOpen(); return r; };
+    window.openHomeCtrl.__caroSK2=true;
+  }
+  /* 닫을 때 접힘 초기화 */
+  ['closeHomeCtrl','closeHomeCtrlDirect'].forEach(function(name){
+    if(typeof window[name]==='function' && !window[name].__caroSK2){
+      var _c=window[name];
+      window[name]=function(){ try{ collapse(); }catch(e){} return _c.apply(this,arguments); };
+      window[name].__caroSK2=true;
+    }
+  });
+  /* 모달 열린 동안 ON/OFF 갱신 */
+  setInterval(function(){ var m=byId('home-ctrl-modal'); if(m&&m.classList.contains('open')) syncState(); }, 2000);
+
+  console.log('[컨트롤러] ✅ 스마트키 바텀시트 v2 (쏘카 디자인)');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 예약 진입 안전장치 (점검중·미반납/연체 차량 차단)
+   ───────────────────────────────────────────────────────────
+   · 어떤 경로로 selectCar 가 호출되든, 점검중이거나 아직 반납되지 않은
+     (연체 포함) 차량은 예약 화면 진입을 막음.
+   · 판정은 caroCarState(점검/미반납/대여중 통합)를 사용.
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  function blockMsg(state){
+    var m=(state && state.cls==='maint') ? '점검 중인 차량은 대여할 수 없습니다.'
+                                          : '현재 대여 중인 차량입니다. 반납 후 이용 가능합니다.';
+    if(window.showToast) showToast(m); else alert(m);
+  }
+  function guardSelect(name){
+    if(typeof window[name]!=='function' || window[name].__caroAvailGuard) return;
+    var orig=window[name];
+    window[name]=function(carId){
+      try{
+        var car=null;
+        var arr=(name==='selectBlCar')?(window.BL_CARS||[]):(window.CARS_DATA||[]);
+        for(var i=0;i<arr.length;i++){ if(arr[i] && arr[i].id===carId){ car=arr[i]; break; } }
+        if(car && window.caroCarState){
+          var stt=window.caroCarState(car);
+          if(stt && !stt.ok){ blockMsg(stt); return; }
+        }
+      }catch(e){}
+      return orig.apply(this, arguments);
+    };
+    window[name].__caroAvailGuard=true;
+  }
+  guardSelect('selectCar');
+  guardSelect('selectBlCar');
+  console.log('[예약] ✅ 점검중·미반납/연체 차량 예약 진입 차단');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 미납(채권) 차단 + 홈 하단 미납 바 + 장기미납 정지 v1
+   ───────────────────────────────────────────────────────────
+   · 반납 정산이 미결제(채권)로 남으면:
+       - 홈 하단 '차량 제어' 바 자리에 [차량번호 · 미납금액 · 납부] 바 표시
+       - 미납이 있는 동안 모든 차량 신규 대여 불가
+   · 미납 발생 후 3주(21일) 이상 경과한 건을 납부하면 → 그 시점부터
+     30일 이용 정지 (납부는 정지 중에도 항상 가능, 정지 해제와는 별개)
+   · 정지는 (면허번호 + 아이디) 서명으로 식별해 localStorage + Firestore(best-effort) 보관
+   · customer-redesign.js 맨 아래 추가. 기존 코드 안 건드림.
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  var UNPAID_KEY='caro_apd_unpaid';
+  var SUSP_KEY='caro_suspension_v1';
+  var LONG_DAYS=21;     /* 3주 이상 미납 = 장기 */
+  var SUSPEND_DAYS=30;  /* 한 달 정지 */
+  var DAY=86400000;
+
+  function won(n){ try{ return (Number(n)||0).toLocaleString('ko-KR'); }catch(e){ return n; } }
+  function toast(m){ if(window.showToast) showToast(m); else alert(m); }
+  function esc(t){ return (''+(t==null?'':t)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function fmtDay(ts){ var d=new Date(ts); if(isNaN(d.getTime())) return '-'; return d.getFullYear()+'.'+('0'+(d.getMonth()+1)).slice(-2)+'.'+('0'+d.getDate()).slice(-2); }
+
+  /* ── 미납 데이터 ── */
+  function unpaidList(){ try{ var l=JSON.parse(localStorage.getItem(UNPAID_KEY)||'[]'); return Array.isArray(l)?l:[]; }catch(e){ return []; } }
+  function unpaidTotal(){ var t=0; unpaidList().forEach(function(x){ t+=(Number(x.amount)||0); }); return t; }
+  function hasUnpaid(){ return unpaidTotal()>0; }
+  function oldestUnpaidTs(){
+    var ts=null; unpaidList().forEach(function(x){ var t=x.ts||(x.date?new Date(x.date.replace(/\./g,'-')).getTime():null); if(t&&(ts===null||t<ts)) ts=t; });
+    return ts;
+  }
+  function oldestUnpaidDays(){ var t=oldestUnpaidTs(); return t?Math.floor((Date.now()-t)/DAY):0; }
+  function latestUnpaidCarNo(){ var l=unpaidList(); for(var i=0;i<l.length;i++){ if(l[i].carNumber) return l[i].carNumber; } return ''; }
+  function clearUnpaid(){ try{ localStorage.setItem(UNPAID_KEY, JSON.stringify([])); }catch(e){} }
+
+  /* ── 사용자 서명 (면허번호 + 아이디) ── */
+  function userSig(){
+    var lic='';
+    try{ var L=JSON.parse(localStorage.getItem('caro_license')||'null'); if(L&&L.number) lic=String(L.number); }catch(e){}
+    var id=(window.userInfo&&(userInfo.id||userInfo.uid))||'';
+    return 'lic:'+lic+'|id:'+id;
+  }
+
+  /* ── 이용 정지 ── */
+  function readSusp(){ try{ return JSON.parse(localStorage.getItem(SUSP_KEY)||'null'); }catch(e){ return null; } }
+  function suspendedUntil(){
+    var s=readSusp(); if(!s||!s.until) return 0;
+    /* 현재 로그인 사용자 서명과 일치할 때만 적용 */
+    if(s.sig && s.sig!==userSig()) return 0;
+    return s.until;
+  }
+  function isSuspended(){ var u=suspendedUntil(); return u>Date.now(); }
+  function applySuspension(days){
+    var until=Date.now()+days*DAY;
+    var rec={ sig:userSig(), until:until, at:Date.now() };
+    try{ localStorage.setItem(SUSP_KEY, JSON.stringify(rec)); }catch(e){}
+    /* Firestore best-effort (users/{uid}.suspendedUntil) */
+    try{
+      var db=window.FB_DB, fn=window.FB_FN, uid=(window.FB_AUTH&&FB_AUTH.currentUser&&FB_AUTH.currentUser.uid);
+      if(db&&fn&&fn.setDoc&&fn.doc&&uid){
+        fn.setDoc(fn.doc(db,'users',uid),{ suspendedUntil:new Date(until).toISOString(), suspendedAt:new Date().toISOString() },{merge:true});
+      }
+    }catch(e){}
+    return until;
+  }
+
+  /* ── 대여 가능 여부 (전역) ── */
+  function canRent(){
+    if(isSuspended()) return {ok:false, reason:'suspended', until:suspendedUntil()};
+    if(hasUnpaid())  return {ok:false, reason:'unpaid', amount:unpaidTotal()};
+    return {ok:true};
+  }
+  window.caroCanRent=canRent;
+  window.caroHasUnpaid=hasUnpaid;
+  window.caroIsSuspended=isSuspended;
+
+  /* ── 납부 ── */
+  function payAll(){
+    var total=unpaidTotal();
+    if(total<=0){ toast('납부할 미납금이 없습니다.'); return; }
+    var longOverdue=oldestUnpaidDays()>=LONG_DAYS;
+    /* (데모) 등록 카드로 결제 처리 — 실제 PG 연동 시 성공 콜백에서 아래 실행 */
+    clearUnpaid();
+    if(longOverdue){
+      var until=applySuspension(SUSPEND_DAYS);
+      toast('미납금 '+won(total)+'원이 납부되었습니다. 다만 장기(3주 이상) 미납으로 '+SUSPEND_DAYS+'일간 이용이 정지됩니다. (해제 '+fmtDay(until)+')');
+    } else {
+      toast('미납금 '+won(total)+'원이 모두 납부되었습니다. 정상 이용 가능합니다.');
+    }
+    syncUnpaidBar();
+    try{ if(window.renderCars) renderCars(); if(window.updateMapMarkers) updateMapMarkers(); }catch(e){}
+  }
+  window.caroPayUnpaid=function(){
+    var total=unpaidTotal();
+    var long=oldestUnpaidDays()>=LONG_DAYS;
+    var msg='미납금 '+won(total)+'원을 납부하시겠습니까?'+(long?'\n\n※ 3주 이상 장기 미납으로, 납부하더라도 '+SUSPEND_DAYS+'일간 이용이 정지됩니다.':'');
+    if(confirm(msg)) payAll();
+  };
+
+  /* ── 홈 하단 미납/정지 바 ── */
+  var css=document.createElement('style'); css.id='caro-unpaid-bar-css';
+  css.textContent=[
+    '#caro-unpaid-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(72px + var(--sab));',
+      'width:calc(100% - 32px);max-width:448px;z-index:485;display:none;align-items:center;gap:11px;',
+      'padding:11px 12px 11px 14px;background:linear-gradient(135deg,#7a1f1f,#5e1717);border:1px solid rgba(255,255,255,.12);',
+      'border-radius:16px;box-shadow:0 8px 24px -8px rgba(120,20,20,.5);}',
+    '#caro-unpaid-bar.show{display:flex;}',
+    '#caro-unpaid-bar .ub-ic{width:34px;height:34px;flex-shrink:0;border-radius:9px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;color:#fff;}',
+    '#caro-unpaid-bar .ub-ic svg{width:20px;height:20px;}',
+    '#caro-unpaid-bar .ub-info{flex:1;min-width:0;}',
+    '#caro-unpaid-bar .ub-t1{font-size:.82rem;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+    '#caro-unpaid-bar .ub-t2{font-size:.68rem;color:rgba(255,255,255,.82);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+    '#caro-unpaid-bar .ub-amt{font-family:"Oswald",sans-serif;font-weight:700;}',
+    '#caro-unpaid-bar .ub-btn{flex-shrink:0;background:#fff;color:#7a1f1f;border:none;border-radius:11px;padding:10px 16px;font-size:.84rem;font-weight:800;cursor:pointer;font-family:inherit;}',
+    '#caro-unpaid-bar .ub-btn:active{opacity:.85;}',
+    /* 정지(미납 없음) 바 */
+    '#caro-unpaid-bar.susp{background:linear-gradient(135deg,#3a3f47,#23262c);}',
+    '#caro-unpaid-bar.susp .ub-btn{display:none;}'
+  ].join('');
+  (document.head||document.documentElement).appendChild(css);
+
+  var WARN='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  var LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+
+  function ensureBar(){
+    var bar=document.getElementById('caro-unpaid-bar');
+    if(!bar){ bar=document.createElement('div'); bar.id='caro-unpaid-bar'; document.body.appendChild(bar); }
+    return bar;
+  }
+  function syncUnpaidBar(){
+    var home=document.getElementById('home-screen');
+    var homeActive=home && home.classList.contains('active');
+    var bar=document.getElementById('caro-unpaid-bar');
+    var unpaid=hasUnpaid(), susp=isSuspended();
+
+    if(!homeActive || (!unpaid && !susp)){
+      if(bar) bar.classList.remove('show');
+      return;
+    }
+    bar=ensureBar();
+    /* 차량 제어 바와 겹치면 위로 올림 */
+    var rb=document.getElementById('caro-rental-bar');
+    var rbOn=rb && rb.style.display!=='none' && getComputedStyle(rb).display!=='none';
+    bar.style.bottom = rbOn ? 'calc(140px + var(--sab))' : 'calc(72px + var(--sab))';
+
+    if(unpaid){
+      bar.classList.remove('susp');
+      var no=latestUnpaidCarNo();
+      var days=oldestUnpaidDays();
+      bar.innerHTML=
+        '<span class="ub-ic">'+WARN+'</span>'+
+        '<div class="ub-info">'+
+          '<div class="ub-t1">미납금 <span class="ub-amt">'+won(unpaidTotal())+'원</span></div>'+
+          '<div class="ub-t2">'+(no?('차량 '+esc(no)+' · '):'')+'납부 전까지 대여 불가'+(days>=LONG_DAYS?' · 장기미납':'')+'</div>'+
+        '</div>'+
+        '<button class="ub-btn" onclick="if(window.caroPayUnpaid)caroPayUnpaid()">납부</button>';
+      bar.classList.add('show');
+    } else { /* 정지 중(미납 없음) */
+      bar.classList.add('susp');
+      bar.innerHTML=
+        '<span class="ub-ic">'+LOCK+'</span>'+
+        '<div class="ub-info">'+
+          '<div class="ub-t1">이용 정지 중</div>'+
+          '<div class="ub-t2">장기 미납으로 정지 · 해제일 '+fmtDay(suspendedUntil())+'</div>'+
+        '</div>';
+      bar.classList.add('show');
+    }
+    /* 홈 본문 하단 여백 확보 */
+    var body=document.querySelector('#home-screen .home-body');
+    if(body){ var cur=parseInt(body.style.paddingBottom||'0',10)||0; if(cur<130) body.style.paddingBottom='130px'; }
+  }
+  window.caroSyncUnpaidBar=syncUnpaidBar;
+
+  syncUnpaidBar();
+  setInterval(syncUnpaidBar, 3000);
+  var hs=document.getElementById('home-screen');
+  if(hs && window.MutationObserver){ new MutationObserver(syncUnpaidBar).observe(hs,{attributes:true,attributeFilter:['class']}); }
+
+  /* ── 대여 차단: caroCarState 한 번 더 래핑 (미납·정지 → 전 차량 불가) ── */
+  if(typeof window.caroCarState==='function' && !window.caroCarState.__caroUnpaidWrap){
+    var _prevState=window.caroCarState;
+    window.caroCarState=function(car){
+      var g=canRent();
+      if(!g.ok) return { ok:false, label:(g.reason==='suspended'?'이용 정지':'미납'), cls:(g.reason==='suspended'?'maint':'rented') };
+      return _prevState.apply(this, arguments);
+    };
+    window.caroCarState.__caroUnpaidWrap=true;
+  }
+
+  /* ── 예약 진입 차단: selectCar / selectBlCar 래핑 (구체적 안내) ── */
+  ['selectCar','selectBlCar'].forEach(function(name){
+    if(typeof window[name]!=='function' || window[name].__caroUnpaidGuard) return;
+    var orig=window[name];
+    window[name]=function(){
+      var g=canRent();
+      if(!g.ok){
+        if(g.reason==='suspended') toast('장기 미납으로 이용이 정지되었습니다. 해제일: '+fmtDay(g.until));
+        else toast('미납금('+won(g.amount)+'원)이 있어 대여할 수 없습니다. 먼저 납부해 주세요.');
+        return;
+      }
+      return orig.apply(this, arguments);
+    };
+    window[name].__caroUnpaidGuard=true;
+  });
+
+  console.log('[미납] ✅ 미납 차단 + 하단 미납 바 + 장기미납('+LONG_DAYS+'일→'+SUSPEND_DAYS+'일 정지) v1');
 })();
