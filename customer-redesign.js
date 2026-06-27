@@ -4038,6 +4038,7 @@
   var SUSP_KEY='caro_suspension_v1';
   var LONG_DAYS=21;     /* 3주 이상 미납 = 장기 */
   var SUSPEND_DAYS=30;  /* 한 달 정지 */
+  var HABITUAL_COUNT=3; /* 누적 미납 3회 이상 = 상습 (완납 포함) */
   var DAY=86400000;
 
   function won(n){ try{ return (Number(n)||0).toLocaleString('ko-KR'); }catch(e){ return n; } }
@@ -4104,17 +4105,30 @@
       }catch(e){}
     },
     /* 이용 정지 기록 → suspensions/{uid} */
-    writeSuspension:function(until,reason){
+    writeSuspension:function(until,reason,opts){
       if(!fsReady()) return;
       try{
         var db=window.FB_DB, fn=window.FB_FN, u=userIdentity();
         if(!u.uid) return;
-        fn.setDoc(fn.doc(db,'suspensions',u.uid),{
+        var data={
           userId:u.uid, idName:u.idName, userName:u.userName, license:u.license,
-          until:new Date(until).toISOString(), untilTs:until,
+          until: until?new Date(until).toISOString():null, untilTs: until||null,
           reason:reason||'장기 미납', createdAt:new Date().toISOString(), active:true
-        },{merge:true});
+        };
+        if(opts){ data.habitual=!!opts.habitual; data.requiresApproval=!!opts.requiresApproval; if(opts.count!=null) data.count=opts.count; }
+        else { data.habitual=false; data.requiresApproval=false; }
+        fn.setDoc(fn.doc(db,'suspensions',u.uid),data,{merge:true});
       }catch(e){}
+    },
+    /* 본인 누적 미납 발생 횟수(완납 포함) → cb(count) */
+    countDebts:function(cb){
+      if(!fsReady()){ cb&&cb(0); return; }
+      try{
+        var db=window.FB_DB, fn=window.FB_FN, u=userIdentity();
+        if(!u.uid||!fn.getDocs||!fn.query||!fn.where){ cb&&cb(0); return; }
+        var q=fn.query(fn.collection(db,'unpaid_debts'),fn.where('userId','==',u.uid));
+        fn.getDocs(q).then(function(snap){ cb&&cb(snap.size||0); }).catch(function(){ cb&&cb(0); });
+      }catch(e){ cb&&cb(0); }
     }
   };
 
@@ -4144,10 +4158,12 @@
     try{
       fn.onSnapshot(fn.doc(db,'suspensions',u.uid),function(ds){
         var s=(ds&&ds.exists)?ds.data():null;
-        if(!s || s.active===false || !(s.untilTs>Date.now())){
+        var activeHold = !!(s && s.active!==false && (s.requiresApproval===true || s.habitual===true));
+        var activeTimed = !!(s && s.active!==false && (s.untilTs>Date.now()));
+        if(!s || s.active===false || (!activeHold && !activeTimed)){
           var cur=readSusp(); if(cur && cur.sig===userSig()){ try{ localStorage.removeItem(SUSP_KEY); }catch(e){} }
         } else {
-          try{ localStorage.setItem(SUSP_KEY, JSON.stringify({ sig:userSig(), until:s.untilTs, at:Date.parse(s.createdAt)||Date.now() })); }catch(e){}
+          try{ localStorage.setItem(SUSP_KEY, JSON.stringify({ sig:userSig(), until:s.untilTs||0, hold:activeHold, at:Date.parse(s.createdAt)||Date.now() })); }catch(e){}
         }
         syncUnpaidBar();
         try{ if(window.renderCars) renderCars(); }catch(e){}
@@ -4160,25 +4176,29 @@
 
   /* ── 이용 정지 ── */
   function readSusp(){ try{ return JSON.parse(localStorage.getItem(SUSP_KEY)||'null'); }catch(e){ return null; } }
-  function suspendedUntil(){
-    var s=readSusp(); if(!s||!s.until) return 0;
-    /* 현재 로그인 사용자 서명과 일치할 때만 적용 */
-    if(s.sig && s.sig!==userSig()) return 0;
-    return s.until;
-  }
-  function isSuspended(){ var u=suspendedUntil(); return u>Date.now(); }
+  function suspValid(){ var s=readSusp(); if(!s) return null; if(s.sig && s.sig!==userSig()) return null; return s; }
+  function suspendedUntil(){ var s=suspValid(); return (s&&s.until)?s.until:0; }
+  function isHold(){ var s=suspValid(); return !!(s && s.hold); }   /* 상습: 관리자 승인 전까지 (자동해제 없음) */
+  function isSuspended(){ return isHold() || suspendedUntil()>Date.now(); }
   function applySuspension(days){
     var until=Date.now()+days*DAY;
-    var rec={ sig:userSig(), until:until, at:Date.now() };
+    var rec={ sig:userSig(), until:until, hold:false, at:Date.now() };
     try{ localStorage.setItem(SUSP_KEY, JSON.stringify(rec)); }catch(e){}
     /* Firestore: suspensions/{uid} (관제 대시보드 연동) */
     try{ if(window.caroDebtFS&&window.caroDebtFS.writeSuspension) window.caroDebtFS.writeSuspension(until,'장기 미납(3주 이상) 납부'); }catch(e){}
     return until;
   }
+  /* 상습(3회+) 완납 시 — 자동 해제 없이 관리자 승인 대기로 묶음 */
+  function applyAdminHold(count){
+    var rec={ sig:userSig(), until:0, hold:true, at:Date.now() };
+    try{ localStorage.setItem(SUSP_KEY, JSON.stringify(rec)); }catch(e){}
+    try{ if(window.caroDebtFS&&window.caroDebtFS.writeSuspension)
+      window.caroDebtFS.writeSuspension(null,'상습 미납(누적 '+count+'회) — 관리자 승인 대기',{habitual:true,requiresApproval:true,count:count}); }catch(e){}
+  }
 
   /* ── 대여 가능 여부 (전역) ── */
   function canRent(){
-    if(isSuspended()) return {ok:false, reason:'suspended', until:suspendedUntil()};
+    if(isSuspended()) return {ok:false, reason:'suspended', until:suspendedUntil(), hold:isHold()};
     if(hasUnpaid())  return {ok:false, reason:'unpaid', amount:unpaidTotal()};
     return {ok:true};
   }
@@ -4194,14 +4214,22 @@
     /* (데모) 등록 카드로 결제 처리 — 실제 PG 연동 시 성공 콜백에서 아래 실행 */
     clearUnpaid();
     try{ if(window.caroDebtFS&&window.caroDebtFS.markAllPaid) window.caroDebtFS.markAllPaid(); }catch(e){}  /* Firestore 납부처리 */
-    if(longOverdue){
-      var until=applySuspension(SUSPEND_DAYS);
-      toast('미납금 '+won(total)+'원이 납부되었습니다. 다만 장기(3주 이상) 미납으로 '+SUSPEND_DAYS+'일간 이용이 정지됩니다. (해제 '+fmtDay(until)+')');
-    } else {
-      toast('미납금 '+won(total)+'원이 모두 납부되었습니다. 정상 이용 가능합니다.');
-    }
-    syncUnpaidBar();
-    try{ if(window.renderCars) renderCars(); if(window.updateMapMarkers) updateMapMarkers(); }catch(e){}
+    var finishPay=function(count){
+      if(count>=HABITUAL_COUNT){
+        /* 상습(누적 3회+): 완납해도 자동 해제 없이 관리자 승인 대기 */
+        applyAdminHold(count);
+        toast('미납금 '+won(total)+'원이 납부되었습니다. 다만 상습 미납(누적 '+count+'회)으로 관리자 승인 전까지 이용이 제한됩니다.');
+      } else if(longOverdue){
+        var until=applySuspension(SUSPEND_DAYS);
+        toast('미납금 '+won(total)+'원이 납부되었습니다. 다만 장기(3주 이상) 미납으로 '+SUSPEND_DAYS+'일간 이용이 정지됩니다. (해제 '+fmtDay(until)+')');
+      } else {
+        toast('미납금 '+won(total)+'원이 모두 납부되었습니다. 정상 이용 가능합니다.');
+      }
+      syncUnpaidBar();
+      try{ if(window.renderCars) renderCars(); if(window.updateMapMarkers) updateMapMarkers(); }catch(e){}
+    };
+    if(window.caroDebtFS&&window.caroDebtFS.countDebts) window.caroDebtFS.countDebts(finishPay);
+    else finishPay(0);
   }
   window.caroPayUnpaid=function(){
     var total=unpaidTotal();
@@ -4268,13 +4296,14 @@
         '</div>'+
         '<button class="ub-btn" onclick="if(window.caroPayUnpaid)caroPayUnpaid()">납부</button>';
       bar.classList.add('show');
-    } else { /* 정지 중(미납 없음) */
+    } else { /* 정지/제한 중(미납 없음) */
       bar.classList.add('susp');
+      var holdMode=isHold();
       bar.innerHTML=
         '<span class="ub-ic">'+LOCK+'</span>'+
         '<div class="ub-info">'+
-          '<div class="ub-t1">이용 정지 중</div>'+
-          '<div class="ub-t2">장기 미납으로 정지 · 해제일 '+fmtDay(suspendedUntil())+'</div>'+
+          '<div class="ub-t1">'+(holdMode?'이용 제한 중':'이용 정지 중')+'</div>'+
+          '<div class="ub-t2">'+(holdMode?'상습 미납 · 관리자 승인 후 이용 가능':('장기 미납으로 정지 · 해제일 '+fmtDay(suspendedUntil())))+'</div>'+
         '</div>';
       bar.classList.add('show');
     }
@@ -4307,7 +4336,7 @@
     window[name]=function(){
       var g=canRent();
       if(!g.ok){
-        if(g.reason==='suspended') toast('장기 미납으로 이용이 정지되었습니다. 해제일: '+fmtDay(g.until));
+        if(g.reason==='suspended') toast(g.hold ? '상습 미납으로 이용이 제한되었습니다. 관리자 승인 후 이용 가능합니다.' : ('장기 미납으로 이용이 정지되었습니다. 해제일: '+fmtDay(g.until)));
         else toast('미납금('+won(g.amount)+'원)이 있어 대여할 수 없습니다. 먼저 납부해 주세요.');
         return;
       }
