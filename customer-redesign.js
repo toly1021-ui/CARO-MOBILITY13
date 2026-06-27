@@ -3791,10 +3791,10 @@
   var st=document.createElement('style'); st.id='caro-smartkey-v2-css';
   st.textContent=[
     '#home-ctrl-modal .ctrl-btn-wrap{display:none !important;}',
-    /* 차량 제어 모달 열렸을 때만 시트/스크림 노출 (그 외 화면 완전 숨김) */
-    '#home-ctrl-modal:not(.open) #caro-sk-sheet,#home-ctrl-modal:not(.open) #caro-sk-scrim{display:none !important;}',
+    /* 시트는 body에 부착 → 기본 숨김, 차량 제어 열렸을 때만 .on 으로 표시 */
+    '#caro-sk-sheet{display:none;} #caro-sk-sheet.on{display:block;}',
     /* 본문 하단 여백 (접힌 시트에 안 가리게) */
-    '#home-ctrl-modal .home-ctrl-box{padding-bottom:calc(180px + var(--sab)) !important;}',
+    '#home-ctrl-modal .home-ctrl-box{padding-bottom:calc(160px + var(--sab)) !important;}',
 
     /* ── 시트 밖 본문 '차량 이용' (주행전 사진·시간 연장·사고 신고) ── */
     '#caro-ctrl-extra{padding:2px 16px 8px;}',
@@ -3808,13 +3808,14 @@
     '#caro-ctrl-extra .ctrl-sq-badge{position:absolute;top:6px;right:8px;} #caro-ctrl-extra .ctrl-sq-badge:empty{display:none;}',
 
     /* ── 스크림 ── */
-    '#caro-sk-scrim{position:fixed;inset:0;z-index:29;background:rgba(18,20,26,.34);opacity:0;pointer-events:none;transition:opacity .3s ease;}',
-    '#home-ctrl-modal.caro-sk-open #caro-sk-scrim{opacity:1;pointer-events:auto;}',
+    '#caro-sk-scrim{position:fixed;inset:0;z-index:899;background:rgba(18,20,26,.34);opacity:0;pointer-events:none;transition:opacity .3s ease;display:none;}',
+    'body.caro-sk-expanded #caro-sk-scrim{display:block;opacity:1;pointer-events:auto;}',
 
     /* ── 시트 ── */
-    '#caro-sk-sheet{position:fixed;left:0;right:0;bottom:0;z-index:30;width:100%;max-width:520px;margin:0 auto;background:#fff;',
+    '#caro-sk-sheet{position:fixed;left:0;right:0;bottom:0;z-index:900;width:100%;max-width:520px;margin:0 auto;background:#fff;',
       'border-top-left-radius:26px;border-top-right-radius:26px;box-shadow:0 -10px 34px -12px rgba(20,22,28,.26);',
-      'padding:8px 18px calc(20px + var(--sab));box-sizing:border-box;}',
+      'padding:8px 18px calc(18px + var(--sab));box-sizing:border-box;}',
+    '.sk-grip{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;}',
     '.sk-handle{width:42px;height:5px;border-radius:3px;background:#d3d8e0;margin:5px auto 4px;}',
     '.sk-head{display:flex;align-items:center;gap:9px;cursor:pointer;padding:8px 4px 14px;user-select:none;-webkit-tap-highlight-color:transparent;}',
     '.sk-title{font-size:1.05rem;font-weight:800;color:var(--text-1);letter-spacing:-.01em;}',
@@ -3822,7 +3823,7 @@
     '.sk-state.on{color:#1d7a3a;} .sk-state.off{color:#aeb4bf;}',
     '.sk-chev{margin-left:auto;color:var(--text-m);display:flex;transition:transform .34s ease;}',
     '.sk-chev svg{width:22px;height:22px;}',
-    '#home-ctrl-modal.caro-sk-open .sk-chev{transform:rotate(180deg);}',
+    '#caro-sk-sheet.expanded .sk-chev{transform:rotate(180deg);}',
 
     /* 공통 버튼 카드(시트 안) */
     '#caro-sk-sheet .ctrl-sq-btn{background:#eef1f6 !important;border:1px solid transparent !important;border-radius:18px !important;',
@@ -3835,36 +3836,17 @@
     '#caro-sk-sheet .ctrl-sq-label{font-size:.82rem !important;font-weight:600 !important;color:var(--text-1) !important;margin-top:0 !important;}',
     '#caro-sk-sheet .ctrl-sq-badge{position:absolute;top:7px;right:9px;} #caro-sk-sheet .ctrl-sq-badge:empty{display:none;}',
 
-    /* 스테이지 높이 전환 */
-    '.sk-stage{overflow:hidden;transition:max-height .42s ease;}',
-    '.sk-stage-collapsed{max-height:130px;}',
-    '.sk-stage-expanded{max-height:400px;}',
+    /* 스테이지: 항상 4버튼 한 줄. 접힘 땐 반납하기·비상등 숨김(문열림·문잠금만) */
+    '.sk-stage{overflow:visible;padding-top:2px;}',
+    '#caro-sk-sheet .sk-row4{display:flex;gap:10px;}',
+    '#caro-sk-sheet .sk-row4 > .ctrl-sq-btn{flex:1;padding:15px 6px !important;}',
+    '#caro-sk-sheet:not(.expanded) #ctrl-btn-return,#caro-sk-sheet:not(.expanded) #ctrl-btn-hazard{display:none !important;}',
 
-    /* 접힘: 4개 가로행 */
-    '.sk-stage-collapsed .sk-collap-row{display:flex;gap:9px;}',
-    '.sk-stage-collapsed .sk-collap-row > .ctrl-sq-btn{flex:1;padding:13px 6px !important;background:#f3f5f9 !important;}',
-    '.sk-stage-collapsed #ctrl-btn-locate{display:none !important;}',
-    '.sk-stage-collapsed .ctrl-sq-icon svg{width:23px;height:23px;}',
-    '.sk-stage-collapsed .ctrl-sq-label{font-size:.76rem !important;color:var(--text-2) !important;}',
-
-    /* 펼침: 쏘카식 비대칭 그리드 */
-    '.sk-stage-expanded{display:flex;gap:12px;height:clamp(252px,40vh,330px);animation:skFade .34s ease;}',
-    '@keyframes skFade{from{opacity:.3;}to{opacity:1;}}',
-    '.sk-stage-expanded .sk-left{flex:1.18;display:flex;flex-direction:column;gap:12px;min-width:0;}',
-    '.sk-stage-expanded .sk-right{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0;}',
-    '.sk-stage-expanded .sk-quick{display:flex;align-items:stretch;background:#eef1f6;border-radius:18px;overflow:hidden;flex-shrink:0;}',
-    '.sk-stage-expanded .sk-quick > .ctrl-sq-btn{flex:1;background:transparent !important;border-radius:0 !important;padding:15px 6px !important;}',
-    '.sk-stage-expanded .sk-quick > .ctrl-sq-btn:first-child{border-right:1px solid rgba(140,148,160,.22) !important;}',
-    '.sk-stage-expanded .sk-return-wrap{flex:1;display:flex;}',
-    '.sk-stage-expanded .sk-return-wrap > .ctrl-sq-btn{flex:1;}',
-    '.sk-stage-expanded .sk-rcell{flex:1;display:flex;}',
-    '.sk-stage-expanded .sk-rcell > .ctrl-sq-btn{flex:1;}',
-
-    /* 반납(return) — 시트 안에선 밝은 큰 카드 + 새로고침 아이콘 (다크 강조 해제) */
+    /* 반납(return) — 시트 안에선 밝은 큰 카드 + 새로고침 아이콘 */
     '#caro-sk-sheet #ctrl-btn-return{background:#eef1f6 !important;border-color:transparent !important;}',
-    '#caro-sk-sheet #ctrl-btn-return .ctrl-sq-icon{display:flex !important;color:var(--accent-2) !important;margin-bottom:8px !important;}',
-    '#caro-sk-sheet #ctrl-btn-return .ctrl-sq-icon svg{width:30px;height:30px;}',
-    '#caro-sk-sheet #ctrl-btn-return .ctrl-sq-label{color:var(--text-1) !important;font-weight:700 !important;font-size:.9rem !important;}'
+    '#caro-sk-sheet #ctrl-btn-return .ctrl-sq-icon{display:flex !important;color:var(--accent-2) !important;margin-bottom:7px !important;}',
+    '#caro-sk-sheet #ctrl-btn-return .ctrl-sq-icon svg{width:27px;height:27px;}',
+    '#caro-sk-sheet #ctrl-btn-return .ctrl-sq-label{color:var(--text-1) !important;font-weight:700 !important;font-size:.82rem !important;}'
   ].join('');
   (document.head||document.documentElement).appendChild(st);
 
@@ -3885,23 +3867,22 @@
   var skExpanded=false;
 
   function buildSheet(){
-    var modal=byId('home-ctrl-modal'); if(!modal) return;
-    var box=modal.querySelector('.home-ctrl-box'); if(!box) return;
     if(!byId('caro-sk-scrim')){
       var scrim=document.createElement('div'); scrim.id='caro-sk-scrim';
       scrim.onclick=function(){ collapse(); };
-      modal.appendChild(scrim);
+      document.body.appendChild(scrim);
     }
     if(!byId('caro-sk-sheet')){
       var sheet=document.createElement('div'); sheet.id='caro-sk-sheet';
       sheet.innerHTML=
-        '<div class="sk-handle"></div>'+
-        '<div class="sk-head" id="sk-head"><span class="sk-title">스마트키</span>'+
-          '<span class="sk-state off" id="sk-state">OFF</span>'+
-          '<span class="sk-chev">'+CHEV+'</span></div>'+
-        '<div class="sk-stage sk-stage-collapsed" id="sk-stage"></div>';
-      box.appendChild(sheet);
-      byId('sk-head').onclick=function(){ toggle(); };
+        '<div class="sk-grip" id="sk-grip"><div class="sk-handle"></div>'+
+          '<div class="sk-head"><span class="sk-title">스마트키</span>'+
+            '<span class="sk-state off" id="sk-state">OFF</span>'+
+            '<span class="sk-chev">'+CHEV+'</span></div>'+
+        '</div>'+
+        '<div class="sk-stage" id="sk-stage"></div>';
+      document.body.appendChild(sheet);
+      byId('sk-grip').onclick=function(){ toggle(); };
     }
   }
 
@@ -3928,23 +3909,12 @@
     if(lb && lb.textContent.trim()==='반납') lb.textContent='반납하기';
   }
 
-  function renderStage(expanded){
+  function renderStage(){
     var stage=byId('sk-stage'); if(!stage) return;
-    if(expanded){
-      stage.className='sk-stage sk-stage-expanded';
-      stage.innerHTML=
-        '<div class="sk-left"><div class="sk-quick" id="sk-q"></div><div class="sk-return-wrap" id="sk-r"></div></div>'+
-        '<div class="sk-right"><div class="sk-rcell" id="sk-l"></div><div class="sk-rcell" id="sk-u"></div></div>';
-      var q=byId('sk-q'); if(q){ if(B.hazard)q.appendChild(B.hazard); if(B.locate)q.appendChild(B.locate); }
-      var r=byId('sk-r'); if(r&&B.ret) r.appendChild(B.ret);
-      var l=byId('sk-l'); if(l&&B.lock) l.appendChild(B.lock);
-      var u=byId('sk-u'); if(u&&B.unlock) u.appendChild(B.unlock);
-    } else {
-      stage.className='sk-stage sk-stage-collapsed';
-      stage.innerHTML='<div class="sk-collap-row" id="sk-cr"></div>';
-      var cr=byId('sk-cr');
-      if(cr){ [B.ret,B.hazard,B.lock,B.unlock,B.locate].forEach(function(b){ if(b) cr.appendChild(b); }); }
-    }
+    if(!byId('sk-row4')) stage.innerHTML='<div class="sk-row4" id="sk-row4"></div>';
+    var r=byId('sk-row4'); if(!r) return;
+    /* 순서: 반납하기 · 비상등 · 문열림 · 문잠금 (접힘 땐 앞 2개 숨겨 문열림·문잠금만) */
+    [B.ret,B.hazard,B.unlock,B.lock].forEach(function(b){ if(b) r.appendChild(b); });
     styleReturn();
   }
 
@@ -3957,14 +3927,17 @@
 
   function setExpanded(v){
     skExpanded=v;
-    var m=byId('home-ctrl-modal'); if(m) m.classList.toggle('caro-sk-open', v);
-    renderStage(v); syncState();
+    var sheet=byId('caro-sk-sheet'); if(sheet) sheet.classList.toggle('expanded', v);
+    document.body.classList.toggle('caro-sk-expanded', v);
+    renderStage(); syncState();
   }
   function toggle(){ setExpanded(!skExpanded); }
   function collapse(){ setExpanded(false); }
+  function showSheet(){ var s=byId('caro-sk-sheet'); if(s) s.classList.add('on'); }
+  function hideSheet(){ var s=byId('caro-sk-sheet'); if(s){ s.classList.remove('on'); s.classList.remove('expanded'); } document.body.classList.remove('caro-sk-expanded'); skExpanded=false; }
   window.caroSmartKeyCollapse=collapse;
 
-  function rebuild(){ if(!grabButtons()) return false; buildSheet(); buildExtra(); setExpanded(false); return true; }
+  function rebuild(){ if(!grabButtons()) return false; buildSheet(); buildExtra(); renderStage(); showSheet(); setExpanded(false); return true; }
 
   function onOpen(){
     var tries=0;
@@ -3978,16 +3951,16 @@
     window.openHomeCtrl=function(){ var r; try{ r=_o.apply(this,arguments); }catch(e){} onOpen(); return r; };
     window.openHomeCtrl.__caroSK2=true;
   }
-  /* 닫을 때 접힘 초기화 */
+  /* 닫을 때 시트 숨김 + 접힘 초기화 */
   ['closeHomeCtrl','closeHomeCtrlDirect'].forEach(function(name){
     if(typeof window[name]==='function' && !window[name].__caroSK2){
       var _c=window[name];
-      window[name]=function(){ try{ collapse(); }catch(e){} return _c.apply(this,arguments); };
+      window[name]=function(){ try{ hideSheet(); }catch(e){} return _c.apply(this,arguments); };
       window[name].__caroSK2=true;
     }
   });
-  /* 모달 열린 동안 ON/OFF 갱신 */
-  setInterval(function(){ var m=byId('home-ctrl-modal'); if(m&&m.classList.contains('open')) syncState(); }, 2000);
+  /* 안전장치: 차량 제어 모달이 열려있을 때만 시트 노출 + ON/OFF 갱신 */
+  setInterval(function(){ var m=byId('home-ctrl-modal'); if(m&&m.classList.contains('open')){ syncState(); } else { hideSheet(); } }, 1200);
 
   console.log('[컨트롤러] ✅ 스마트키 바텀시트 v2 (쏘카 디자인)');
 })();
