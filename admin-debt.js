@@ -13,7 +13,7 @@
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
-  var DAY=86400000, LONG_DAYS=21;
+  var DAY=86400000, LONG_DAYS=21, HABITUAL_COUNT=3;
   var debts=[], susps=[];
 
   function ready(){ return window.FB_DB && window.FB_FN && typeof window.FB_FN.onSnapshot==='function'; }
@@ -28,7 +28,7 @@
     if(document.getElementById('debt-css')) return;
     var s=document.createElement('style'); s.id='debt-css';
     s.textContent=
-      '#tab-debt .db-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}'
+      '#tab-debt .db-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px;}'
      +'.db-kpi{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;}'
      +'.db-kpi .v{font-size:26px;font-weight:800;font-family:"Oswald",sans-serif;color:var(--gold-soft);}'
      +'.db-kpi .v.bad{color:var(--bad);}'
@@ -48,6 +48,8 @@
      +'.db-badge.long{background:rgba(213,122,104,.16);color:var(--bad);border:1px solid rgba(213,122,104,.4);}'
      +'.db-badge.warn{background:rgba(224,168,108,.16);color:var(--warn);border:1px solid rgba(224,168,108,.4);}'
      +'.db-badge.susp{background:rgba(213,122,104,.16);color:var(--bad);border:1px solid rgba(213,122,104,.4);}'
+     +'.db-badge.hab{background:rgba(224,168,108,.16);color:var(--warn);border:1px solid rgba(224,168,108,.4);}'
+     +'.db-badge.ok{background:rgba(123,184,154,.16);color:var(--ok);border:1px solid rgba(123,184,154,.4);}'
      +'.db-btn{flex-shrink:0;border:1px solid var(--border2);background:var(--panel2);color:var(--txt);border-radius:9px;'
        +'padding:8px 13px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}'
      +'.db-btn:hover{border-color:var(--gold-dim);color:var(--gold-soft);}'
@@ -57,8 +59,27 @@
     document.head.appendChild(s);
   }
 
-  function activeSusps(){ return susps.filter(function(s){ return s.active!==false && (s.untilTs||Date.parse(s.until)||0) > Date.now(); }); }
+  function isHoldSusp(s){ return s && s.active!==false && (s.requiresApproval===true || s.habitual===true); }
+  function activeSusps(){ return susps.filter(function(s){ return s.active!==false && ( isHoldSusp(s) || ((s.untilTs||Date.parse(s.until)||0) > Date.now()) ); }); }
   function unpaidDebts(){ return debts.filter(function(d){ return (d.status||'unpaid')==='unpaid'; }); }
+  function suspOf(uid){ for(var i=0;i<susps.length;i++){ if((susps[i].userId||susps[i]._id)===uid) return susps[i]; } return null; }
+  /* 사용자별 누적 미납 발생 횟수(완납 포함) */
+  function habitualMap(){
+    var m={};
+    debts.forEach(function(d){
+      var k=d.userId||d.idName; if(!k) return;
+      if(!m[k]) m[k]={ key:k, userId:d.userId||k, count:0, unpaid:0,
+                       name:d.userName||d.idName||'사용자', idName:d.idName||'', license:d.license||'' };
+      m[k].count++;
+      if((d.status||'unpaid')==='unpaid') m[k].unpaid += (+d.amount||0);
+      if(!m[k].license && d.license) m[k].license=d.license;
+      if((!m[k].name||m[k].name==='사용자') && d.userName) m[k].name=d.userName;
+    });
+    return m;
+  }
+  function habitualUsers(){ var m=habitualMap();
+    return Object.keys(m).map(function(k){return m[k];}).filter(function(u){return u.count>=HABITUAL_COUNT;})
+      .sort(function(a,b){ return b.count-a.count; }); }
 
   function render(){
     var root=document.getElementById('debtRoot'); if(!root) return;
@@ -66,6 +87,7 @@
 
     var un=unpaidDebts();
     var as=activeSusps();
+    var habit=habitualUsers();
     var totalAmt=0, longCnt=0, users={};
     un.forEach(function(d){ totalAmt+=(+d.amount||0); users[d.userId||d.idName||'?']=1; if(daysSince(tsOf(d))>=LONG_DAYS) longCnt++; });
     var userCnt=Object.keys(users).length;
@@ -74,8 +96,39 @@
       +'<div class="db-kpi"><div class="v bad">'+won(totalAmt)+'</div><div class="l">총 미납 금액(원)</div></div>'
       +'<div class="db-kpi"><div class="v">'+un.length+'</div><div class="l">미납 건수</div></div>'
       +'<div class="db-kpi"><div class="v">'+userCnt+'</div><div class="l">미납 사용자</div></div>'
+      +'<div class="db-kpi"><div class="v bad">'+habit.length+'</div><div class="l">상습 미납자(3회+)</div></div>'
       +'<div class="db-kpi"><div class="v bad">'+as.length+'</div><div class="l">이용 정지 사용자</div></div>'
       +'</div>';
+
+    /* 상습 미납자 (누적 3회 이상) — 관리자가 이용 허용/정지 결정 */
+    h+='<div class="db-h">상습 미납자 <span class="cnt">누적 '+HABITUAL_COUNT+'회 이상 · '+habit.length+'명</span></div>';
+    h+='<div class="card">';
+    if(!habit.length){
+      h+='<div class="db-empty">상습 미납자가 없습니다.</div>';
+    } else {
+      habit.forEach(function(u){
+        var s=suspOf(u.userId);
+        var held=isHoldSusp(s);
+        var timed=s && s.active!==false && (s.untilTs||Date.parse(s.until)||0)>Date.now();
+        var blocked=held||timed;
+        var statusBadge = held ? '<span class="db-badge hab">승인 대기</span>'
+                        : timed ? '<span class="db-badge susp">정지중</span>'
+                        : '<span class="db-badge ok">이용 가능</span>';
+        var btns = blocked
+          ? '<button class="db-btn go" onclick="window.caroDebtUnsuspend&&caroDebtUnsuspend(\''+esc(u.userId)+'\')">이용 허용</button>'
+          : '<button class="db-btn" onclick="window.caroDebtHold&&caroDebtHold(\''+esc(u.userId)+'\')">정지 적용</button>';
+        h+='<div class="db-row">'
+          +'<div class="db-main">'
+            +'<div class="db-u">'+esc(u.name)+'<span class="sub">'+esc(u.idName||'')+(u.license?(' · 면허 '+esc(u.license)):'')+'</span></div>'
+            +'<div class="db-meta">누적 미납 '+u.count+'회'+(u.unpaid>0?(' · 현재 미납 '+won(u.unpaid)+'원'):' · 현재 미납 없음')+'</div>'
+          +'</div>'
+          +'<span class="db-badge long">상습</span>'
+          +statusBadge
+          +btns
+          +'</div>';
+      });
+    }
+    h+='</div>';
 
     /* 미납 목록 */
     h+='<div class="db-h">미납 내역 <span class="cnt">'+un.length+'건 · 장기미납('+LONG_DAYS+'일+) '+longCnt+'건</span></div>';
@@ -114,16 +167,19 @@
       h+='<div class="db-empty">현재 이용 정지된 사용자가 없습니다.</div>';
     } else {
       as.sort(function(a,b){ return (b.untilTs||0)-(a.untilTs||0); }).forEach(function(s){
+        var held=isHoldSusp(s);
         var until=s.untilTs||Date.parse(s.until)||0;
         var left=Math.max(0,Math.ceil((until-Date.now())/DAY));
+        var meta = held ? (esc(s.reason||'상습 미납')+' · 관리자 승인 대기')
+                        : (esc(s.reason||'장기 미납')+' · 해제일 '+fmtDay(until)+' (잔여 '+left+'일)');
         h+='<div class="db-row">'
           +'<div class="db-main">'
             +'<div class="db-u">'+esc(s.userName||s.idName||'사용자')
               +'<span class="sub">'+esc(s.idName||'')+(s.license?(' · 면허 '+esc(s.license)):'')+'</span></div>'
-            +'<div class="db-meta">'+esc(s.reason||'장기 미납')+' · 해제일 '+fmtDay(until)+' (잔여 '+left+'일)</div>'
+            +'<div class="db-meta">'+meta+'</div>'
           +'</div>'
-          +'<span class="db-badge susp">정지중</span>'
-          +'<button class="db-btn" onclick="window.caroDebtUnsuspend&&caroDebtUnsuspend(\''+esc(s.userId||s._id)+'\')">정지 해제</button>'
+          +(held?'<span class="db-badge hab">승인 대기</span>':'<span class="db-badge susp">정지중</span>')
+          +'<button class="db-btn" onclick="window.caroDebtUnsuspend&&caroDebtUnsuspend(\''+esc(s.userId||s._id)+'\')">'+(held?'이용 허용':'정지 해제')+'</button>'
           +'</div>';
       });
     }
@@ -146,12 +202,30 @@
   };
   window.caroDebtUnsuspend=function(uid){
     if(!ready()||!uid) return;
-    if(!confirm('이 사용자의 이용 정지를 해제할까요?')) return;
+    if(!confirm('이 사용자의 이용 정지를 해제(이용 허용)할까요?')) return;
     var db=window.FB_DB, FN=window.FB_FN;
     try{
       FN.setDoc(FN.doc(db,'suspensions',uid),{ active:false, liftedAt:new Date().toISOString(), liftedBy:'admin' },{merge:true})
-        .then(function(){ if(window.toast) toast('이용 정지를 해제했습니다.'); })
-        .catch(function(e){ if(window.toast) toast('해제 실패: 권한/규칙을 확인하세요.'); console.warn(e); });
+        .then(function(){ if(window.toast) toast('이용을 허용했습니다.'); })
+        .catch(function(e){ if(window.toast) toast('처리 실패: 권한/규칙을 확인하세요.'); console.warn(e); });
+    }catch(e){ console.warn(e); }
+  };
+  /* 상습 미납자 수동 이용정지(관리자 승인 전까지) */
+  window.caroDebtHold=function(uid){
+    if(!ready()||!uid) return;
+    var m=habitualMap()[uid]||{}, cnt=m.count||0;
+    if(!confirm('이 사용자를 상습 미납으로 이용 정지할까요?\n(누적 '+cnt+'회 · 관리자가 다시 허용하기 전까지 차량 이용 불가)')) return;
+    var info=null; for(var i=0;i<debts.length;i++){ if(debts[i].userId===uid){ info=debts[i]; break; } }
+    var db=window.FB_DB, FN=window.FB_FN;
+    try{
+      FN.setDoc(FN.doc(db,'suspensions',uid),{
+        userId:uid, idName:(info&&info.idName)||m.idName||'', userName:(info&&info.userName)||m.name||'', license:(info&&info.license)||m.license||'',
+        active:true, requiresApproval:true, habitual:true, count:cnt,
+        reason:'상습 미납(누적 '+cnt+'회) — 관리자 적용', until:null, untilTs:null,
+        createdAt:new Date().toISOString(), heldBy:'admin'
+      },{merge:true})
+        .then(function(){ if(window.toast) toast('상습 미납으로 이용 정지를 적용했습니다.'); })
+        .catch(function(e){ if(window.toast) toast('처리 실패: 권한/규칙을 확인하세요.'); console.warn(e); });
     }catch(e){ console.warn(e); }
   };
 
