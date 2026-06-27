@@ -629,9 +629,15 @@
    +'#login-screen .form-input:focus,#find-screen .form-input:focus,#signup-screen .form-input:focus{border-color:#20232b!important;box-shadow:0 0 0 3px rgba(20,22,28,.08)!important;}'
    +'#login-screen .input-label,#find-screen .input-label,#signup-screen .input-label{color:#5a5e66!important;}'
    +'#login-screen .login-heading{color:#1a1c20!important;}'
-    /* 로그인 버튼만 살짝 아래로 (체크박스 줄과 간격 띄움) */
-   +'#login-screen .form-options{margin-bottom:22px!important;}'
-   +'#login-screen .submit-btn{margin-top:8px!important;}';
+    /* ── 로그인 화면 간격 대칭 정리 (일정한 세로 리듬) ── */
+   +'#login-screen .login-form.form-container{padding:24px 20px!important;}'
+   +'#login-screen .input-group{margin-bottom:16px!important;}'
+   +'#login-screen .form-options{display:flex!important;gap:20px!important;margin:6px 0 20px!important;}'
+   +'#login-screen .submit-btn{margin:0!important;}'
+   +'#login-screen .divider{margin:20px 0!important;}'
+   +'#login-screen .social-btns{margin:0 0 20px!important;}'
+   +'#login-screen .form-links{margin:0 0 16px!important;}'
+   +'#login-screen .back-bottom-btn{margin:0!important;}';
   (document.head||document.documentElement).appendChild(st);
   console.log('[\uB514\uC790\uC778] \u2705 \uB85C\uADF8\uC778 \uC804 \uD654\uBA74 \uB9AC\uB514\uC790\uC778 v1');
 })();
