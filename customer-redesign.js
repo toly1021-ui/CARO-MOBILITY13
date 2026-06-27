@@ -4381,7 +4381,7 @@
     '#caro-ctrl-menu .cm-val{font-size:.82rem;color:var(--text-m,#8a8f98);font-weight:600;white-space:nowrap;}',
     '#caro-ctrl-menu .cm-val.go{color:#2f6df0;}',
     '#caro-ctrl-menu .cm-chev{color:#c4c9d0;font-size:1.1rem;margin-left:2px;}',
-    '#caro-ctrl-menu .cm-cancel{width:100%;text-align:center;background:none;border:none;color:#b23a3a;font-size:.9rem;font-weight:700;padding:14px;font-family:inherit;cursor:pointer;}',
+    '#caro-ctrl-menu .cm-cancel{width:100%;text-align:center;background:#fff;border:1px solid var(--border-l,#e7eaef);border-radius:14px;color:#b23a3a;font-size:.9rem;font-weight:700;padding:15px;font-family:inherit;cursor:pointer;}',
     '#caro-ctrl-menu .cm-cancel:active{opacity:.6;}'
   ].join('');
   (document.head||document.documentElement).appendChild(css);
