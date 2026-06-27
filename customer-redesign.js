@@ -3837,10 +3837,10 @@
     '#caro-sk-sheet .sk-main{display:flex;gap:10px;}',
     '#caro-sk-sheet .sk-main > .ctrl-sq-btn{flex:1;}',
     /* 펼침 때 위로 슬라이드되어 올라오는 줄: 반납하기·비상등 */
-    '#caro-sk-sheet .sk-extra{display:flex;gap:10px;max-height:0;opacity:0;overflow:hidden;margin-bottom:0;',
-      'transition:max-height .34s cubic-bezier(.4,0,.2,1),opacity .26s ease,margin-bottom .34s cubic-bezier(.4,0,.2,1);}',
+    '#caro-sk-sheet .sk-extra{display:flex;gap:10px;max-height:0;opacity:0;overflow:hidden;margin-top:0;',
+      'transition:max-height .34s cubic-bezier(.4,0,.2,1),opacity .26s ease,margin-top .34s cubic-bezier(.4,0,.2,1);}',
     '#caro-sk-sheet .sk-extra > .ctrl-sq-btn{flex:1;}',
-    '#caro-sk-sheet.expanded .sk-extra{max-height:120px;opacity:1;margin-bottom:10px;}',
+    '#caro-sk-sheet.expanded .sk-extra{max-height:120px;opacity:1;margin-top:10px;}',
 
     /* 반납(return) — 밝은 카드 + 새로고침 아이콘 */
     '#caro-sk-sheet #ctrl-btn-return{background:#eef1f6 !important;border-color:transparent !important;}',
@@ -3879,8 +3879,8 @@
           '<div class="sk-head"><span class="sk-title">스마트키</span>'+
             '<span class="sk-state off" id="sk-state">OFF</span></div>'+
         '</div>'+
-        '<div class="sk-extra" id="sk-extra"></div>'+
-        '<div class="sk-main" id="sk-main"></div>';
+        '<div class="sk-main" id="sk-main"></div>'+
+        '<div class="sk-extra" id="sk-extra"></div>';
       document.body.appendChild(sheet);
       byId('sk-grip').onclick=function(){ toggle(); };
     }
@@ -3957,8 +3957,8 @@
       window[name].__caroSK2=true;
     }
   });
-  /* 안전장치: 차량 제어 모달이 열려있을 때만 시트 노출 + ON/OFF 갱신 */
-  setInterval(function(){ var m=byId('home-ctrl-modal'); if(m&&m.classList.contains('open')){ syncState(); } else { hideSheet(); } }, 1200);
+  /* 안전장치: 차량 제어 모달이 열려있는 동안엔 시트를 항상 표시(사라지면 즉시 복구) */
+  setInterval(function(){ var m=byId('home-ctrl-modal'); if(m&&m.classList.contains('open')){ showSheet(); syncState(); } else { hideSheet(); } }, 700);
 
   console.log('[컨트롤러] ✅ 스마트키 바텀시트 v2 (쏘카 디자인)');
 })();
@@ -4401,12 +4401,12 @@
     h+='<div class="cm-place"><span class="cm-pic">'+I.pin+'</span><div class="cm-pt"><div class="cm-pl">반납 장소</div><div class="cm-pv">'+esc(placeOf(res,'return'))+'</div></div></div>';
     /* 리스트 */
     h+='<div class="cm-list">'
-      +'<button class="cm-row" data-act="time"><span class="cm-ic">'+I.clock+'</span><span class="cm-lb">대여 시각</span><span class="cm-val">'+esc(rentT)+'</span><span class="cm-chev">\u203A</span></button>'
       +'<button class="cm-row" data-act="extend"><span class="cm-ic">'+I.ext+'</span><span class="cm-lb">시간 연장</span><span class="cm-chev">\u203A</span></button>'
       +'<button class="cm-row" data-act="codriver"><span class="cm-ic">'+I.user+'</span><span class="cm-lb">동승운전자</span><span class="cm-val go">등록하기</span><span class="cm-chev">\u203A</span></button>'
       +'<button class="cm-row" data-act="photo"><span class="cm-ic">'+I.cam+'</span><span class="cm-lb">차량 확인 (주행전 사진)</span><span class="cm-val go">사진 등록하기</span><span class="cm-chev">\u203A</span></button>'
       +'<button class="cm-row" data-act="penalty"><span class="cm-ic">'+I.warn+'</span><span class="cm-lb">취소수수료 및 페널티 안내</span><span class="cm-chev">\u203A</span></button>'
       +'<button class="cm-row" data-act="cs"><span class="cm-ic">'+I.head+'</span><span class="cm-lb">고객센터</span><span class="cm-chev">\u203A</span></button>'
+      +'<button class="cm-row" data-act="accident"><span class="cm-ic" style="color:#b23a3a">'+I.warn+'</span><span class="cm-lb">사고 신고</span><span class="cm-chev">\u203A</span></button>'
       +'</div>';
     /* 예약 취소 */
     h+='<button class="cm-cancel" data-act="cancel">예약 취소하기</button>';
@@ -4415,10 +4415,10 @@
 
   function onAct(act){
     if(act==='extend') call('openExtendSheet');
-    else if(act==='time') call('openExtendSheet');
     else if(act==='photo'){ if(window.toggleCtrlPhoto) toggleCtrlPhoto(); else call('openPhotoModal'); }
     else if(act==='penalty') goScreen('cs-screen');
     else if(act==='cs') goScreen('cs-screen');
+    else if(act==='accident') goScreen('accident-screen');
     else if(act==='codriver') toast('동승운전자 등록은 준비 중입니다.');
     else if(act==='cancel'){
       try{ if(window.closeHomeCtrlDirect) closeHomeCtrlDirect(); }catch(e){}
