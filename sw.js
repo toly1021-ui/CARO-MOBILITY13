@@ -1,11 +1,11 @@
 /* ══════════════════════════════════════════
-   CARO MOBILITY — Service Worker v7
+   CARO MOBILITY — Service Worker v8
    - 앱 파일: 네트워크 우선 (항상 최신, 오프라인 시 캐시)
    - Firebase/Firestore: 서비스워커 개입 안 함(브라우저 직접 처리)
    - chrome-extension 등 비-HTTP 요청: 완전 무시
    - 캐시 번호 안 올려도 수정이 바로 반영됨
 ══════════════════════════════════════════ */
-const CACHE_NAME = 'caro-v7';
+const CACHE_NAME = 'caro-v8';
 
 /* 오프라인 대비용 기본 캐시 */
 const CACHE_ASSETS = [
