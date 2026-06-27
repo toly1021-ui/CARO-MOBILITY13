@@ -628,7 +628,17 @@
    +'#login-screen .form-input,#find-screen .form-input,#signup-screen .form-input{background:#fff!important;border:1px solid rgba(200,208,218,.8)!important;box-shadow:none!important;border-radius:11px!important;}'
    +'#login-screen .form-input:focus,#find-screen .form-input:focus,#signup-screen .form-input:focus{border-color:#20232b!important;box-shadow:0 0 0 3px rgba(20,22,28,.08)!important;}'
    +'#login-screen .input-label,#find-screen .input-label,#signup-screen .input-label{color:#5a5e66!important;}'
-   +'#login-screen .login-heading{color:#1a1c20!important;}';
+   +'#login-screen .login-heading{color:#1a1c20!important;}'
+    /* ── 버튼 정렬·높이 통일 (로그인·소셜·뒤로 한 줄로 깔끔하게) ── */
+   +'#login-screen .submit-btn{width:100%!important;padding:15px!important;margin-top:4px!important;box-shadow:0 4px 14px -6px rgba(20,22,28,.45)!important;}'
+   +'#login-screen .divider{margin:16px 0!important;}'
+   +'#login-screen .social-btns{display:flex!important;gap:10px!important;margin:0 0 12px!important;}'
+   +'#login-screen .social-btn{flex:1 1 0!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:center!important;height:50px!important;padding:0 10px!important;border-radius:14px!important;font-size:.92rem!important;font-weight:700!important;white-space:nowrap!important;border:1px solid transparent!important;}'
+   +'#login-screen .kakao-btn{background:#FEE500!important;color:#3c1e00!important;}'
+   +'#login-screen .naver-btn{background:#03C75A!important;color:#fff!important;}'
+   +'#login-screen .form-links{display:flex!important;align-items:center!important;justify-content:center!important;gap:10px!important;margin:14px 0 10px!important;}'
+   +'#login-screen .back-bottom-btn{width:100%!important;height:50px!important;padding:0!important;margin-top:0!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:14px!important;}'
+   +'#login-screen .submit-btn,#login-screen .back-bottom-btn{height:50px!important;padding:0!important;display:flex!important;align-items:center!important;justify-content:center!important;}';
   (document.head||document.documentElement).appendChild(st);
   console.log('[\uB514\uC790\uC778] \u2705 \uB85C\uADF8\uC778 \uC804 \uD654\uBA74 \uB9AC\uB514\uC790\uC778 v1');
 })();
@@ -4451,4 +4461,23 @@
   }
   setTimeout(function(){ if(document.querySelector('#home-ctrl-modal.open')) inject(); }, 600);
   console.log('[차량제어] ✅ SOCAR식 메뉴 v1');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO 자동 백업 — "앱 정상 부팅" 신호
+   핵심 스크립트(script.js)의 함수가 살아있을 때만 alive 표시.
+   → 업데이트 불량으로 script.js가 깨지면 alive 안 켜지고 워치독이 백업 전환.
+═══════════════════════════════════════════════════════════ */
+(function(){
+  function markAlive(){
+    try{
+      if(typeof window.openModal==='function' && typeof window.goTo==='function'){
+        window.__caroAlive = true;
+      }
+    }catch(e){}
+  }
+  markAlive();
+  /* 혹시 늦게 정의되는 경우 대비해 한 번 더 */
+  setTimeout(markAlive, 1500);
+  setTimeout(markAlive, 4000);
 })();
