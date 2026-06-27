@@ -7,6 +7,45 @@
   <meta name="interactive-widget" content="resizes-content"/>
   <title>CARO MOBILITY</title>
 
+  <!-- ═══ CARO 자동 백업(failover) 워치독 ═══
+       업데이트 불량/공격으로 앱이 정상적으로 안 뜨면 백업 서버로 자동 전환.
+       ★ 아래 BACKUP 주소만 본인 백업 주소로 바꾸세요 (boot.html의 BACKUP과 동일) ★ -->
+  <script>
+  (function(){
+    var BACKUP = "https://여기-백업주소.pages.dev/";   /* ← 백업 주소만 변경 */
+    var BOOT_TIMEOUT = 12000;   /* 이 시간(ms) 내 앱이 안 뜨면 백업 전환 */
+    var KEY = "caro_fo_tried";
+    function host(u){ try{ return new URL(u).host; }catch(e){ return ''; } }
+    var onBackup       = location.host && location.host === host(BACKUP);
+    var notConfigured  = BACKUP.indexOf('여기-') !== -1;
+    var triedThisSess  = false; try{ triedThisSess = sessionStorage.getItem(KEY)==='1'; }catch(e){}
+    var DISABLED = notConfigured || onBackup;
+    window.__caroAlive = false;
+    var redirected = false;
+    function failover(reason){
+      if(DISABLED || redirected || triedThisSess || window.__caroAlive) return;
+      redirected = true;
+      try{ sessionStorage.setItem(KEY,'1'); }catch(e){}
+      try{ console.warn('[CARO failover] → 백업 전환:', reason); }catch(e){}
+      var sep = BACKUP.indexOf('?')>=0 ? '&' : '?';
+      location.replace(BACKUP + sep + 'via=backup');
+    }
+    /* 1) 우리 도메인의 핵심 js/css 로드 실패 → 잠깐 뒤 백업 전환 */
+    window.addEventListener('error', function(ev){
+      var t = ev && ev.target;
+      if(t && (t.tagName==='SCRIPT' || t.tagName==='LINK')){
+        var src = t.src || t.href || '';
+        if(src && src.indexOf(location.origin)===0){
+          setTimeout(function(){ failover('resource-fail'); }, 1500);
+        }
+      }
+    }, true);
+    /* 2) 부트 타임아웃: 시간 내 앱 정상부팅 신호(__caroAlive) 없으면 백업 전환 */
+    setTimeout(function(){ failover('boot-timeout'); }, BOOT_TIMEOUT);
+    window.__caroFailover = failover;   /* 필요시 수동 호출용 */
+  })();
+  </script>
+
   <!-- PWA 공통 -->
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#18191c" media="(prefers-color-scheme: light)"/>
@@ -1783,7 +1822,7 @@
 <script src="script.js?v=2"></script>
 <script src="script-photo-upload.js?v=3"></script>
 <script src="customer-notices.js?v=5"></script>
-<script src="customer-redesign.js?v=86"></script>
+<script src="customer-redesign.js?v=88"></script>
 <!-- ══ 드럼롤 날짜/시간 피커 ══ -->
 <div class="drum-overlay" id="drum-overlay" onclick="closeDrumPicker()">
   <div class="drum-sheet" id="drum-sheet">
