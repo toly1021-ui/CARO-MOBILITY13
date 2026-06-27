@@ -1866,8 +1866,7 @@ function updateMapMarkers(){
   myReservations.forEach(function(r){
     if(r.start && r.end){
       if(!r.returned){
-        var releaseTime=new Date(r.end.getTime()+10*60000);
-        if(now<releaseTime) reservedMap[r.car.id]={until:releaseTime};
+        reservedMap[r.car.id]={until:null};
       } else if(r.returnedAt){
         var releaseTimeR=new Date(r.returnedAt.getTime()+10*60000);
         if(now<releaseTimeR && !reservedMap[r.car.id])
@@ -1935,9 +1934,8 @@ function renderCars(){
   myReservations.forEach(function(r){
     if(r.start && r.end){
       if(!r.returned){
-        /* 미반납: 예약 종료 후 10분까지 */
-        var releaseTime=new Date(r.end.getTime()+10*60000);
-        if(now<releaseTime) reservedMap[r.car.id]={start:r.start,end:r.end,release:releaseTime,returned:false};
+        /* 미반납: 반납 전까지 무조건 대여중 (예정·이용중·연체 모두) */
+        reservedMap[r.car.id]={start:r.start,end:r.end,release:null,returned:false};
       } else if(r.returnedAt){
         /* 반납 완료: 반납 시각 기준 10분까지만 유지 */
         var releaseTimeR=new Date(r.returnedAt.getTime()+10*60000);
@@ -10543,8 +10541,7 @@ window.devUploadAllCars=function(){
     myReservations.forEach(function(r){
       if(r.start && r.end){
         if(!r.returned){
-          var releaseTime = new Date(r.end.getTime() + 10*60000);
-          if(now < releaseTime) reservedMap[r.car.id] = { until: releaseTime };
+          reservedMap[r.car.id] = { until: null };
         } else if(r.returnedAt){
           var releaseTimeR = new Date(r.returnedAt.getTime() + 10*60000);
           if(now < releaseTimeR && !reservedMap[r.car.id])
