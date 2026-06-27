@@ -78,10 +78,10 @@
       +'</div>';
 
     /* 미납 목록 */
-    h+='<div class="db-h">⚠️ 미납 내역 <span class="cnt">'+un.length+'건 · 장기미납('+LONG_DAYS+'일+) '+longCnt+'건</span></div>';
+    h+='<div class="db-h">미납 내역 <span class="cnt">'+un.length+'건 · 장기미납('+LONG_DAYS+'일+) '+longCnt+'건</span></div>';
     h+='<div class="card">';
     if(!un.length){
-      h+='<div class="db-empty"><div class="ic">✅</div>미납 내역이 없습니다.</div>';
+      h+='<div class="db-empty">미납 내역이 없습니다.</div>';
     } else {
       un.sort(function(a,b){ return tsOf(b)-tsOf(a); }).forEach(function(d){
         var days=daysSince(tsOf(d));
@@ -108,10 +108,10 @@
     h+='</div>';
 
     /* 정지 목록 */
-    h+='<div class="db-h">🚫 이용 정지 <span class="cnt">'+as.length+'명</span></div>';
+    h+='<div class="db-h">이용 정지 <span class="cnt">'+as.length+'명</span></div>';
     h+='<div class="card">';
     if(!as.length){
-      h+='<div class="db-empty"><div class="ic">🟢</div>현재 이용 정지된 사용자가 없습니다.</div>';
+      h+='<div class="db-empty">현재 이용 정지된 사용자가 없습니다.</div>';
     } else {
       as.sort(function(a,b){ return (b.untilTs||0)-(a.untilTs||0); }).forEach(function(s){
         var until=s.untilTs||Date.parse(s.until)||0;
@@ -173,7 +173,7 @@
   }
   function failMsg(){
     var root=document.getElementById('debtRoot');
-    if(root && !debts.length) root.innerHTML='<div class="card"><div class="db-empty"><div class="ic">🔒</div>'
+    if(root && !debts.length) root.innerHTML='<div class="card"><div class="db-empty">'
       +'미납·정지 데이터를 불러올 수 없습니다.<br><span style="font-size:12px;color:var(--muted2)">Firestore 규칙(unpaid_debts, suspensions)과 관리자 로그인을 확인해 주세요.</span></div></div>';
   }
 
