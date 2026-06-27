@@ -285,6 +285,7 @@
     <button class="tab" data-tab="resv">예약 관리</button>
     <button class="tab" data-tab="notice">공지·이벤트</button>
     <button class="tab" data-tab="chat">상담 통계</button>
+    <button class="tab" data-tab="debt">미납·정지</button>
     <button class="tab" data-tab="set">설정</button>
   </div>
 
@@ -389,6 +390,11 @@
   <!-- ===================== TAB: 상담 통계 ===================== -->
   <section id="tab-chat" class="hide">
     <div id="ssRoot"></div>
+  </section>
+
+  <!-- ===================== TAB: 미납·정지 ===================== -->
+  <section id="tab-debt" class="hide">
+    <div id="debtRoot"></div>
   </section>
 
   <section id="tab-set" class="hide">
@@ -782,12 +788,13 @@
     t.addEventListener('click', function(){
       document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
       t.classList.add('active');
-      ['dash','price','resv','notice','chat','set'].forEach(function(id){
+      ['dash','price','resv','notice','chat','debt','set'].forEach(function(id){
         var el=document.getElementById('tab-'+id); if(el) el.classList.toggle('hide', id!==t.dataset.tab);
       });
       if(t.dataset.tab==='dash') resizeChart();
       if(t.dataset.tab==='price') renderPriceFleet();
       if(t.dataset.tab==='chat' && window.renderSupportStats) window.renderSupportStats();
+      if(t.dataset.tab==='debt' && window.renderDebtAdmin) window.renderDebtAdmin();
     });
   });
 
@@ -982,5 +989,6 @@
 <script src="admin-cars.js?v=1"></script>
 <script src="admin-monthly.js?v=8"></script>
 <script src="admin-support-stats.js?v=2"></script>
+<script src="admin-debt.js?v=1"></script>
 </body>
 </html>
