@@ -524,7 +524,7 @@ document.addEventListener('DOMContentLoaded', function(){
       }catch(e){}
       goTo('main-screen');
       if(shortcut) window._pendingShortcut = shortcut;
-    }, 3000);
+    }, 4500);
 
   /* 토스페이먼츠 결제 성공 처리 */
   var urlParams2=new URLSearchParams(window.location.search);
