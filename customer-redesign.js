@@ -4504,10 +4504,10 @@
   var GOLD='#c8a96e';
   var css=document.createElement('style'); css.id='caro-membership-css';
   css.textContent=[
-    /* ── 홈 회전 배너 ── */
-    '.plan-slide-wrap{margin:0 16px;border-radius:16px;overflow:hidden;position:relative;}',
+    /* ── 홈 회전 배너 (이벤트 배너와 동일 사이즈) ── */
+    '.plan-slide-wrap{position:relative;margin-bottom:18px;overflow:hidden;border-radius:var(--r2);box-shadow:0 4px 16px rgba(0,0,0,.14);cursor:pointer;}',
     '.plan-slide-track{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1);}',
-    '.plan-slide{min-width:100%;padding:15px 17px;display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;}',
+    '.plan-slide{flex-shrink:0;width:100%;min-height:108px;padding:18px 20px 14px;display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;}',
     '.plan-slide.ps-lite{background:linear-gradient(120deg,#dfe3e9,#eef1f5);color:#26282d;}',
     '.plan-slide.ps-plus{background:linear-gradient(120deg,#2a2d33,#3a3f47);color:#f2f4f7;}',
     '.plan-slide.ps-biz{background:linear-gradient(120deg,#101216,#20242b);color:#f2f4f7;}',
@@ -4517,14 +4517,14 @@
     '.ps-title{font-size:1.02rem;font-weight:800;letter-spacing:-.01em;}',
     '.ps-desc{font-size:.74rem;opacity:.82;margin-top:2px;}',
     '.ps-price{text-align:right;flex:0 0 auto;padding-left:12px;}',
-    '.ps-w{font-family:Oswald,sans-serif;font-weight:600;font-size:1.45rem;line-height:1;}',
+    '.ps-w{font-family:var(--font);font-weight:800;font-size:1.45rem;line-height:1;}',
     '.ps-plus .ps-w,.ps-biz .ps-w{color:'+GOLD+';}',
     '.ps-u{font-size:.66rem;opacity:.8;}',
     '.ps-go{display:inline-block;margin-top:7px;font-size:.66rem;font-weight:700;padding:5px 11px;border-radius:20px;}',
     '.ps-lite .ps-go{background:#26282d;color:#fff;} .ps-plus .ps-go,.ps-biz .ps-go{background:'+GOLD+';color:#18191c;}',
-    '.plan-slide-dots{display:flex;justify-content:center;gap:6px;padding:9px 0 2px;}',
-    '.plan-slide-dots span{width:6px;height:6px;border-radius:50%;background:#cfd4db;transition:.3s;}',
-    '.plan-slide-dots span.on{width:16px;border-radius:4px;background:'+GOLD+';}',
+    '.plan-slide-dots{display:flex;justify-content:center;gap:6px;padding:7px 0 3px;background:rgba(0,0,0,.04);}',
+    '.plan-slide-dots span{width:6px;height:6px;border-radius:50%;background:var(--border);transition:all .3s;}',
+    '.plan-slide-dots span.on{width:18px;border-radius:14px;background:var(--accent);}',
 
     /* ── 멤버십 화면 공통 ── */
     '#membership-screen,#my-membership-screen{background:linear-gradient(180deg,#f5f7fa,#eef1f5)!important;display:block!important;align-items:stretch!important;}',
@@ -4539,7 +4539,7 @@
     '.mbs-seg{display:flex;gap:6px;margin:14px 18px 0;background:#e9edf2;border-radius:14px;padding:4px;}',
     '.mbs-seg button{flex:1;border:none;background:none;font-family:inherit;font-size:.82rem;font-weight:700;color:#888d98;padding:9px 0;border-radius:11px;cursor:pointer;}',
     '.mbs-seg button.on{background:#fff;color:#18191c;box-shadow:0 2px 8px -4px rgba(20,25,35,.3);}',
-    '.mbs-carou{display:flex;gap:14px;overflow-x:auto;padding:18px 18px 8px;scroll-snap-type:x mandatory;}',
+    '.mbs-carou{display:flex;gap:14px;overflow-x:auto;padding:18px 18px 8px;scroll-snap-type:x mandatory;justify-content:safe center;}',
     '.mbs-carou::-webkit-scrollbar{height:0;}',
     '.mplan{min-width:270px;scroll-snap-align:center;border-radius:24px;padding:22px 20px;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:420px;border:1px solid transparent;box-sizing:border-box;}',
     '.mplan.lite{background:#fff;border-color:rgba(200,208,218,.7);color:#18191c;}',
@@ -4551,7 +4551,7 @@
     '.mp-name{font-weight:800;font-size:1.3rem;position:relative;} .plus .mp-name,.biz .mp-name{color:#fff;}',
     '.mp-tag{font-size:.76rem;opacity:.72;margin:3px 0 16px;position:relative;}',
     '.mp-price{display:flex;align-items:baseline;gap:4px;margin-bottom:18px;position:relative;}',
-    '.mp-price .w{font-family:Oswald,sans-serif;font-weight:600;font-size:2rem;} .plus .mp-price .w,.biz .mp-price .w{color:'+GOLD+';}',
+    '.mp-price .w{font-family:var(--font);font-weight:800;font-size:2rem;} .plus .mp-price .w,.biz .mp-price .w{color:'+GOLD+';}',
     '.mp-price .u{font-size:.8rem;opacity:.72;}',
     '.mp-benefits{display:flex;flex-direction:column;gap:10px;position:relative;margin-bottom:20px;}',
     '.mp-benefits div{font-size:.84rem;opacity:.95;line-height:1.4;} .plus .mp-benefits div,.biz .mp-benefits div{color:#e7e9ee;}',
@@ -4570,13 +4570,13 @@
     '.mm-card.biz{background:linear-gradient(160deg,#16181d,#0b0c0f);}',
     '.mm-card .glow{position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,110,.35),transparent 70%);}',
     '.mm-card .pl{font-size:.74rem;opacity:.8;letter-spacing:.04em;position:relative;}',
-    '.mm-card .nm{font-family:Oswald,sans-serif;font-weight:600;font-size:1.7rem;margin:2px 0 12px;color:'+GOLD+';position:relative;}',
+    '.mm-card .nm{font-family:var(--font);font-weight:800;font-size:1.7rem;margin:2px 0 12px;color:'+GOLD+';position:relative;}',
     '.mm-card .bill{font-size:.8rem;opacity:.9;position:relative;}',
     '.mm-card .st{position:absolute;top:18px;right:18px;background:rgba(200,169,110,.22);color:'+GOLD+';font-size:.68rem;font-weight:800;padding:4px 10px;border-radius:20px;}',
     '.mm-lbl{font-size:.74rem;font-weight:800;color:#888d98;letter-spacing:.04em;margin:6px 2px 0;}',
     '.mm-quota{display:flex;gap:10px;}',
     '.mm-qbox{flex:1;background:#fff;border:1px solid rgba(200,208,218,.7);border-radius:16px;padding:14px 12px;text-align:center;}',
-    '.mm-qn{font-family:Oswald,sans-serif;font-weight:600;font-size:1.35rem;color:#18191c;} .mm-qn small{font-size:.68rem;color:#888d98;}',
+    '.mm-qn{font-family:var(--font);font-weight:800;font-size:1.35rem;color:#18191c;} .mm-qn small{font-size:.68rem;color:#888d98;}',
     '.mm-ql{font-size:.72rem;color:#888d98;margin-top:3px;}',
     '.mm-bar{height:5px;border-radius:3px;background:#e9edf2;margin-top:9px;overflow:hidden;} .mm-bar i{display:block;height:100%;background:'+GOLD+';}',
     '.mm-rows{background:#fff;border:1px solid rgba(200,208,218,.7);border-radius:16px;overflow:hidden;}',
@@ -4651,7 +4651,7 @@
       return;
     }
     var isBiz=p.plan==='BIZ';
-    var info = p.plan==='LITE' ? '<div class="mm-row"><span class="k">주중 할인</span><span class="v">20%</span></div>'
+    var info = p.plan==='LITE' ? '<div class="mm-row"><span class="k">주중 할인</span><span class="v">20%</span></div><div class="mm-row"><span class="k">심야 할인</span><span class="v">10%</span></div>'
       : p.plan==='PLUS' ? '<div class="mm-row"><span class="k">주중 할인</span><span class="v">40%</span></div><div class="mm-row"><span class="k">심야 할인</span><span class="v">50%</span></div>'
       : '<div class="mm-row"><span class="k">업무시간 할인</span><span class="v">50%</span></div><div class="mm-row"><span class="k">주중 할인</span><span class="v">30%</span></div>';
     var quota = p.plan==='PLUS'
@@ -4662,7 +4662,7 @@
     body.innerHTML='<div class="mm-wrap">'+
       '<div class="mm-card'+(isBiz?' biz':'')+'"><div class="glow"></div><span class="st">이용 중</span>'+
         '<div class="pl">현재 플랜</div><div class="nm">'+p.name+'</div>'+
-        '<div class="bill">다음 결제 '+fmtDate(p.next)+' · '+(p.plan==='LITE'?'4,900':p.plan==='PLUS'?'14,900':'99,000')+'원</div></div>'+
+        '<div class="bill">다음 결제 '+fmtDate(p.next)+' · '+(p.plan==='LITE'?'8,900':p.plan==='PLUS'?'14,900':'99,000')+'원</div></div>'+
       quota+
       '<div class="mm-lbl">플랜 정보</div><div class="mm-rows">'+info+
         '<div class="mm-row"><span class="k">결제 수단</span><span class="v">등록하기 ›</span></div>'+
