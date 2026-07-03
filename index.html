@@ -385,51 +385,75 @@
     <button class="mbs-mine" onclick="if(window.goTo)goTo('my-membership-screen')">내 멤버십</button>
   </div>
   <div class="mbs-body">
-    <div class="mbs-hd"><h2>플랜을 선택하세요</h2><p>주중에 더 저렴하게, 매달 고정 혜택으로.</p></div>
+    <div class="mb-hero">
+      <div class="mb-kick">CARO MEMBERSHIP</div>
+      <h2>멤버십으로<br>매달 아끼세요</h2>
+      <p>주중엔 더 저렴하게, 매달 고정 혜택으로.</p>
+      <div class="mb-chips"><span>주중 최대 50%</span><span>심야 할인</span><span>주말 쿠폰</span></div>
+    </div>
+
     <div class="mbs-seg">
       <button class="on" data-seg="personal">개인</button>
       <button data-seg="corp">법인(비즈)</button>
     </div>
-    <div class="mbs-carou">
-      <div class="mplan lite" data-plan="LITE">
-        <div class="mp-reco">기본</div>
-        <div class="mp-name">CARO 라이트</div>
-        <div class="mp-tag">가끔 타는 분께</div>
-        <div class="mp-price"><span class="w">8,900</span><span class="u">원/월</span></div>
-        <div class="mp-benefits"><div>✓ 주중(월~목) <b>20% 할인</b></div><div>✓ 심야(22~08시) <b>10% 할인</b></div></div>
-        <button class="mp-join" data-plan="LITE" data-name="CARO 라이트">가입하기</button>
+
+    <div class="mb-scalc" id="planCalc">
+      <div class="msc-t">얼마나 아낄까요?</div>
+      <div class="msc-s">한 달에 얼마나 타시나요?</div>
+      <div class="msc-btns" id="planCalcBtns">
+        <button data-h="6">가볍게<br><small>월 6시간</small></button>
+        <button class="on" data-h="15">보통<br><small>월 15시간</small></button>
+        <button data-h="28">자주<br><small>월 28시간</small></button>
       </div>
-      <div class="mplan plus" data-plan="PLUS">
-        <div class="mp-glow"></div>
-        <div class="mp-reco">추천 · 가장 인기</div>
-        <div class="mp-name">CARO 플러스</div>
-        <div class="mp-tag">자주·심야 이동 많은 분</div>
-        <div class="mp-price"><span class="w">14,900</span><span class="u">원/월</span></div>
-        <div class="mp-benefits">
-          <div>✓ 주중 <b>40% 할인</b></div>
-          <div>✓ 심야 <b>50% 할인</b> (주말 밤 포함)</div>
-          <div>✓ 주말 <b>10% 쿠폰</b> 월 1장</div>
-          <div>✓ 할인 적용 월 40시간까지</div>
+      <div class="msc-out" id="planCalcOut"></div>
+    </div>
+
+    <div class="mb-cards personal" id="mbsCards">
+      <div class="pcard lite" data-plan="LITE">
+        <div class="pc-top">
+          <div class="pc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21c-4-1-7-4-7-9V5l7-2 7 2v7c0 5-3 8-7 9z"/></svg></div>
+          <div><div class="pc-name">CARO 라이트</div><div class="pc-sub">가끔 타는 분께</div></div>
         </div>
-        <button class="mp-join" data-plan="PLUS" data-name="CARO 플러스">가입하기</button>
-        <div class="mp-cap">이 거점 잔여 12자리</div>
+        <div class="pc-price"><span class="w">8,900</span><span class="u">원/월</span></div>
+        <div class="pc-bl">
+          <div><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>주중(월~목) <b>20% 할인</b></div>
+          <div><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>심야(22~08시) <b>10% 할인</b></div>
+        </div>
+        <button class="pc-join" data-plan="LITE" data-name="CARO 라이트">가입하기</button>
       </div>
-      <div class="mplan biz" data-plan="BIZ">
-        <div class="mp-glow"></div>
-        <div class="mp-reco">CARO THE BLACK · 법인</div>
-        <div class="mp-name">CARO 비즈</div>
-        <div class="mp-tag">입주기업 · 임직원 3계정</div>
-        <div class="mp-price"><span class="w">99,000</span><span class="u">원/월</span></div>
-        <div class="mp-benefits">
-          <div>✓ 업무시간 <b>50% 할인</b></div>
-          <div>✓ 주중 그 외 <b>30% 할인</b></div>
-          <div>✓ 월 <b>3만원 크레딧</b> + 세금계산서</div>
+
+      <div class="pcard plus" data-plan="PLUS">
+        <div class="pc-ribbon">BEST</div>
+        <div class="pc-top">
+          <div class="pc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16 3 7l5.5 4L12 4l3.5 7L21 7l-2 9z"/><line x1="5" y1="19.5" x2="19" y2="19.5"/></svg></div>
+          <div><div class="pc-name">CARO 플러스</div><div class="pc-sub">자주·심야 이동 많은 분</div></div>
         </div>
-        <button class="mp-join wait" data-plan="BIZ" data-name="CARO 비즈">대기 신청</button>
-        <div class="mp-cap">이 거점 마감 · 대기 접수 중</div>
+        <div class="pc-price"><span class="w">14,900</span><span class="u">원/월</span></div>
+        <div class="pc-bl">
+          <div><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>주중 <b>40% 할인</b></div>
+          <div><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>심야 <b>50% 할인</b> (주말 밤 포함)</div>
+          <div><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>주말 <b>10% 쿠폰</b> 월 1장</div>
+          <div><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>할인 적용 월 40시간까지</div>
+        </div>
+        <button class="pc-join" data-plan="PLUS" data-name="CARO 플러스">가입하기</button>
+      </div>
+
+      <div class="pcard biz" data-plan="BIZ">
+        <div class="pc-top">
+          <div class="pc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l7-4 7 4v13"/><line x1="4" y1="21" x2="20" y2="21"/><rect x="9" y="12" width="6" height="9"/></svg></div>
+          <div><div class="pc-name">CARO 비즈</div><div class="pc-sub">입주기업 · 임직원 3계정</div></div>
+        </div>
+        <div class="pc-price"><span class="w">99,000</span><span class="u">원/월</span></div>
+        <div class="pc-bl">
+          <div><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>업무시간(월~목 9~18시) <b>50% 할인</b></div>
+          <div><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>주중 그 외 시간 <b>30% 할인</b></div>
+          <div><svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>월 <b>3만원 크레딧</b> + 세금계산서</div>
+        </div>
+        <button class="pc-join" data-plan="BIZ" data-name="CARO 비즈">가입 문의</button>
       </div>
     </div>
-    <div class="mbs-note">← 옆으로 밀어 다른 플랜 보기 →<br>할인은 대여요금(시간요금)에만 적용됩니다. 주행요금·하이패스·면책상품 제외.<br>월회비 선불 자동결제 · 해지 시 당월 말까지 혜택 유지(환불 없음).</div>
+
+    <div class="mbs-note">할인은 대여요금(시간요금)에만 적용됩니다. 주행요금·하이패스·면책상품 제외.<br>월회비 선불 자동결제 · 해지 시 당월 말까지 혜택 유지(환불 없음).</div>
   </div>
 </div>
 
@@ -1935,7 +1959,7 @@
 <script src="script.js?v=2"></script>
 <script src="script-photo-upload.js?v=3"></script>
 <script src="customer-notices.js?v=5"></script>
-<script src="customer-redesign.js?v=94"></script>
+<script src="customer-redesign.js?v=98"></script>
 <!-- ══ 드럼롤 날짜/시간 피커 ══ -->
 <div class="drum-overlay" id="drum-overlay" onclick="closeDrumPicker()">
   <div class="drum-sheet" id="drum-sheet">
