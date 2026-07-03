@@ -4696,3 +4696,258 @@
 
   console.log('[멤버십] ✅ 플랜 v1 (배너+화면)');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 멤버십 리치 v2
+   · 히어로 + 절약 계산기 + 프리미엄 카드(라인 아이콘)
+   · 개인/법인 토글, 잔여 숫자 숨김 → 매진 시 버튼 비활성화
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  var GOLD='#c8a96e', GOLDD='#a98a4e', RATE=6200;
+  /* 어드민이 채우면 됨: 'open' | 'full' */
+  window.CARO_PLAN_CAPS = window.CARO_PLAN_CAPS || {LITE:'open', PLUS:'open', BIZ:'open'};
+
+  var css=document.createElement('style'); css.id='caro-membership-v2-css';
+  css.textContent=[
+    '#membership-screen .mbs-hd{display:none;}',   /* 옛 헤더 숨김(히어로로 대체) */
+    '.mb-hero{margin:6px 16px 0;border-radius:24px;padding:24px 20px 22px;color:var(--text-1);position:relative;overflow:hidden;background:var(--glass2);border:1px solid var(--border-l);box-shadow:0 1px 2px rgba(24,25,28,.04);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}',
+    '.mb-hero::after{content:"";position:absolute;right:-40px;top:-52px;width:172px;height:172px;border-radius:50%;background:radial-gradient(circle,rgba(198,164,104,.16),transparent 70%);pointer-events:none;}',
+    '.mb-kick{font-size:.82rem;letter-spacing:.02em;color:var(--text-m);font-weight:600;position:relative;margin-bottom:8px;}',
+    '.mb-hero h2{font-size:1.7rem;font-weight:800;margin:0 0 4px;line-height:1.18;letter-spacing:-.02em;position:relative;color:var(--text-1);}',
+    '.mb-hero p{font-size:.85rem;color:var(--text-m);position:relative;}',
+    '.mb-chips{display:flex;gap:8px;margin-top:16px;position:relative;flex-wrap:wrap;}',
+    '.mb-chips span{font-size:.72rem;font-weight:600;background:#fff;border:1px solid var(--border-l);color:var(--text-2);padding:6px 11px;border-radius:20px;}',
+
+    /* 카드 아이콘 제거(심플) */
+    '.pc-ic{display:none!important;}',
+
+    /* 간단 계산기 (버튼 3개) */
+    '.mb-scalc{margin:14px 16px 0;background:#fff;border:1px solid var(--border-l);border-radius:18px;padding:16px 16px 18px;}',
+    '.mb-scalc.hide{display:none;}',
+    '.msc-t{font-weight:800;font-size:.94rem;}',
+    '.msc-s{font-size:.76rem;color:var(--text-m);margin:3px 0 13px;}',
+    '.msc-btns{display:flex;gap:8px;margin-bottom:14px;}',
+    '.msc-btns button{flex:1;border:1px solid var(--border-l);background:#f6f8fb;border-radius:11px;padding:10px 0;font-family:inherit;font-size:.82rem;font-weight:700;color:var(--text-2);line-height:1.3;cursor:pointer;}',
+    '.msc-btns button small{font-weight:500;color:var(--text-m);font-size:.68rem;}',
+    '.msc-btns button.on{background:#18191c;color:#fff;border-color:#18191c;}',
+    '.msc-btns button.on small{color:rgba(255,255,255,.7);}',
+    '.msc-out{background:#f6f8fb;border-radius:12px;padding:13px 15px;font-size:.9rem;font-weight:700;display:flex;justify-content:space-between;align-items:center;gap:8px;}',
+    '.msc-out .save{color:'+GOLDD+';font-weight:800;text-align:right;}',
+
+    '.mb-cards{padding:16px 16px 6px;display:flex;flex-direction:column;gap:14px;max-width:520px;margin:0 auto;}',
+    '.mb-cards.personal .biz{display:none;} .mb-cards.corp .lite,.mb-cards.corp .plus{display:none;}',
+    '.pcard{border-radius:22px;padding:20px;position:relative;overflow:hidden;border:1px solid rgba(200,208,218,.7);background:#fff;}',
+    '.pcard.plus{background:linear-gradient(160deg,#2f333a,#1d2026);border:none;color:#f2f4f7;}',
+    '.pcard.biz{background:linear-gradient(160deg,#16181d,#0b0c0f);border:none;color:#f2f4f7;}',
+    '.pc-ribbon{position:absolute;top:15px;right:-34px;transform:rotate(38deg);background:'+GOLD+';color:#18191c;font-size:.62rem;font-weight:800;padding:4px 38px;letter-spacing:.08em;}',
+    '.pc-top{display:flex;align-items:center;gap:12px;margin-bottom:4px;}',
+    '.pc-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}',
+    '.lite .pc-ic{background:#eef1f5;color:#6a6f79;} .plus .pc-ic,.biz .pc-ic{background:rgba(200,169,110,.16);color:'+GOLD+';} .pc-ic svg{width:22px;height:22px;}',
+    '.pc-name{font-weight:800;font-size:1.15rem;} .plus .pc-name,.biz .pc-name{color:#fff;}',
+    '.pc-sub{font-size:.74rem;color:#888d98;} .plus .pc-sub,.biz .pc-sub{color:rgba(255,255,255,.6);}',
+    '.pc-price{display:flex;align-items:baseline;gap:4px;margin:12px 0 14px;}',
+    '.pc-price .w{font-weight:800;font-size:1.9rem;} .plus .pc-price .w,.biz .pc-price .w{color:'+GOLD+';}',
+    '.pc-price .u{font-size:.8rem;color:#888d98;} .plus .pc-price .u,.biz .pc-price .u{color:rgba(255,255,255,.6);}',
+    '.pc-bl{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}',
+    '.pc-bl div{display:flex;gap:9px;align-items:flex-start;font-size:.85rem;color:#44474f;line-height:1.35;} .plus .pc-bl div,.biz .pc-bl div{color:#e7e9ee;}',
+    '.pc-bl .ck{flex:0 0 auto;width:16px;height:16px;margin-top:1px;color:'+GOLDD+';} .plus .pc-bl .ck,.biz .pc-bl .ck{color:'+GOLD+';}',
+    '.pc-bl b{font-weight:700;} .plus .pc-bl b,.biz .pc-bl b{color:'+GOLD+';}',
+    '.pc-join{width:100%;text-align:center;border:none;border-radius:13px;padding:14px;font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;}',
+    '.lite .pc-join{background:#26282d;color:#fff;} .plus .pc-join,.biz .pc-join{background:'+GOLD+';color:#18191c;}',
+    '.pc-join.sold{background:#eef1f5!important;color:#a9adb5!important;cursor:not-allowed;}',
+    '.pc-soldnote{text-align:center;font-size:.72rem;color:#888d98;margin-top:8px;} .plus .pc-soldnote,.biz .pc-soldnote{color:rgba(255,255,255,.55);}',
+    /* 가입 결제 바텀시트 */
+    '.mjoin-ov{position:fixed;inset:0;z-index:1300;background:rgba(18,20,26,0);display:flex;align-items:flex-end;justify-content:center;pointer-events:none;transition:background .3s;}',
+    '.mjoin-ov.open{background:rgba(18,20,26,.45);pointer-events:auto;}',
+    '.mjoin-sheet{width:100%;max-width:520px;background:#fff;border-radius:24px 24px 0 0;padding:10px 20px calc(24px + var(--sab));transform:translateY(100%);transition:transform .34s cubic-bezier(.4,0,.2,1);max-height:88vh;overflow-y:auto;box-sizing:border-box;}',
+    '.mjoin-ov.open .mjoin-sheet{transform:translateY(0);}',
+    '.mj-grip{width:42px;height:5px;border-radius:3px;background:#d3d8e0;margin:4px auto 14px;}',
+    '.mj-title{font-weight:800;font-size:1.2rem;}',
+    '.mj-price{display:flex;align-items:baseline;gap:5px;margin:8px 0 16px;} .mj-price .w{font-size:1.9rem;font-weight:800;} .mj-price .u{color:#888d98;font-size:.85rem;}',
+    '.mj-bl{display:flex;flex-direction:column;gap:9px;margin-bottom:16px;} .mj-bl div{display:flex;gap:8px;font-size:.88rem;color:#44474f;align-items:flex-start;line-height:1.35;} .mj-bl .ck{color:'+GOLDD+';font-weight:800;flex:0 0 auto;}',
+    '.mj-card{background:#f6f8fb;border:1px solid var(--border-l,#e7eaef);border-radius:14px;padding:14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}',
+    '.mj-card-l{display:flex;align-items:center;gap:11px;} .mj-card-ic{width:34px;height:34px;border-radius:9px;background:#e7ebf1;display:flex;align-items:center;justify-content:center;color:#4b5563;flex:0 0 auto;} .mj-card-ic svg{width:19px;height:19px;}',
+    '.mj-card-nm{font-weight:700;font-size:.92rem;} .mj-card-sub{font-size:.74rem;color:#888d98;margin-top:1px;}',
+    '.mj-card.nocard{flex-direction:column;gap:11px;align-items:stretch;text-align:center;font-size:.88rem;color:#888d98;}',
+    '.mj-addcard{background:#26282d;color:#fff;border:none;border-radius:11px;padding:12px;font-weight:700;font-family:inherit;cursor:pointer;}',
+    '.mj-notice{font-size:.76rem;color:#888d98;line-height:1.6;margin-bottom:16px;}',
+    '.mj-pay{width:100%;border:none;border-radius:14px;padding:16px;font-family:inherit;font-size:.98rem;font-weight:800;background:'+GOLD+';color:#18191c;cursor:pointer;}',
+    '.mj-pay.disabled{background:#eef1f5;color:#a9adb5;cursor:not-allowed;}',
+    /* 비즈 문의 시트 */
+    '.mj-seclbl{font-size:.76rem;font-weight:800;color:#888d98;letter-spacing:.03em;margin:2px 2px 10px;}',
+    '.mj-need{display:flex;flex-direction:column;gap:11px;margin-bottom:18px;}',
+    '.mj-need-row{display:flex;gap:11px;align-items:flex-start;}',
+    '.mj-need-ck{flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(200,169,110,.16);color:'+GOLDD+';display:flex;align-items:center;justify-content:center;margin-top:1px;} .mj-need-ck svg{width:14px;height:14px;}',
+    '.mj-need-t{font-weight:700;font-size:.9rem;color:#18191c;} .mj-need-s{font-size:.78rem;color:#888d98;margin-top:1px;}',
+    '.mj-steps{display:flex;flex-direction:column;gap:0;margin-bottom:18px;position:relative;}',
+    '.mj-step{display:flex;align-items:center;gap:11px;padding:7px 0;font-size:.88rem;color:#44474f;font-weight:600;}',
+    '.mj-step-n{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:#18191c;color:#fff;font-size:.76rem;font-weight:800;display:flex;align-items:center;justify-content:center;}'
+  ].join('');
+  (document.head||document.documentElement).appendChild(css);
+
+  function toast(m){ if(window.showToast) showToast(m); else alert(m); }
+
+  /* 개인/법인 토글 */
+  function bindSeg2(){
+    var seg=document.querySelector('#membership-screen .mbs-seg');
+    var cards=document.getElementById('mbsCards');
+    var calc=document.getElementById('planCalc');
+    if(!seg||!cards||seg.__caroV2) return; seg.__caroV2=true;
+    seg.addEventListener('click', function(e){
+      var b=e.target.closest('button[data-seg]'); if(!b) return;
+      [].forEach.call(seg.children, function(x){ x.classList.toggle('on', x===b); });
+      var corp=b.getAttribute('data-seg')==='corp';
+      cards.classList.toggle('corp', corp);
+      cards.classList.toggle('personal', !corp);
+      if(calc) calc.classList.toggle('hide', corp);  /* 법인이면 개인용 계산기 숨김 */
+    });
+  }
+
+  /* 절약 계산기 (버튼 3개) */
+  function bindCalc(){
+    var btns=document.getElementById('planCalcBtns');
+    var out=document.getElementById('planCalcOut');
+    if(!btns||!out||btns.__caroV2) return; btns.__caroV2=true;
+    function run(h){
+      var lite=RATE*h*0.20-8900, plus=RATE*h*0.40-14900;
+      var best = plus>=lite ? {n:'CARO 플러스로',s:plus} : {n:'CARO 라이트로',s:lite};
+      var save = best.s>=0
+        ? '<span class="save">월 '+Math.round(best.s).toLocaleString()+'원 이득</span>'
+        : '<span class="save" style="color:#888d98">아직은 그냥 이용이 나아요</span>';
+      out.innerHTML='<span>'+(best.s>=0?best.n:'가끔 이용이라면')+'</span>'+save;
+    }
+    btns.addEventListener('click', function(e){
+      var b=e.target.closest('button[data-h]'); if(!b) return;
+      [].forEach.call(btns.children, function(x){ x.classList.toggle('on', x===b); });
+      run(+b.getAttribute('data-h'));
+    });
+    var on=btns.querySelector('button.on')||btns.querySelector('button');
+    run(on?+on.getAttribute('data-h'):15);
+  }
+
+  /* 매진 시 버튼 비활성화 */
+  function applyCaps(){
+    var caps=window.CARO_PLAN_CAPS||{};
+    ['LITE','PLUS','BIZ'].forEach(function(pl){
+      var btn=document.querySelector('#membership-screen .pc-join[data-plan="'+pl+'"]');
+      if(!btn) return;
+      var card=btn.closest('.pcard');
+      var old=card&&card.querySelector('.pc-soldnote'); if(old) old.remove();
+      if(caps[pl]==='full'){
+        btn.classList.add('sold'); btn.disabled=true; btn.textContent='대기 신청';
+        var n=document.createElement('div'); n.className='pc-soldnote'; n.textContent='현재 거점 정원이 찼어요 · 자리 나면 알려드릴게요';
+        if(card) card.appendChild(n);
+      } else {
+        btn.classList.remove('sold'); btn.disabled=false;
+        btn.textContent = (pl==='BIZ' ? '가입 문의' : '가입하기');
+      }
+    });
+  }
+
+  /* 가입 결제 바텀시트 */
+  var PLAN_INFO={
+    LITE:{name:'CARO 라이트',price:8900,bl:['주중(월~목) 20% 할인','심야(22~08시) 10% 할인']},
+    PLUS:{name:'CARO 플러스',price:14900,bl:['주중 40% 할인','심야 50% 할인 (주말 밤 포함)','주말 10% 쿠폰 월 1장','할인 적용 월 40시간까지']}
+  };
+  var CARD_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><line x1="2.5" y1="9.5" x2="21.5" y2="9.5"/></svg>';
+  var CHECK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  function money(n){ return (n||0).toLocaleString(); }
+  function firstCard(){ try{ return (window.savedCards&&window.savedCards.length)?window.savedCards[0]:null; }catch(e){ return null; } }
+  function buildSheet(){
+    if(document.getElementById('mjoin-ov')) return;
+    var ov=document.createElement('div'); ov.id='mjoin-ov'; ov.className='mjoin-ov';
+    ov.innerHTML='<div class="mjoin-sheet" id="mjoin-sheet"></div>';
+    ov.addEventListener('click', function(e){ if(e.target===ov) closeSheet(); });
+    document.body.appendChild(ov);
+  }
+  function closeSheet(){ var ov=document.getElementById('mjoin-ov'); if(ov) ov.classList.remove('open'); }
+  function openJoinSheet(plan){
+    var info=PLAN_INFO[plan]; if(!info) return;
+    buildSheet();
+    var card=firstCard();
+    var cardHtml = card
+      ? '<div class="mj-card"><div class="mj-card-l"><span class="mj-card-ic">'+CARD_SVG+'</span><div><div class="mj-card-nm">'+(card.alias||'카드')+' ···'+card.last4+'</div><div class="mj-card-sub">등록된 결제 카드로 결제돼요</div></div></div></div>'
+      : '<div class="mj-card nocard"><div>등록된 결제 카드가 없어요.<br>카드를 먼저 등록해 주세요.</div><button class="mj-addcard" id="mjAddCard">결제 카드 등록하기</button></div>';
+    var sheet=document.getElementById('mjoin-sheet');
+    sheet.innerHTML=
+      '<div class="mj-grip"></div>'+
+      '<div class="mj-title">'+info.name+' 가입</div>'+
+      '<div class="mj-price"><span class="w">'+money(info.price)+'</span><span class="u">원 / 월</span></div>'+
+      '<div class="mj-bl">'+info.bl.map(function(b){return '<div><span class="ck">✓</span>'+b+'</div>';}).join('')+'</div>'+
+      cardHtml+
+      '<div class="mj-notice">· 매월 결제일에 등록 카드로 <b>자동 결제</b>돼요 (선불)<br>· 해지해도 당월 말까지 혜택 유지 · <b>환불 없음</b><br>· 할인은 대여요금(시간요금)에만 적용</div>'+
+      '<button class="mj-pay'+(card?'':' disabled')+'" id="mjPay">'+(card ? money(info.price)+'원 결제하고 가입' : '카드 등록 후 가입할 수 있어요')+'</button>';
+    var ov=document.getElementById('mjoin-ov');
+    requestAnimationFrame(function(){ ov.classList.add('open'); });
+    var pay=document.getElementById('mjPay');
+    if(pay && card) pay.onclick=function(){ doJoin(plan,info,card); };
+    var add=document.getElementById('mjAddCard');
+    if(add) add.onclick=function(){ closeSheet(); try{ if(window.openAddCard) openAddCard(); else if(window.goTo) goTo('payment-info-screen'); }catch(e){} };
+  }
+  function doJoin(plan,info,card){
+    try{ var nx=new Date(); nx.setMonth(nx.getMonth()+1);
+      localStorage.setItem('caro_plan_v1', JSON.stringify({plan:plan,name:info.name,since:Date.now(),next:nx.getTime(),card:(card?card.last4:null)})); }catch(e){}
+    closeSheet();
+    toast(info.name+' 가입 완료 · '+money(info.price)+'원 결제되었습니다');
+    if(window.goTo) goTo('my-membership-screen');
+  }
+
+  /* 가입 버튼 → 결제 시트 열기 (비즈는 문의 시트) */
+  function bindJoin2(){
+    var cards=document.getElementById('mbsCards');
+    if(!cards||cards.__caroV2) return; cards.__caroV2=true;
+    cards.addEventListener('click', function(e){
+      var b=e.target.closest('.pc-join'); if(!b||b.disabled) return;
+      var plan=b.getAttribute('data-plan');
+      if(plan==='BIZ'){ openBizSheet(); return; }
+      openJoinSheet(plan);
+    });
+  }
+
+  /* 비즈(법인) 가입 문의 시트 */
+  function openBizSheet(){
+    buildSheet();
+    var need=[
+      ['사업자등록증','법인/개인사업자 확인용 (사본 이미지)'],
+      ['담당자 정보','이름 · 연락처 · 이메일'],
+      ['임직원 계정','이용할 임직원 최대 3명 (이름 · 면허)'],
+      ['세금계산서 정보','사업자번호 · 담당 이메일 (매월 발행)']
+    ];
+    var step=['가입 문의 신청','서류 확인 (영업일 1~2일)','승인 & 계정 개설','이용 시작'];
+    var sheet=document.getElementById('mjoin-sheet');
+    sheet.innerHTML=
+      '<div class="mj-grip"></div>'+
+      '<div class="mj-title">CARO 비즈 (법인) 가입 문의</div>'+
+      '<div class="mj-price"><span class="w">99,000</span><span class="u">원 / 월 · 임직원 3계정</span></div>'+
+      '<div class="mj-seclbl">준비하실 것</div>'+
+      '<div class="mj-need">'+need.map(function(n){
+        return '<div class="mj-need-row"><span class="mj-need-ck">'+CHECK_SVG+'</span><div><div class="mj-need-t">'+n[0]+'</div><div class="mj-need-s">'+n[1]+'</div></div></div>';
+      }).join('')+'</div>'+
+      '<div class="mj-seclbl">진행 절차</div>'+
+      '<div class="mj-steps">'+step.map(function(s,i){
+        return '<div class="mj-step"><span class="mj-step-n">'+(i+1)+'</span><span>'+s+'</span></div>';
+      }).join('')+'</div>'+
+      '<div class="mj-notice">· 법인은 사업자 확인 후 <b>승인제</b>로 개설돼요<br>· 결제는 세금계산서 발행 (선불 자동결제)<br>· 자세한 문의: 고객센터 또는 아래 신청</div>'+
+      '<button class="mj-pay" id="mjBiz">가입 문의 신청하기</button>';
+    var ov=document.getElementById('mjoin-ov');
+    requestAnimationFrame(function(){ ov.classList.add('open'); });
+    var btn=document.getElementById('mjBiz');
+    if(btn) btn.onclick=function(){
+      closeSheet();
+      toast('가입 문의가 접수되었어요. 영업일 1~2일 내 담당자가 연락드립니다.');
+    };
+  }
+
+  function initMbs(){ bindSeg2(); bindCalc(); bindJoin2(); applyCaps();
+    var cards=document.getElementById('mbsCards'); if(cards && !cards.classList.contains('corp')) cards.classList.add('personal'); }
+
+  if(typeof window.goTo==='function' && !window.goTo.__caroMbs2){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments);
+      try{ if(id==='membership-screen') setTimeout(initMbs,30); }catch(e){}
+      return r; };
+    window.goTo.__caroMbs2=true;
+  }
+  setTimeout(function(){ if(document.getElementById('mbsCards')) initMbs(); }, 800);
+  console.log('[멤버십] ✅ 리치 v2');
+})();
