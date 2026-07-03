@@ -4492,3 +4492,207 @@
   setTimeout(markAlive, 1500);
   setTimeout(markAlive, 4000);
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   CARO MOBILITY — 멤버십 플랜 v1
+   · 홈 회전 플랜 배너(이벤트 배너 아래) → 탭 시 멤버십 화면
+   · 멤버십 화면(CARO 톤 카드) + 내 멤버십 화면
+   · 색: 라이트=실버 / 플러스=차콜+골드 / 비즈=블랙+골드
+   · 결제/요금계산 백엔드는 추후 — 가입은 데모(localStorage) 저장
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  var GOLD='#c8a96e';
+  var css=document.createElement('style'); css.id='caro-membership-css';
+  css.textContent=[
+    /* ── 홈 회전 배너 ── */
+    '.plan-slide-wrap{margin:0 16px;border-radius:16px;overflow:hidden;position:relative;}',
+    '.plan-slide-track{display:flex;transition:transform .5s cubic-bezier(.4,0,.2,1);}',
+    '.plan-slide{min-width:100%;padding:15px 17px;display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;}',
+    '.plan-slide.ps-lite{background:linear-gradient(120deg,#dfe3e9,#eef1f5);color:#26282d;}',
+    '.plan-slide.ps-plus{background:linear-gradient(120deg,#2a2d33,#3a3f47);color:#f2f4f7;}',
+    '.plan-slide.ps-biz{background:linear-gradient(120deg,#101216,#20242b);color:#f2f4f7;}',
+    '.ps-badge{display:inline-block;font-size:.6rem;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:12px;margin-bottom:7px;}',
+    '.ps-lite .ps-badge{background:rgba(24,25,28,.08);color:#5a5e66;}',
+    '.ps-plus .ps-badge,.ps-biz .ps-badge{background:rgba(200,169,110,.2);color:'+GOLD+';}',
+    '.ps-title{font-size:1.02rem;font-weight:800;letter-spacing:-.01em;}',
+    '.ps-desc{font-size:.74rem;opacity:.82;margin-top:2px;}',
+    '.ps-price{text-align:right;flex:0 0 auto;padding-left:12px;}',
+    '.ps-w{font-family:Oswald,sans-serif;font-weight:600;font-size:1.45rem;line-height:1;}',
+    '.ps-plus .ps-w,.ps-biz .ps-w{color:'+GOLD+';}',
+    '.ps-u{font-size:.66rem;opacity:.8;}',
+    '.ps-go{display:inline-block;margin-top:7px;font-size:.66rem;font-weight:700;padding:5px 11px;border-radius:20px;}',
+    '.ps-lite .ps-go{background:#26282d;color:#fff;} .ps-plus .ps-go,.ps-biz .ps-go{background:'+GOLD+';color:#18191c;}',
+    '.plan-slide-dots{display:flex;justify-content:center;gap:6px;padding:9px 0 2px;}',
+    '.plan-slide-dots span{width:6px;height:6px;border-radius:50%;background:#cfd4db;transition:.3s;}',
+    '.plan-slide-dots span.on{width:16px;border-radius:4px;background:'+GOLD+';}',
+
+    /* ── 멤버십 화면 공통 ── */
+    '#membership-screen,#my-membership-screen{background:linear-gradient(180deg,#f5f7fa,#eef1f5)!important;display:block!important;align-items:stretch!important;}',
+    '.mbs-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px;',
+      'padding:calc(14px + var(--sat,0px)) 14px 12px;background:rgba(245,247,250,.94);backdrop-filter:blur(8px);border-bottom:1px solid rgba(200,208,218,.7);}',
+    '.mbs-back{background:none;border:none;font-size:1.5rem;color:#44474f;cursor:pointer;width:40px;text-align:left;font-family:inherit;}',
+    '.mbs-ti{font-weight:800;font-size:1.05rem;}',
+    '.mbs-mine{background:none;border:1px solid rgba(200,208,218,.9);border-radius:20px;padding:6px 12px;font-size:.78rem;font-weight:700;color:#44474f;font-family:inherit;cursor:pointer;}',
+    '.mbs-body{padding-bottom:40px;}',
+    '.mbs-body::-webkit-scrollbar{width:0;}',
+    '.mbs-hd{padding:20px 20px 4px;} .mbs-hd h2{font-size:1.45rem;font-weight:800;letter-spacing:-.02em;} .mbs-hd p{color:#888d98;font-size:.86rem;margin-top:4px;}',
+    '.mbs-seg{display:flex;gap:6px;margin:14px 18px 0;background:#e9edf2;border-radius:14px;padding:4px;}',
+    '.mbs-seg button{flex:1;border:none;background:none;font-family:inherit;font-size:.82rem;font-weight:700;color:#888d98;padding:9px 0;border-radius:11px;cursor:pointer;}',
+    '.mbs-seg button.on{background:#fff;color:#18191c;box-shadow:0 2px 8px -4px rgba(20,25,35,.3);}',
+    '.mbs-carou{display:flex;gap:14px;overflow-x:auto;padding:18px 18px 8px;scroll-snap-type:x mandatory;}',
+    '.mbs-carou::-webkit-scrollbar{height:0;}',
+    '.mplan{min-width:270px;scroll-snap-align:center;border-radius:24px;padding:22px 20px;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:420px;border:1px solid transparent;box-sizing:border-box;}',
+    '.mplan.lite{background:#fff;border-color:rgba(200,208,218,.7);color:#18191c;}',
+    '.mplan.plus{background:linear-gradient(165deg,#2f333a,#1f2229);color:#f2f4f7;}',
+    '.mplan.biz{background:linear-gradient(165deg,#16181d,#0b0c0f);color:#f2f4f7;}',
+    '.mp-glow{position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,110,.4),transparent 68%);filter:blur(6px);}',
+    '.mp-reco{align-self:flex-start;font-size:.64rem;font-weight:800;letter-spacing:.04em;padding:4px 10px;border-radius:20px;margin-bottom:12px;position:relative;}',
+    '.lite .mp-reco{background:#eef1f5;color:#5a5e66;} .plus .mp-reco,.biz .mp-reco{background:rgba(200,169,110,.22);color:'+GOLD+';}',
+    '.mp-name{font-weight:800;font-size:1.3rem;position:relative;} .plus .mp-name,.biz .mp-name{color:#fff;}',
+    '.mp-tag{font-size:.76rem;opacity:.72;margin:3px 0 16px;position:relative;}',
+    '.mp-price{display:flex;align-items:baseline;gap:4px;margin-bottom:18px;position:relative;}',
+    '.mp-price .w{font-family:Oswald,sans-serif;font-weight:600;font-size:2rem;} .plus .mp-price .w,.biz .mp-price .w{color:'+GOLD+';}',
+    '.mp-price .u{font-size:.8rem;opacity:.72;}',
+    '.mp-benefits{display:flex;flex-direction:column;gap:10px;position:relative;margin-bottom:20px;}',
+    '.mp-benefits div{font-size:.84rem;opacity:.95;line-height:1.4;} .plus .mp-benefits div,.biz .mp-benefits div{color:#e7e9ee;}',
+    '.mp-benefits b{font-weight:700;} .plus .mp-benefits b,.biz .mp-benefits b{color:'+GOLD+';}',
+    '.mp-join{margin-top:auto;text-align:center;border:none;border-radius:14px;padding:14px;font-family:inherit;font-size:.9rem;font-weight:800;cursor:pointer;position:relative;}',
+    '.lite .mp-join{background:#26282d;color:#fff;} .plus .mp-join,.biz .mp-join{background:'+GOLD+';color:#18191c;}',
+    '.mp-join.wait{background:#eef1f5!important;color:#888d98!important;}',
+    '.mp-cap{text-align:center;font-size:.7rem;opacity:.62;margin-top:8px;position:relative;}',
+    '.mbs-note{color:#888d98;font-size:.74rem;text-align:center;line-height:1.5;padding:6px 20px 24px;}',
+    '.mbs-carou.corp .mplan.lite,.mbs-carou.corp .mplan.plus{display:none;}',
+    '.mbs-carou.personal .mplan.biz{display:none;}',
+
+    /* ── 내 멤버십 ── */
+    '.mm-wrap{padding:18px 16px 26px;display:flex;flex-direction:column;gap:14px;}',
+    '.mm-card{border-radius:22px;padding:20px 18px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(160deg,#2f333a,#1a1c22);box-shadow:0 14px 30px -16px rgba(20,25,35,.7);}',
+    '.mm-card.biz{background:linear-gradient(160deg,#16181d,#0b0c0f);}',
+    '.mm-card .glow{position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,110,.35),transparent 70%);}',
+    '.mm-card .pl{font-size:.74rem;opacity:.8;letter-spacing:.04em;position:relative;}',
+    '.mm-card .nm{font-family:Oswald,sans-serif;font-weight:600;font-size:1.7rem;margin:2px 0 12px;color:'+GOLD+';position:relative;}',
+    '.mm-card .bill{font-size:.8rem;opacity:.9;position:relative;}',
+    '.mm-card .st{position:absolute;top:18px;right:18px;background:rgba(200,169,110,.22);color:'+GOLD+';font-size:.68rem;font-weight:800;padding:4px 10px;border-radius:20px;}',
+    '.mm-lbl{font-size:.74rem;font-weight:800;color:#888d98;letter-spacing:.04em;margin:6px 2px 0;}',
+    '.mm-quota{display:flex;gap:10px;}',
+    '.mm-qbox{flex:1;background:#fff;border:1px solid rgba(200,208,218,.7);border-radius:16px;padding:14px 12px;text-align:center;}',
+    '.mm-qn{font-family:Oswald,sans-serif;font-weight:600;font-size:1.35rem;color:#18191c;} .mm-qn small{font-size:.68rem;color:#888d98;}',
+    '.mm-ql{font-size:.72rem;color:#888d98;margin-top:3px;}',
+    '.mm-bar{height:5px;border-radius:3px;background:#e9edf2;margin-top:9px;overflow:hidden;} .mm-bar i{display:block;height:100%;background:'+GOLD+';}',
+    '.mm-rows{background:#fff;border:1px solid rgba(200,208,218,.7);border-radius:16px;overflow:hidden;}',
+    '.mm-row{display:flex;align-items:center;justify-content:space-between;padding:15px;border-bottom:1px solid rgba(200,208,218,.55);font-size:.88rem;}',
+    '.mm-row:last-child{border-bottom:none;} .mm-row .k{color:#44474f;} .mm-row .v{color:#18191c;font-weight:600;}',
+    '.mm-cancel{width:100%;text-align:center;background:#fff;border:1px solid rgba(200,208,218,.7);border-radius:14px;color:#b23a3a;font-size:.88rem;font-weight:700;padding:14px;font-family:inherit;cursor:pointer;}',
+    '.mm-empty{text-align:center;padding:60px 24px;color:#888d98;}',
+    '.mm-empty .ic{font-size:2.4rem;margin-bottom:12px;}',
+    '.mm-empty .msg{font-size:.95rem;margin-bottom:20px;line-height:1.5;}',
+    '.mm-empty .gob{background:#26282d;color:#fff;border:none;border-radius:14px;padding:13px 26px;font-size:.9rem;font-weight:700;font-family:inherit;cursor:pointer;}'
+  ].join('');
+  (document.head||document.documentElement).appendChild(css);
+
+  function toast(m){ if(window.showToast) showToast(m); else alert(m); }
+
+  /* ── 홈 배너 자동 회전 ── */
+  function startBanner(){
+    var track=document.getElementById('planSlideTrack');
+    var dotsWrap=document.getElementById('planSlideDots');
+    if(!track||!dotsWrap||track.__caroRun) return;
+    track.__caroRun=true;
+    var dots=dotsWrap.children, n=track.children.length, i=0;
+    setInterval(function(){
+      i=(i+1)%n; track.style.transform='translateX(-'+(i*100)+'%)';
+      for(var k=0;k<n;k++) dots[k].className=(k===i?'on':'');
+    }, 2800);
+  }
+
+  /* ── 세그먼트(개인/법인) ── */
+  function bindSeg(){
+    var seg=document.querySelector('#membership-screen .mbs-seg');
+    var carou=document.querySelector('#membership-screen .mbs-carou');
+    if(!seg||!carou||seg.__caroBound) return; seg.__caroBound=true;
+    carou.classList.add('personal');
+    seg.addEventListener('click', function(e){
+      var b=e.target.closest('button[data-seg]'); if(!b) return;
+      [].forEach.call(seg.children, function(x){ x.classList.toggle('on', x===b); });
+      var mode=b.getAttribute('data-seg');
+      carou.classList.toggle('personal', mode==='personal');
+      carou.classList.toggle('corp', mode==='corp');
+      carou.scrollLeft=0;
+    });
+  }
+
+  /* ── 가입 버튼 (데모 저장) ── */
+  function bindJoin(){
+    var carou=document.querySelector('#membership-screen .mbs-carou');
+    if(!carou||carou.__caroJoin) return; carou.__caroJoin=true;
+    carou.addEventListener('click', function(e){
+      var b=e.target.closest('.mp-join'); if(!b) return;
+      var plan=b.getAttribute('data-plan'), name=b.getAttribute('data-name');
+      if(plan==='BIZ'){ toast('비즈(법인)는 사업자 승인제예요. 대기 신청이 접수되었습니다.'); return; }
+      try{
+        var next=new Date(); next.setMonth(next.getMonth()+1);
+        localStorage.setItem('caro_plan_v1', JSON.stringify({plan:plan,name:name,since:Date.now(),next:next.getTime()}));
+      }catch(err){}
+      toast(name+' 가입이 접수되었습니다. (결제 연동은 준비 중)');
+      if(window.goTo) goTo('my-membership-screen');
+      renderMy();
+    });
+  }
+
+  /* ── 내 멤버십 렌더 ── */
+  function getPlan(){ try{ return JSON.parse(localStorage.getItem('caro_plan_v1')||'null'); }catch(e){ return null; } }
+  function fmtDate(ts){ var d=new Date(ts); return (d.getMonth()+1)+'/'+d.getDate(); }
+  function renderMy(){
+    var body=document.getElementById('myMbsBody'); if(!body) return;
+    var p=getPlan();
+    if(!p){
+      body.innerHTML='<div class="mm-empty"><div class="ic">💳</div><div class="msg">아직 가입한 멤버십이 없어요.<br>플랜을 골라 더 저렴하게 이용해 보세요.</div>'+
+        '<button class="gob" onclick="if(window.goTo)goTo(\'membership-screen\')">플랜 보러가기</button></div>';
+      return;
+    }
+    var isBiz=p.plan==='BIZ';
+    var info = p.plan==='LITE' ? '<div class="mm-row"><span class="k">주중 할인</span><span class="v">20%</span></div>'
+      : p.plan==='PLUS' ? '<div class="mm-row"><span class="k">주중 할인</span><span class="v">40%</span></div><div class="mm-row"><span class="k">심야 할인</span><span class="v">50%</span></div>'
+      : '<div class="mm-row"><span class="k">업무시간 할인</span><span class="v">50%</span></div><div class="mm-row"><span class="k">주중 할인</span><span class="v">30%</span></div>';
+    var quota = p.plan==='PLUS'
+      ? '<div class="mm-lbl">이번 달 남은 혜택</div><div class="mm-quota"><div class="mm-qbox"><div class="mm-qn">40<small>/40h</small></div><div class="mm-ql">할인 적용 시간</div><div class="mm-bar"><i style="width:100%"></i></div></div><div class="mm-qbox"><div class="mm-qn">1<small>장</small></div><div class="mm-ql">주말 쿠폰</div><div class="mm-bar"><i style="width:100%"></i></div></div></div>'
+      : p.plan==='BIZ'
+      ? '<div class="mm-lbl">이번 달 남은 혜택</div><div class="mm-quota"><div class="mm-qbox"><div class="mm-qn">30,000<small>원</small></div><div class="mm-ql">이용 크레딧</div><div class="mm-bar"><i style="width:100%"></i></div></div><div class="mm-qbox"><div class="mm-qn">3<small>계정</small></div><div class="mm-ql">임직원</div></div></div>'
+      : '';
+    body.innerHTML='<div class="mm-wrap">'+
+      '<div class="mm-card'+(isBiz?' biz':'')+'"><div class="glow"></div><span class="st">이용 중</span>'+
+        '<div class="pl">현재 플랜</div><div class="nm">'+p.name+'</div>'+
+        '<div class="bill">다음 결제 '+fmtDate(p.next)+' · '+(p.plan==='LITE'?'4,900':p.plan==='PLUS'?'14,900':'99,000')+'원</div></div>'+
+      quota+
+      '<div class="mm-lbl">플랜 정보</div><div class="mm-rows">'+info+
+        '<div class="mm-row"><span class="k">결제 수단</span><span class="v">등록하기 ›</span></div>'+
+        '<div class="mm-row"><span class="k">이용 내역</span><span class="v">›</span></div>'+
+        '<div class="mm-row"><span class="k">플랜 변경</span><span class="v">›</span></div></div>'+
+      '<button class="mm-cancel" id="mmCancelBtn">멤버십 해지</button>'+
+      '<div class="mbs-note" style="padding:2px 4px 0;">해지해도 당월 말까지 혜택이 유지되며 환불은 없습니다.</div></div>';
+    var cb=document.getElementById('mmCancelBtn');
+    if(cb) cb.onclick=function(){
+      if(confirm('멤버십을 해지할까요?\n(당월 말까지 혜택 유지, 환불 없음)')){
+        try{ localStorage.removeItem('caro_plan_v1'); }catch(e){}
+        toast('해지 예약되었습니다. 당월 말까지 이용 가능해요.');
+        renderMy();
+      }
+    };
+  }
+
+  /* goTo 후킹 → 멤버십 화면 진입 시 초기화 */
+  if(typeof window.goTo==='function' && !window.goTo.__caroMbs){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments);
+      try{ if(id==='membership-screen'){ bindSeg(); bindJoin(); } if(id==='my-membership-screen'){ renderMy(); } }catch(e){}
+      return r; };
+    window.goTo.__caroMbs=true;
+  }
+
+  function boot(){ startBanner(); bindSeg(); bindJoin(); }
+  if(document.readyState!=='loading') setTimeout(boot,300); else document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot,300); });
+  /* 배너는 홈이 늦게 그려질 수 있으니 재시도 */
+  var tries=0; var iv=setInterval(function(){ tries++; startBanner(); if(document.getElementById('planSlideTrack')&&document.getElementById('planSlideTrack').__caroRun || tries>20) clearInterval(iv); }, 400);
+
+  console.log('[멤버십] ✅ 플랜 v1 (배너+화면)');
+})();
