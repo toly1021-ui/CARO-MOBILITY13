@@ -1903,7 +1903,13 @@
     var b=document.createElement('button');
     b.id='caro-admin-entry'; b.className='hmenu-item'; b.type='button';
     b.innerHTML='<span class="hmenu-item-icon">🛠️</span><span class="hmenu-item-label">관리자 모드</span><span class="hmenu-item-arrow">›</span>';
-    b.onclick=function(){ try{ if(window.closeHomeMenu) closeHomeMenu(); }catch(e){} try{ if(window.goTo) goTo('dev-screen'); }catch(e){} };
+    b.onclick=function(){
+      try{ if(window.closeHomeMenu) closeHomeMenu(); }catch(e){}
+      try{
+        if(window.showDevLoginTransition){ showDevLoginTransition(); }
+        else if(window.goTo){ goTo('dev-screen'); }
+      }catch(e){ try{ if(window.goTo) goTo('dev-screen'); }catch(e2){} }
+    };
     logout.parentNode.insertBefore(dv, logout);
     logout.parentNode.insertBefore(b, logout);
   }
@@ -1992,7 +1998,7 @@
       setTimeout(function(){
         try{ if(window.goTo) goTo('dev-screen'); }catch(e){}
         setTimeout(function(){ overlay.style.opacity='0'; overlay.style.pointerEvents='none'; },600);
-      },2000);
+      },3500);
     });});
   };
   console.log('[관리자모드] ✅ 진입 전환화면 CARO ADMIN(골드)');
