@@ -3093,11 +3093,22 @@ function devRenderCarStatusList(){
 }
 function devToggleCarStatus(carId){
   var car=CARS_DATA.find(function(c){return c.id===carId;});
+  var isBL=false;
+  if(!car && window.BL_CARS){ car=BL_CARS.find(function(c){return c.id===carId;}); isBL=!!car; }
   if(!car) return;
   car.devDisabled=!car.devDisabled;
-  if(car.devDisabled) car.status='busy'; else car.status='available';
+  car.status=car.devDisabled?'unavailable':'available';
   devRenderCarStatusList();
   renderCars();
+  /* Firestore 저장 → 어드민(admin.html)·다른 기기와 동기화 */
+  try{
+    if(typeof fbReady==='function' && fbReady() && window.FB_FN && window.FB_DB && typeof FB_FN.setDoc==='function'){
+      fsLastWriteTime=Date.now();
+      var col=isBL?FS_BL_COL:FS_CARS_COL;
+      FB_FN.setDoc(FB_FN.doc(FB_DB, col, String(car.id)), { status:car.status, devDisabled:car.devDisabled }, { merge:true })
+        .catch(function(e){ console.error('차량 상태 저장 실패:', e); });
+    }
+  }catch(e){ console.error(e); }
   showToast(car.devDisabled?('🚫 '+car.name+' 사용 불가 처리됨'):('✅ '+car.name+' 이용 가능으로 복구됨'));
 }
 window.devToggleCarStatus=devToggleCarStatus;
@@ -5476,6 +5487,22 @@ function deleteCarFromFirestore(carId, isBL){
   return fn.deleteDoc(fn.doc(db,isBL?FS_BL_COL:FS_CARS_COL,String(carId))).catch(function(e){console.error('차량 삭제 실패:',e);});
 }
 
+function normalizeCarStatus(c){
+  /* 어드민은 status:'unavailable', 대시보드는 devDisabled 를 씀 → 하나로 통일 */
+  try{
+    var s=(''+(c && c.status || '')).toLowerCase();
+    var unavail = (c && c.devDisabled===true) || /unavail|maint|점검|off|disable|사고|고장|불가/.test(s);
+    c.devDisabled = !!unavail;
+    if(unavail){ if(s==='available'||s===''){ c.status='unavailable'; } }
+    else { if(s===''||s==='unavailable'){ c.status='available'; } }
+    /* 이미지 필드 통일: 어드민은 image, 앱은 img */
+    if(!c.img && c.image) c.img=c.image;
+    if(!c.image && c.img) c.image=c.img;
+  }catch(e){}
+  return c;
+}
+window.normalizeCarStatus=normalizeCarStatus;
+
 function startCarsListener(){
   if(!fbReady()) return;
   var fn=window.FB_FN, db=window.FB_DB;
@@ -5485,7 +5512,7 @@ function startCarsListener(){
   try{
     fsCarsUnsub=fn.onSnapshot(fn.collection(db,FS_CARS_COL),function(snap){
       if(Date.now()-fsLastWriteTime<1000) return;
-      var nc=[]; snap.forEach(function(d){nc.push(d.data());});
+      var nc=[]; snap.forEach(function(d){nc.push(normalizeCarStatus(d.data()));});
       CARS_DATA=nc;
       try{localStorage.setItem(CARS_STORAGE_KEY,JSON.stringify(CARS_DATA));}catch(e){}
       if(typeof renderCars==='function')renderCars();
@@ -5495,7 +5522,7 @@ function startCarsListener(){
     });
     fsBlUnsub=fn.onSnapshot(fn.collection(db,FS_BL_COL),function(snap){
       if(Date.now()-fsLastWriteTime<1000) return;
-      var nb=[]; snap.forEach(function(d){nb.push(d.data());});
+      var nb=[]; snap.forEach(function(d){nb.push(normalizeCarStatus(d.data()));});
       BL_CARS=nb;
       try{localStorage.setItem(BL_STORAGE_KEY,JSON.stringify(BL_CARS));}catch(e){}
       if(typeof renderBLCars==='function')renderBLCars();
