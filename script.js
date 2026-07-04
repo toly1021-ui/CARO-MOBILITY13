@@ -3106,7 +3106,12 @@ function devToggleCarStatus(carId){
       fsLastWriteTime=Date.now();
       var col=isBL?FS_BL_COL:FS_CARS_COL;
       FB_FN.setDoc(FB_FN.doc(FB_DB, col, String(car.id)), { status:car.status, devDisabled:car.devDisabled }, { merge:true })
-        .catch(function(e){ console.error('차량 상태 저장 실패:', e); });
+        .catch(function(e){
+          console.error('차량 상태 저장 실패:', e);
+          var code=(e&&e.code)||'';
+          if(/permission|denied/i.test(code)) showToast('저장 권한이 없어요 · Firestore 보안 규칙을 확인하세요');
+          else showToast('저장 실패 · 네트워크를 확인하세요');
+        });
     }
   }catch(e){ console.error(e); }
   showToast(car.devDisabled?('🚫 '+car.name+' 사용 불가 처리됨'):('✅ '+car.name+' 이용 가능으로 복구됨'));
