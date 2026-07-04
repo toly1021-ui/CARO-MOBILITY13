@@ -99,8 +99,18 @@
       +'<div class="hint">직원이 입사 시 만든 로그인 아이디(이메일)와 똑같이 입력하세요. 이 계정으로 태블릿에 로그인하면 아래 권한이 적용됩니다.</div>'
       +'<label class="fld">직원 이름 *</label>'
       +'<input class="txt" id="acctName" placeholder="예: 이현장" maxlength="30" />'
-      +'<label class="fld">직책 (선택)</label>'
-      +'<input class="txt" id="acctRole" placeholder="예: 송도점 운영 담당" maxlength="40" />'
+      +'<label class="fld">역할 / 직책 (선택)</label>'
+      +'<div class="role-row">'
+        +'<input class="txt" id="acctRole" placeholder="예: 송도점 운영 담당" maxlength="40" />'
+        +'<select class="sel" id="acctPosition">'
+          +'<option value="">직책 ▼</option>'
+          +'<option>매니저</option>'
+          +'<option>슈퍼바이저</option>'
+          +'<option>어드바이저</option>'
+          +'<option>사원</option>'
+          +'<option>계약직</option>'
+        +'</select>'
+      +'</div>'
       +'<label class="fld">접근 권한 (체크한 메뉴만 사용 가능)</label>'
       +'<div class="aperms">'
         +PERMS.map(function(p){
@@ -116,6 +126,16 @@
     +'<button class="btn gold" id="acctSave">저장</button></div>'
     +'</div>';
   document.body.appendChild(modal);
+  /* 역할/직책 행 스타일 */
+  var _rrStyle=document.createElement('style');
+  _rrStyle.textContent=
+    '#acctModal .role-row{display:flex;gap:8px;align-items:stretch;}'
+   +'#acctModal .role-row .txt{flex:1;min-width:0;}'
+   +'#acctModal .role-row select.sel{flex:0 0 120px;width:120px;cursor:pointer;'
+   +'background:#1f2228;border:1px solid #34383f;color:#e9eaed;border-radius:9px;'
+   +'padding:10px 9px;font-size:13px;font-family:inherit;box-sizing:border-box;}'
+   +'#acctModal .role-row select.sel:focus{outline:none;border-color:#c8a96e;}';
+  document.head.appendChild(_rrStyle);
 
   function openModal(acct){
     editingEmail = acct ? (acct.id||acct.email||null) : null;
@@ -125,6 +145,7 @@
     em.disabled = !!acct;   /* 수정 시 이메일(키) 고정 */
     modal.querySelector('#acctName').value = acct ? (acct.name||'') : '';
     modal.querySelector('#acctRole').value = acct ? (acct.role||'') : '';
+    var posSel=modal.querySelector('#acctPosition'); if(posSel) posSel.value = acct ? (acct.position||'') : '';
     var perms=(acct&&acct.perms)||{};
     modal.querySelectorAll('.aperm input').forEach(function(c){ c.checked=!!perms[c.dataset.perm]; });
     modal.querySelector('#acctActive').checked = acct ? (acct.active!==false) : true;
@@ -141,6 +162,7 @@
     var email=(editingEmail || modal.querySelector('#acctEmail').value.trim().toLowerCase());
     var name=modal.querySelector('#acctName').value.trim();
     var role=modal.querySelector('#acctRole').value.trim();
+    var position=(modal.querySelector('#acctPosition')||{}).value||'';
     if(!email || email.indexOf('@')<0){ T('직원 이메일(아이디)을 정확히 입력하세요'); return; }
     if(!name){ T('직원 이름을 입력하세요'); return; }
     if(email===SUPER){ T('최고관리자 계정은 여기서 수정할 수 없습니다'); return; }
@@ -148,7 +170,7 @@
     modal.querySelectorAll('.aperm input').forEach(function(c){ perms[c.dataset.perm]=!!c.checked; });
     var active=modal.querySelector('#acctActive').checked;
     var FN=window.FB_FN, db=window.FB_DB;
-    var data={ email:email, name:name, role:role, perms:perms, active:active,
+    var data={ email:email, name:name, role:role, position:position, perms:perms, active:active,
       updatedAt:(FN.serverTimestamp?FN.serverTimestamp():new Date().toISOString()) };
     if(!editingEmail) data.createdAt=(FN.serverTimestamp?FN.serverTimestamp():new Date().toISOString());
     FN.setDoc(FN.doc(db,'admin_accounts',email), data, {merge:true}).then(function(){
@@ -202,7 +224,7 @@
       html+='<div class="acct2'+(on?'':' off')+'"><span class="av">'+esc(initial)+'</span>'
         +'<div class="acct2-info"><div class="acct2-name">'+esc(a.name||email)
         +'<span class="stat '+(on?'on':'no')+'">'+(on?'활성':'정지')+'</span></div>'
-        +'<div class="acct2-role">'+(a.role?esc(a.role)+' · ':'')+esc(email)+'</div>'
+        +'<div class="acct2-role">'+((a.position||a.role)?((a.position?esc(a.position):'')+(a.position&&a.role?' · ':'')+(a.role?esc(a.role):'')+' · '):'')+esc(email)+'</div>'
         +'<div class="acct2-perms">'+badges(a.perms)+'</div></div>'
         +'<div class="acct2-btns">'
         +'<button class="acct2-btn edit" onclick="editAcct(\''+esc(email)+'\')">수정</button>'
