@@ -2148,6 +2148,14 @@
     if(!editingEmail) data.createdAt=new Date().toISOString();
     FN.setDoc(FN.doc(db,'admin_accounts',email), data, {merge:true}).then(function(){
       T(editingEmail?'권한이 수정되었습니다':'직원 권한이 부여되었습니다'); closeModal();
+      /* 즉시 반영 (onSnapshot 기다리지 않고 바로 목록 갱신) */
+      try{
+        var obj={id:email, email:email, name:name, perms:perms, active:active};
+        var idx=-1; for(var i=0;i<cache.length;i++){ if((cache[i].id||cache[i].email)===email){ idx=i; break; } }
+        if(idx>=0) cache[idx]=obj; else cache.push(obj);
+        cache.sort(function(x,y){ return (x.name||'').localeCompare(y.name||''); });
+        renderList();
+      }catch(e){}
     }).catch(function(e){ console.error('[앱권한] 저장 실패',e); T('저장 실패 — 최고관리자만 가능 / 규칙 확인'); });
   };
 
@@ -2209,13 +2217,13 @@
     if(block.dataset.mode===mode){ if(sup) startSnap(); return; }
     block.dataset.mode=mode;
     if(sup){
-      block.innerHTML='<div class="csm-hd">👥 직원 권한 관리</div>'
+      block.innerHTML='<div class="csm-hd">직원 권한 관리</div>'
         +'<button class="dev-btn dev-full-btn" id="caro-staff-add" style="background:rgba(200,169,110,.12);border:1px solid rgba(200,169,110,.3);color:#dcc28f;">+ 직원 권한 부여</button>'
         +'<div id="caro-staff-list"></div>';
       var ab=document.getElementById('caro-staff-add'); if(ab) ab.onclick=function(){ openModal(null); };
       startSnap(); renderList();
     } else {
-      block.innerHTML='<div class="csm-locked">🔒 직원 권한 부여는 <b style="color:#dcc28f;">최고관리자</b>만 가능합니다.</div>';
+      block.innerHTML='<div class="csm-locked">직원 권한 부여는 <b style="color:#dcc28f;">최고관리자</b>만 가능합니다.</div>';
     }
   }
 
