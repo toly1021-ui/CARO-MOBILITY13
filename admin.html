@@ -584,7 +584,7 @@
     v.status=makeUnavail?'점검':'이용가능';   // 즉시 반영(낙관적)
     renderFleet(); renderKPIs(); if(id===selectedId) renderLive();
     if(!db||!FN){ toast('연결 대기 중'); return; }
-    FN.setDoc(FN.doc(db, v.col, v.docId), { status:newStatus }, { merge:true })
+    FN.setDoc(FN.doc(db, v.col, v.docId), { status:newStatus, devDisabled:makeUnavail }, { merge:true })
       .then(function(){ toast(v.name+(makeUnavail?' → 사용불가 (앱에도 반영)':' → 복구됨')); })
       .catch(function(e){ toast('저장 실패: 관리자 권한 확인'); console.error(e); });
   };
@@ -622,7 +622,8 @@
       status: document.getElementById('em-status').value,
       pricePerHour: Number(document.getElementById('em-price').value)||0,
       place: document.getElementById('em-place').value.trim(),
-      image: document.getElementById('em-image').value.trim()
+      image: document.getElementById('em-image').value.trim(),
+      img: document.getElementById('em-image').value.trim()
     };
     FN.setDoc(FN.doc(db, v.col, v.docId), data, { merge:true })
       .then(function(){ toast(data.name+' 저장 완료 (앱에도 반영)'); closeEdit(); })
