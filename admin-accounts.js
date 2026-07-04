@@ -175,6 +175,15 @@
     if(!editingEmail) data.createdAt=(FN.serverTimestamp?FN.serverTimestamp():new Date().toISOString());
     FN.setDoc(FN.doc(db,'admin_accounts',email), data, {merge:true}).then(function(){
       T(editingEmail?'권한이 수정되었습니다':'직원 계정이 추가되었습니다'); closeModal();
+      /* 즉시 반영 (onSnapshot 기다리지 않고 바로 목록 갱신) */
+      try{
+        var obj={id:email, email:email, name:name, role:role, position:position, perms:perms, active:active};
+        var arr=window.__caroAccts||[]; var idx=-1;
+        for(var i=0;i<arr.length;i++){ if((arr[i].id||arr[i].email)===email){ idx=i; break; } }
+        if(idx>=0) arr[idx]=obj; else arr.push(obj);
+        arr.sort(function(x,y){ return (x.name||'').localeCompare(y.name||''); });
+        window.__caroAccts=arr; render(arr);
+      }catch(e){}
     }).catch(function(e){
       console.error('[계정] 저장 실패', e);
       T('저장 실패 — Firestore 규칙(admin_accounts)을 확인하세요');
