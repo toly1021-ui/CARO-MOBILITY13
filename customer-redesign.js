@@ -4966,3 +4966,56 @@
   setTimeout(function(){ if(document.getElementById('mbsCards')) initMbs(); }, 800);
   console.log('[멤버십] ✅ 리치 v2');
 })();
+
+/* ═══════════════════════════════════════════════
+   [가입자 이름 표시] 홈 인사말 + 우측 메뉴 상단
+   · 인사말/메뉴 위 = 가입자 본명(없으면 아이디 부분)
+   · 메뉴 아래 = 이메일 주소
+═══════════════════════════════════════════════ */
+(function(){
+  var cachedName=null, fetchedFor=null;
+  function curEmail(){
+    try{ return (window.userInfo && (userInfo.email||userInfo.id))||''; }catch(e){ return ''; }
+  }
+  function localPart(email){ return email? String(email).split('@')[0] : ''; }
+  function apply(name){
+    var email=curEmail();
+    var display=(name && name!==email) ? name : localPart(email);
+    var wn=document.getElementById('home-welcome-name');
+    if(wn && email) wn.textContent=(display||email)+' 님, 안녕하세요';
+    var hn=document.getElementById('hmenu-name');
+    if(hn && email) hn.textContent=display||email;
+    var hi=document.getElementById('hmenu-id');
+    if(hi && email) hi.textContent=email;   /* 아래줄 = 이메일 */
+  }
+  function refresh(){
+    var email=curEmail(); if(!email) return;
+    /* 1) userInfo.name 이 실제 이름이면 바로 사용 */
+    var nm=(window.userInfo && userInfo.name)||'';
+    if(nm && nm!==email){ cachedName=nm; apply(nm); return; }
+    /* 2) 캐시된 이름 있으면 사용 */
+    if(cachedName){ apply(cachedName); return; }
+    /* 3) Firestore users/{uid}.name 조회(1회) */
+    try{
+      var uid=(window.userInfo && userInfo.uid)||'';
+      if(uid && uid!==fetchedFor && window.FB_DB && window.FB_FN && window.FB_FN.getDoc){
+        fetchedFor=uid;
+        window.FB_FN.getDoc(window.FB_FN.doc(window.FB_DB,'users',uid)).then(function(s){
+          var ex=s&&(typeof s.exists==='function'?s.exists():s.exists);
+          var d=ex?s.data():null;
+          var real=d&&d.name;
+          if(real && real!==email){ cachedName=real; try{ userInfo.name=real; }catch(e){} apply(real); }
+          else apply('');   /* 이름 없으면 아이디 부분으로 */
+        }).catch(function(){ apply(''); });
+      } else { apply(''); }
+    }catch(e){ apply(''); }
+  }
+  window.caroRefreshIdentity=refresh;
+  /* 드로어 열 때마다 갱신 */
+  var _open=window.openHomeMenu;
+  window.openHomeMenu=function(){ try{ if(_open) _open.apply(this,arguments); }catch(e){} setTimeout(refresh,30); };
+  /* 홈 진입/초기/로그인 후 갱신 */
+  document.addEventListener('DOMContentLoaded',function(){ setTimeout(refresh,1500); setTimeout(refresh,3500); });
+  var _tries=0, iv=setInterval(function(){ _tries++; if(curEmail()) refresh(); if(_tries>40) clearInterval(iv); }, 1500);
+  console.log('[가입자 이름] ✅ 인사말/메뉴 이름 표시');
+})();
