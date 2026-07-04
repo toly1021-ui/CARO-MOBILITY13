@@ -2223,6 +2223,15 @@
   var _rds=window.renderDevScreen;
   window.renderDevScreen=function(){ try{ if(_rds) _rds.apply(this,arguments); }catch(e){} setTimeout(inject,40); };
   inject(); setTimeout(inject,1000); setTimeout(inject,2500);
+  /* 최고관리자 인증/Firestore 준비가 늦어도 목록 리스너가 반드시 붙도록 계속 재시도
+     (재접속/재시작/업데이트 후 목록이 비어 보이던 문제 해결) */
+  var _snapTry=setInterval(function(){
+    try{
+      if(snapStarted){ clearInterval(_snapTry); return; }
+      if(isSuper() && ready()){ inject(); }
+    }catch(e){}
+  }, 700);
+  setTimeout(function(){ try{ clearInterval(_snapTry); }catch(e){} }, 45000);
   console.log('[앱권한] ✅ 최고관리자 직원 권한 부여 2d');
 })();
 
