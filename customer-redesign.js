@@ -1902,7 +1902,7 @@
     var dv=document.createElement('div'); dv.className='hmenu-divider'; dv.id='caro-admin-entry-div';
     var b=document.createElement('button');
     b.id='caro-admin-entry'; b.className='hmenu-item'; b.type='button';
-    b.innerHTML='<span class="hmenu-item-icon">🛠️</span><span class="hmenu-item-label">관리자 모드</span><span class="hmenu-item-arrow">›</span>';
+    b.innerHTML='<span class="hmenu-item-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9.5 12l2 2 3.5-3.5"/></svg></span><span class="hmenu-item-label">관리자 모드</span><span class="hmenu-item-arrow">›</span>';
     b.onclick=function(){
       try{ if(window.closeHomeMenu) closeHomeMenu(); }catch(e){}
       try{
