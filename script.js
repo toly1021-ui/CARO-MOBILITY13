@@ -107,8 +107,21 @@ window.getCarPriceByName=getCarPriceByName;
 ───────────────────────────────────────────── */
 var INCHEON_AREAS = {
   '구월동': {lat:37.4490, lng:126.7080, spread:0.003},
-  '송도':   {lat:37.3820, lng:126.6560, spread:0.004}
+  '송도':   {lat:37.3820, lng:126.6560, spread:0.004},
+  '부평':   {lat:37.4893, lng:126.7235, spread:0.003},
+  '동인천': {lat:37.4762, lng:126.6188, spread:0.003}
 };
+
+/* ─────────────────────────────────────────────
+   거점(스테이션/와드) — 지도에 핀 표시
+   · 해당 거점의 예약가능 차량이 1대 이상 → 원래 색(골드)
+   · 전부 예약완료/사용불가 → 회색
+───────────────────────────────────────────── */
+var CARO_STATIONS = [
+  {id:'st_dongincheon', name:'동인천 거점', place:'동화마을 제2공영주차장', area:'동인천', addr:'인천 제물포구 제물량로 307', lat:37.4762, lng:126.6188},
+  {id:'st_bupyeong',    name:'부평 거점',    place:'부평역사쇼핑몰',        area:'부평',   addr:'인천 부평구 광장로 16',    lat:37.4893, lng:126.7235}
+];
+window.CARO_STATIONS=CARO_STATIONS;
 
 function getRandomIncheonLocation(region){
   var area;
@@ -1890,6 +1903,36 @@ function updateMapMarkers(){
       .bindPopup('<b>'+getCarName(car)+'</b><br>'+car.fuel+' · '+car.pricePerHour.toLocaleString()+'원/h<br><span style="color:'+col+';font-weight:700;">'+label+'</span>');
     mapMarkers.push(marker);
   });
+
+  /* ── 거점(와드) 마커 ── */
+  if(window.CARO_STATIONS){
+    CARO_STATIONS.forEach(function(st){
+      var hasAvail=false;
+      var allCars=CARS_DATA.concat(typeof BL_CARS!=='undefined'?BL_CARS:[]);
+      allCars.forEach(function(car){
+        if(car.lat==null||car.lng==null) return;
+        var near=(car.place===st.area)||(car.region===st.area)||(car.place===st.place)||
+                 (Math.sqrt(Math.pow(car.lat-st.lat,2)+Math.pow(car.lng-st.lng,2))<0.035);
+        if(!near) return;
+        var res=reservedMap[car.id];
+        if(car.status==='available' && !car.devDisabled && !res) hasAvail=true;
+      });
+      var col=hasAvail?'#c8a96e':'#9aa0a8';   /* 예약가능=골드 / 마감=회색 */
+      var sub=hasAvail?'예약 가능':'예약 마감';
+      var sIcon=L.divIcon({
+        html:'<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'+
+          '<div style="width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:'+col+';border:2.5px solid #fff;box-shadow:0 3px 9px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;">'+
+            '<div style="transform:rotate(45deg);width:9px;height:9px;border-radius:50%;background:#fff;"></div>'+
+          '</div>'+
+          '<div style="font-size:9.5px;font-weight:800;color:#fff;background:'+col+';padding:2px 7px;border-radius:12px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);letter-spacing:.02em;">'+st.name+'</div>'+
+        '</div>',
+        className:'',iconSize:[90,46],iconAnchor:[15,30]
+      });
+      var sm=L.marker([st.lat,st.lng],{icon:sIcon,zIndexOffset:1000}).addTo(caroMap)
+        .bindPopup('<b>'+st.name+'</b><br>'+(st.place||'')+'<br>'+(st.addr||'')+'<br><span style="color:'+col+';font-weight:700;">'+sub+'</span>');
+      mapMarkers.push(sm);
+    });
+  }
 }
 window.updateMapMarkers=updateMapMarkers;
 function updateCarSheetCount(){
