@@ -3197,8 +3197,10 @@
    ─────────────────────────────────────────────────────────── */
 (function(){ 'use strict';
   var ZONES={
-    '구월동':{ addr:'인천 남동구 구월동 1408-2', lat:37.4476, lng:126.7007 },
-    '송도':  { addr:'인천 연수구 송도동 9-9',   lat:37.3846, lng:126.6500 }
+    '구월동':{ name:'구월동 거점', addr:'인천 남동구 구월동 1408-2', lat:37.4476, lng:126.7007 },
+    '송도':  { name:'송도 거점',   addr:'인천 연수구 송도동 9-9',   lat:37.3846, lng:126.6500 },
+    '동인천':{ name:'동인천 거점', addr:'인천 중구 제물량로 307',   lat:37.4762, lng:126.6188 },
+    '부평':  { name:'부평 거점',   addr:'인천 부평구 광장로 16',    lat:37.4893, lng:126.7235 }
   };
 
   function jitter(id){
@@ -3227,7 +3229,7 @@
   function applyToAreas(){
     try{
       if(!window.INCHEON_AREAS) return;
-      ['구월동','송도'].forEach(function(z){
+      ['구월동','송도','동인천','부평'].forEach(function(z){
         if(window.INCHEON_AREAS[z]){
           window.INCHEON_AREAS[z].lat=ZONES[z].lat;
           window.INCHEON_AREAS[z].lng=ZONES[z].lng;
@@ -3238,10 +3240,64 @@
   }
   applyToAreas();
 
-  // 지도 함수 래핑 → 항상 거점으로 스냅 후 동작
+  /* ── 거점(와드) 핀: 카카오맵에 표시 + 예약마감 시 회색 ── */
+  var KWard=[];
+  function clearWards(){ KWard.forEach(function(o){ try{o.setMap(null);}catch(e){} }); KWard=[]; }
+  function carReserved(car){
+    var now=new Date(), hit=false;
+    (window.myReservations||[]).forEach(function(r){
+      if(!r.car||r.car.id!==car.id||!r.start||!r.end) return;
+      if(!r.returned) hit=true;
+      else if(r.returnedAt && now<new Date(r.returnedAt.getTime()+600000)) hit=true;
+    });
+    return hit;
+  }
+  function carAvail(car){ return car && car.status==='available' && !car.devDisabled && !carReserved(car); }
+  function carsInZone(zname){
+    var list=[];
+    (window.CARS_DATA||[]).concat(window.BL_CARS||[]).forEach(function(c){
+      if(!c || c.lat==null || c.lng==null) return;
+      var z=(c.region && ZONES[c.region]) ? c.region : nearestZone(c);
+      if(z===zname) list.push(c);
+    });
+    return list;
+  }
+  function drawWards(){
+    var kakao=window.kakao;
+    if(!kakao||!kakao.maps||!window.caroMap||!window.caroMap.__kakao) return;
+    clearWards();
+    Object.keys(ZONES).forEach(function(zn){
+      var z=ZONES[zn];
+      var cars=carsInZone(zn);
+      var availN=cars.filter(carAvail).length;
+      var hasAvail=availN>0, hasAny=cars.length>0;
+      var col=hasAvail?'#c8a96e':'#9aa0a8';               /* 예약가능=골드 / 마감·없음=회색 */
+      var sub=hasAvail?'예약 가능':(hasAny?'예약 마감':'대기 차량 없음');
+      var name=z.name||zn;
+      var html='<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">'
+        +'<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:'+col+';border:2.5px solid #fff;box-shadow:0 3px 9px rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;">'
+          +'<div style="transform:rotate(45deg);width:10px;height:10px;border-radius:50%;background:#fff;"></div>'
+        +'</div>'
+        +'<div style="font-size:10px;font-weight:800;color:#fff;background:'+col+';padding:2px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);letter-spacing:.01em;">'+name+'</div>'
+        +'</div>';
+      var el=document.createElement('div'); el.innerHTML=html; el.style.cursor='pointer';
+      var pos=new kakao.maps.LatLng(z.lat, z.lng);
+      var ov=new kakao.maps.CustomOverlay({position:pos,content:el,yAnchor:1.0,xAnchor:0.5,clickable:true,zIndex:5});
+      ov.setMap(window.caroMap); KWard.push(ov);
+      el.addEventListener('click',function(ev){ ev.stopPropagation();
+        try{ var iw=new kakao.maps.InfoWindow({removable:true});
+          iw.setContent('<div style="padding:9px 12px;font-size:12px;line-height:1.55;min-width:160px;"><b>'+name+'</b><br>'+(z.addr||'')+'<br><span style="color:'+col+';font-weight:700;">'+sub+'</span> · 예약가능 '+availN+'/'+cars.length+'대</div>');
+          iw.setPosition(pos); iw.open(window.caroMap);
+        }catch(e){}
+      });
+    });
+  }
+  window.caroDrawWards=drawWards;
+
+  // 지도 함수 래핑 → 항상 거점으로 스냅 후 동작 + 거점 와드 그리기
   if(typeof window.updateMapMarkers==='function' && !window.updateMapMarkers.__caroZone){
     var _um=window.updateMapMarkers;
-    window.updateMapMarkers=function(){ snapAll(); return _um.apply(this,arguments); };
+    window.updateMapMarkers=function(){ snapAll(); var r=_um.apply(this,arguments); try{ drawWards(); }catch(e){} return r; };
     window.updateMapMarkers.__caroZone=true;
   }
   if(typeof window.initCarBottomSheet==='function' && !window.initCarBottomSheet.__caroZone){
@@ -3321,12 +3377,19 @@
   }
   function nm(car){ return window.getCarName?window.getCarName(car):car.name; }
   function carsInZone(zone){ return (window.CARS_DATA||[]).filter(function(c){ return window.caroZoneOf && window.caroZoneOf(c)===zone; }); }
+  function zoneAvailCount(zone){
+    return carsInZone(zone).filter(function(c){
+      return c.status==='available' && !isMaintCar(c) && !isReservedNow(c);
+    }).length;
+  }
 
-  // ── 와드 SVG (흰색 위치핀 + 골드 C) ──
-  function wardSVG(count){
+  // ── 와드 SVG (위치핀 + C) — active면 골드, 예약마감/차량없음이면 회색 ──
+  function wardSVG(active){
+    var cCol = active ? '#c8a96e' : '#9aa0a8';
+    var pin  = active ? '#ffffff' : '#eef0f3';
     return '<svg width="46" height="56" viewBox="0 0 46 56" xmlns="http://www.w3.org/2000/svg">'
-      +'<path d="M23 3 C13.6 3 6 10.6 6 20 C6 31 23 52 23 52 C23 52 40 31 40 20 C40 10.6 32.4 3 23 3 Z" fill="#ffffff" stroke="rgba(0,0,0,.10)" stroke-width="1"/>'
-      +'<text x="23" y="28" text-anchor="middle" font-size="22" font-weight="700" fill="#c8a96e" font-family="Georgia,\'Times New Roman\',serif">C</text>'
+      +'<path d="M23 3 C13.6 3 6 10.6 6 20 C6 31 23 52 23 52 C23 52 40 31 40 20 C40 10.6 32.4 3 23 3 Z" fill="'+pin+'" stroke="rgba(0,0,0,.10)" stroke-width="1"/>'
+      +'<text x="23" y="28" text-anchor="middle" font-size="22" font-weight="700" fill="'+cCol+'" font-family="Georgia,\'Times New Roman\',serif">C</text>'
       +'</svg>';
   }
 
@@ -3336,12 +3399,16 @@
     if(!window.caroMap || !window.caroMap.__kakao || !window.kakao || !window.CARO_ZONES) return;
     clearZM();
     Object.keys(window.CARO_ZONES).forEach(function(zone){
-      var cars=carsInZone(zone); if(!cars.length) return;
       var Z=window.CARO_ZONES[zone];
+      if(!Z || Z.lat==null || Z.lng==null) return;
+      var total=carsInZone(zone).length;
+      var availN=zoneAvailCount(zone);
+      var active=availN>0;                 /* 예약가능 차량 1대↑ → 골드 / 전부 예약·차량없음 → 회색 */
+      var badgeCol=active?'#c8a96e':'#9aa0a8';
       var pos=new window.kakao.maps.LatLng(Z.lat, Z.lng);
       var el=document.createElement('div');
       el.style.cssText='cursor:pointer;filter:drop-shadow(0 4px 6px rgba(0,0,0,.32));transition:transform .12s;';
-      el.innerHTML=wardSVG(cars.length);
+      el.innerHTML=wardSVG(active);
       el.addEventListener('mousedown',function(){ el.style.transform='scale(.92)'; });
       el.addEventListener('mouseup',function(){ el.style.transform=''; });
       el.addEventListener('click',function(e){ e.stopPropagation(); openZoneSheet(zone); });
