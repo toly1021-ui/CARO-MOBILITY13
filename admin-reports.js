@@ -13,7 +13,12 @@
   var accSub = false, inqSub = false;
   var view = 'acc';   /* acc | inq */
 
-  function ready(){ return !!(window.FB_DB && window.FB_FN && window.FB_FN.onSnapshot); }
+  function ready(){
+    /* 로그인(인증)까지 끝나야 Firestore 규칙을 통과함 */
+    var authed = false;
+    try{ authed = !!(window.FB_AUTH && window.FB_AUTH.currentUser); }catch(e){ authed = false; }
+    return !!(window.FB_DB && window.FB_FN && window.FB_FN.onSnapshot && authed);
+  }
   function esc(s){
     return String(s == null ? '' : s)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -293,8 +298,20 @@
     var n = 0;
     var iv = setInterval(function(){
       n++;
-      if(boot() || n > 60) clearInterval(iv);
+      if(boot() || n > 120) clearInterval(iv);
     }, 700);
   }
+  /* 로그인 완료 시점에 확실히 한 번 더 시도 */
+  (function hookAuth(t){
+    t = t || 0;
+    var A = window.FB_AUTH, FN = window.FB_FN;
+    if(!A || !FN || typeof FN.onAuthStateChanged !== 'function'){
+      if(t > 100) return;
+      return setTimeout(function(){ hookAuth(t + 1); }, 150);
+    }
+    FN.onAuthStateChanged(A, function(u){
+      if(u) setTimeout(boot, 150);
+    });
+  })();
   console.log('[접수관리] ✅ 사고접수·문의 관리 v1');
 })();
