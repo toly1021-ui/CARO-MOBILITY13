@@ -2632,6 +2632,9 @@
     thanks:{ say:'따뜻한 말씀 감사해요! 😊 더 도와드릴 게 있으면 언제든 편하게 말씀해 주세요.', end:'none'}
   };
 
+  /* v4 검색 레이어가 40개 상세 답변에 접근할 수 있도록 지식베이스 노출 */
+  window.__caroBotKB = { CATS: CATS, FLOW: FLOW };
+
   var INTENTS=[
     {key:'car', test:/냄새|악취|쾌쾌|퀴퀴|찌든|담배|흡연|토|구토|더럽|더러|지저분|청결|얼룩|쓰레기|오염|벌레/, node:N.smell},
     {key:'acc', test:/사고|충돌|박았|박음|들이받|긁힘|긁었|긁힘|접촉|추돌|찌그/, node:N.acc},
@@ -5359,6 +5362,12 @@
     }
   ];
 
+  /* v4 검색 레이어가 "이건 v3 담당"인지 알 수 있도록 노출 */
+  window.__caroPersonalCan = function(t){
+    for(var i=0;i<PERSONAL.length;i++){ if(PERSONAL[i].test.test(t)) return true; }
+    return false;
+  };
+
   /* ── 점수 기반 의도 매칭 (첫 매칭이 아니라 최고점) ── */
   var KEYS={
     acc:   ['사고','충돌','박았','들이받','추돌','접촉','긁','찌그','파손'],
@@ -5567,5 +5576,318 @@
 
   if(!hook()){
     var n=0, iv=setInterval(function(){ n++; if(hook()||n>40) clearInterval(iv); }, 500);
+  }
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [개선] CARO 상담봇 v4 — FAQ 전체 검색 엔진
+   ─────────────────────────────────────────────────────────
+   문제: 봇에 상세 답변이 40개 있는데, 자유 입력은 13개 굵직한
+         의도로만 연결돼서 대부분 "이해 못 했어요"로 끝남.
+   해결: 40개 답변 전체를 검색 대상으로 삼고,
+         · 한국어 2-gram 유사도 + 동의어 사전으로 점수화
+         · 확실하면 바로 답변
+         · 애매하면 "혹시 이거예요?" 후보 3개 제시  ← 막다른 길 제거
+         · 정말 모르면 입력한 내용 그대로 1:1 문의로 넘김
+   ═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+
+  function $(id){ return document.getElementById(id); }
+
+  /* ── 동의어/구어체 사전 (고객이 실제로 쓰는 말 → 표준어) ── */
+  var SYN = {
+    '반납':['반납','반환','돌려','반납하','갖다놓','반납할','리턴'],
+    '연장':['연장','더타','더 타','시간늘','시간 늘','늘리','더쓰','더 쓰','늦어','늦을'],
+    '취소':['취소','캔슬','물러','안탈','안 탈','취소하'],
+    '변경':['변경','바꾸','바꿔','수정','옮기','미루'],
+    '수수료':['수수료','위약','페널티','패널티','벌금','추가금'],
+    '요금':['요금','가격','비용','얼마','금액','값','비싸','싸'],
+    '결제':['결제','계산','카드','지불','청구','과금'],
+    '환불':['환불','돌려받','되돌려','리펀'],
+    '영수증':['영수증','증빙','세금계산서','현금영수증'],
+    '보험':['보험','면책','자기부담','자차','대물','대인'],
+    '사고':['사고','충돌','박았','박음','들이받','추돌','접촉','긁','찌그','파손','부딪'],
+    '고장':['고장','안되','안 되','멈춰','서버렸','시동','경고등','타이어','펑크','배터리','퍼졌'],
+    '문열기':['문열','문 열','잠금','잠그','스마트키','차키','차 키','언락','열쇠'],
+    '분실물':['분실','두고','놓고','잃어','잊고','물건'],
+    '주차':['주차','세워','파킹','댈','대는'],
+    '거점':['거점','카로존','존','스테이션','정류','어디서','픽업'],
+    '가입':['가입','회원','등록','계정','아이디','비번','비밀번호','로그인','탈퇴'],
+    '면허':['면허','운전면허','자격','나이','연령','경력'],
+    '월렌트':['월렌트','월 렌트','장기','한달','한 달','월단위'],
+    '블랙':['블랙','더블랙','더 블랙','프리미엄','컨시어지'],
+    '사진':['사진','촬영','찍','인증샷'],
+    '청소':['청소','세차','냄새','악취','더럽','지저분','담배','얼룩','쓰레기'],
+    '앱오류':['오류','버그','에러','튕','안떠','안 떠','느려','먹통','안나와','안 나와'],
+    '예약':['예약','빌리','대여','렌트','타고','이용'],
+    '장소':['어디','장소','위치','곳','데']
+  };
+
+  /* FAQ에 없던 질문 보강 (실제 고객이 자주 묻는데 답변이 없던 것들) */
+  var EXTRA = [
+    { cat:'car', catLabel:'🔧 차량 문제·긴급', q:'차량이 더럽거나 냄새가 나요',
+      a:'불편을 드려 죄송해요. <b>사진과 함께 알려 주시면</b> 확인 후 조치해 드릴게요.<br>카로는 반납된 차량을 순회 전기차로 <b>자동세차 + 실내청소</b>하고 있어요. 다음 이용에 불편이 없도록 바로 처리하겠습니다.' },
+    { cat:'member', catLabel:'👤 회원·가입·인증', q:'면허 자격 조건',
+      a:'만 <b>21세 이상</b>, 운전면허 취득 <b>1년 이상</b>이면 이용할 수 있어요. 차종에 따라 추가 조건이 있을 수 있어요.' },
+    { cat:'ret', catLabel:'🔄 반납·연장', q:'주차는 어디에 하나요',
+      a:'대여했던 <b>카로존의 지정 주차구역</b>에 주차해 주세요. 부득이하게 다른 곳에 주차하면 반납 시 “다른 장소”를 선택하고 위치 설명과 사진을 남겨 주세요.' }
+  ];
+
+  /* ── 텍스트 정규화 ── */
+  function norm(s){
+    return String(s||'').toLowerCase()
+      .replace(/<[^>]+>/g,' ')
+      .replace(/[^가-힣a-z0-9]/g,'');
+  }
+  /* ── 한국어 2-gram ── */
+  function grams(s){
+    var t=norm(s), g=[];
+    if(t.length<2) return t?[t]:[];
+    for(var i=0;i<t.length-1;i++) g.push(t.substr(i,2));
+    return g;
+  }
+  /* ── 동의어 확장: 입력에서 표준 개념 뽑기 ── */
+  function concepts(q){
+    var t=norm(q), out={};
+    Object.keys(SYN).forEach(function(k){
+      for(var i=0;i<SYN[k].length;i++){
+        if(t.indexOf(norm(SYN[k][i]))>=0){ out[k]=true; break; }
+      }
+    });
+    return out;
+  }
+
+  /* ── 지식베이스 구축 (FLOW 40개 Q&A 전부) ── */
+  var KB=[];
+  function buildKB(){
+    if(KB.length) return true;
+    var kb=window.__caroBotKB;
+    if(!kb || !kb.FLOW) return false;
+    var CATS=kb.CATS||[], FLOW=kb.FLOW||{};
+    Object.keys(FLOW).forEach(function(key){
+      var f=FLOW[key];
+      var catLabel=(CATS.filter(function(c){return c.key===key;})[0]||{}).label||'';
+      /* 카테고리 대표 답변 */
+      if(f.a) KB.push({ cat:key, catLabel:catLabel, q:catLabel.replace(/^\S+\s/,''), a:f.a, top:true });
+      /* 상세 Q&A */
+      (f.subs||[]).forEach(function(s){
+        if(s && s.q && s.a) KB.push({ cat:key, catLabel:catLabel, q:s.q, a:s.a, top:false });
+      });
+    });
+    /* FAQ에 없던 질문 보강 */
+    EXTRA.forEach(function(x){ KB.push({cat:x.cat, catLabel:x.catLabel, q:x.q, a:x.a, top:false}); });
+
+    /* 검색 인덱스: 질문과 답변을 분리해서 계산 (질문 매칭을 훨씬 크게 봄) */
+    KB.forEach(function(e){
+      e._qg = {}; grams(e.q).forEach(function(g){ e._qg[g]=1; });
+      e._ag = {}; grams(e.a).forEach(function(g){ e._ag[g]=1; });
+      e._qgN = Object.keys(e._qg).length;
+      e._qc = concepts(e.q);
+      e._c  = concepts(e.q + ' ' + e.a);
+    });
+    console.log('[상담봇 v4] 지식베이스 구축:', KB.length, '개 답변');
+    return KB.length>0;
+  }
+
+  /* ── 점수 계산 (시뮬레이션으로 검증된 가중치) ──
+     핵심: 답변 본문이 길다는 이유로 엉뚱한 항목이 이기지 않도록
+           질문 매칭을 자카드로 계산(길이 보정)하고 가중치를 크게 둠 */
+  function scoreEntry(e, qg, qc, qn){
+    var s=0, i;
+
+    /* 1) 질문 유사도 — 자카드 (교집합/합집합) → 긴 항목 부당 승리 방지 */
+    if(qg.length && e._qgN){
+      var inter=0, seen={};
+      for(i=0;i<qg.length;i++){
+        if(seen[qg[i]]) continue;
+        seen[qg[i]]=1;
+        if(e._qg[qg[i]]) inter++;
+      }
+      var uniq=Object.keys(seen).length;
+      var uni = uniq + e._qgN - inter;
+      if(uni>0) s += (inter/uni) * 55;
+    }
+
+    /* 2) 답변 본문 매칭 — 보조 지표 (가중치 낮음) */
+    if(qg.length){
+      var hitA=0, seenA={};
+      for(i=0;i<qg.length;i++){
+        if(seenA[qg[i]]) continue;
+        seenA[qg[i]]=1;
+        if(e._ag[qg[i]]) hitA++;
+      }
+      s += (hitA / Object.keys(seenA).length) * 15;
+    }
+
+    /* 3) 개념(동의어) 일치 — 질문의 개념이 맞으면 강한 신호 */
+    var ck=Object.keys(qc);
+    if(ck.length){
+      var qm=0, am=0;
+      ck.forEach(function(k){ if(e._qc[k]) qm++; if(e._c[k]) am++; });
+      s += (qm/ck.length) * 40;
+      s += (am/ck.length) * 10;
+      if(am===0) s -= 18;   /* 개념이 전혀 안 맞으면 감점 */
+    }
+
+    /* 4) 질문에 통째로 포함 */
+    if(qn.length>=2 && norm(e.q).indexOf(qn)>=0) s += 25;
+
+    return s;
+  }
+
+  function search(q){
+    if(!buildKB()) return [];
+    var qg=grams(q), qc=concepts(q), qn=norm(q);
+    var out=KB.map(function(e){ return {e:e, s:scoreEntry(e,qg,qc,qn)}; });
+    out.sort(function(a,b){ return b.s-a.s; });
+    return out;
+  }
+
+  /* ── 봇 UI 연결 ── */
+  function hook(){
+    var inp=$('cbot-in'), send=$('cbot-send'), body=$('cbot-body');
+    if(!inp||!send||!body||inp.__caroV4) return false;
+    if(!buildKB()) return false;
+    inp.__caroV4=true;
+
+    function addMe(t){ var d=document.createElement('div'); d.className='cbot-msg cbot-me'; d.textContent=t; body.appendChild(d); body.scrollTop=body.scrollHeight; }
+    function addBot(h){ var d=document.createElement('div'); d.className='cbot-msg cbot-bot'; d.innerHTML=h; body.appendChild(d); body.scrollTop=body.scrollHeight; }
+    function quick(list){
+      var w=document.createElement('div'); w.className='cbot-qr';
+      list.forEach(function(o){
+        var b=document.createElement('button'); b.className='cbot-qbtn'+(o.go?' go':'');
+        b.textContent=o.label;
+        b.onclick=function(){ w.remove(); o.onClick(); };
+        w.appendChild(b);
+      });
+      body.appendChild(w); body.scrollTop=body.scrollHeight;
+    }
+    function log(resolved,u,b){ try{ if(window.__caroBotLog) window.__caroBotLog(resolved,u,b); }catch(e){} }
+
+    function endButtons(){
+      quick([
+        {label:'✅ 해결됐어요', onClick:function(){
+          addMe('해결됐어요'); addBot('도움이 되어 다행이에요! 🚗');
+          log(true,'해결됐어요','해결');
+          quick([
+            {label:'상담 끝내기', go:true, onClick:function(){
+              addBot('상담을 종료할게요. 이용해 주셔서 감사합니다 🙂');
+              setTimeout(function(){ var x=$('cbot-x'); if(x) x.click(); }, 900);
+            }},
+            {label:'더 물어볼게요', onClick:function(){ addBot('네, 편하게 물어보세요!'); }}
+          ]);
+        }},
+        {label:'🙋 상담사 연결', go:true, onClick:function(){ toAgent(''); }}
+      ]);
+    }
+
+    function toAgent(userText){
+      addMe('상담사 연결');
+      addBot('상담사에게 연결해 드릴게요. <b>1:1 문의</b>로 남겨 주시면 직접 답변드려요.');
+      log(false, userText||'상담사 연결', '1:1 문의 안내');
+      quick([{label:'📝 1:1 문의 접수', go:true, onClick:function(){
+        try{
+          /* 고객이 쓴 내용을 문의 폼에 미리 채워줌 — 두 번 안 쓰게 */
+          if(userText){
+            setTimeout(function(){
+              var f=document.getElementById('cs-inquiry-form');
+              if(f){
+                var ta=f.querySelector('textarea');
+                if(ta && !ta.value) ta.value=userText;
+              }
+            }, 500);
+          }
+          var x=$('cbot-x'); if(x) x.click();
+          if(window.goTo) goTo('inquiry-screen');
+        }catch(e){}
+      }}]);
+    }
+
+    function answer(e, userText){
+      addBot(e.a);
+      log(null, userText, String(e.a).replace(/<[^>]+>/g,''));
+      endButtons();
+    }
+
+    function handle(t){
+      var res=search(t);
+      if(!res.length){ toAgent(t); return; }
+
+      var best=res[0];
+
+      /* 확실함 → 바로 답변 */
+      if(best.s >= 38){
+        answer(best.e, t);
+        return;
+      }
+
+      /* 애매함 → "혹시 이거예요?" 후보 제시 (막다른 길 없음) */
+      if(best.s >= 14){
+        var cands=res.filter(function(r){ return r.s>=10; }).slice(0,3);
+        addBot('혹시 이 중에 찾으시는 게 있을까요?');
+        log(null, t, '후보 제시');
+        var btns=cands.map(function(r){
+          return { label:r.e.q, onClick:function(){ addMe(r.e.q); answer(r.e, r.e.q); } };
+        });
+        btns.push({label:'🙋 다 아니에요 (상담사 연결)', go:true, onClick:function(){ toAgent(t); }});
+        quick(btns);
+        return;
+      }
+
+      /* 정말 모름 → 솔직히 말하고 바로 사람에게 (입력 내용 그대로 전달) */
+      addBot('죄송해요, 제가 정확히 이해하지 못했어요. 😥<br>'
+           + '<b>상담사에게 바로 연결</b>해 드릴게요 — 방금 쓰신 내용은 그대로 전달돼요.');
+      log(null, t, '이해 실패 → 상담사 연결 유도');
+      quick([
+        {label:'🙋 상담사 연결', go:true, onClick:function(){ toAgent(t); }},
+        {label:'주제에서 고르기', onClick:function(){
+          var kb=window.__caroBotKB;
+          var cats=(kb&&kb.CATS)||[];
+          quick(cats.map(function(c){
+            return { label:c.label, onClick:function(){
+              addMe(c.label.replace(/^\S+\s/,''));
+              var top=KB.filter(function(e){ return e.cat===c.key && e.top; })[0];
+              if(top) addBot(top.a);
+              var subs=KB.filter(function(e){ return e.cat===c.key && !e.top; });
+              if(subs.length){
+                quick(subs.map(function(e){
+                  return { label:e.q, onClick:function(){ addMe(e.q); answer(e, e.q); } };
+                }));
+              } else endButtons();
+            }};
+          }));
+        }}
+      ]);
+    }
+
+    /* 기존 핸들러보다 먼저 가로채기 */
+    function intercept(ev){
+      var t=(inp.value||'').trim();
+      if(!t) return;
+
+      /* 개인화(v3)가 처리할 질문이면 v3에게 양보 */
+      if(window.__caroPersonalCan && window.__caroPersonalCan(t)) return;
+
+      /* 상담사 직접 요청은 기존 로직 유지 */
+      if(/상담사|상담원|직원|사람.*연결|콜센터/.test(t)) return;
+
+      ev.stopImmediatePropagation();
+      ev.preventDefault();
+      inp.value='';
+      addMe(t);
+      handle(t);
+    }
+
+    send.addEventListener('click', intercept, true);
+    inp.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.keyCode===13) intercept(e);
+    }, true);
+
+    console.log('[상담봇 v4] ✅ FAQ 전체 검색 활성화 (' + KB.length + '개 답변)');
+    return true;
+  }
+
+  if(!hook()){
+    var n=0, iv=setInterval(function(){ n++; if(hook()||n>60) clearInterval(iv); }, 500);
   }
 })();
