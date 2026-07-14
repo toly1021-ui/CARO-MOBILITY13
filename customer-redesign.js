@@ -5447,3 +5447,36 @@
     var n=0, iv=setInterval(function(){ n++; if(hook()||n>40) clearInterval(iv); }, 500);
   }
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [수정] 상담봇 — 태블릿에서 전체화면으로 (길쭉함 해소)
+   · 원인: #caro-bot 에 max-width:480px 가 걸려 좌우가 비었음
+   · 폰(≤600px)은 기존 그대로, 태블릿/큰 화면만 넓게
+   · 원본 CSS는 그대로 두고 뒤에서 덮어씀(override)
+   ═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  var css=''
+   /* 태블릿·데스크톱: 전체 폭 사용 (좌우 여백 제거) */
+   +'@media (min-width:601px){'
+   +  '#caro-bot{max-width:none !important;width:100% !important;margin:0 !important;'
+   +    'background:#f5f6f8 !important;}'
+   /* 내용은 중앙 정렬해서 너무 넓게 늘어지지 않게 (읽기 편한 폭 유지) */
+   +  '#caro-bot .cbot-hd{padding-left:max(14px,calc((100% - 900px)/2)) !important;'
+   +    'padding-right:max(14px,calc((100% - 900px)/2)) !important;}'
+   +  '#caro-bot .cbot-body{padding-left:max(14px,calc((100% - 900px)/2)) !important;'
+   +    'padding-right:max(14px,calc((100% - 900px)/2)) !important;}'
+   +  '#caro-bot .cbot-foot{padding-left:max(12px,calc((100% - 900px)/2)) !important;'
+   +    'padding-right:max(12px,calc((100% - 900px)/2)) !important;}'
+   /* 말풍선이 너무 길어지지 않도록 */
+   +  '#caro-bot .cbot-msg{max-width:640px !important;}'
+   +'}'
+   /* 큰 태블릿(가로) — 여백을 조금 더 */
+   +'@media (min-width:1000px){'
+   +  '#caro-bot .cbot-msg{max-width:700px !important;}'
+   +'}';
+  var s=document.createElement('style');
+  s.id='caro-bot-fullscreen';
+  s.textContent=css;
+  (document.head||document.documentElement).appendChild(s);
+  console.log('[상담봇] ✅ 전체화면 레이아웃 적용');
+})();
