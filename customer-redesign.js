@@ -3240,64 +3240,10 @@
   }
   applyToAreas();
 
-  /* ── 거점(와드) 핀: 카카오맵에 표시 + 예약마감 시 회색 ── */
-  var KWard=[];
-  function clearWards(){ KWard.forEach(function(o){ try{o.setMap(null);}catch(e){} }); KWard=[]; }
-  function carReserved(car){
-    var now=new Date(), hit=false;
-    (window.myReservations||[]).forEach(function(r){
-      if(!r.car||r.car.id!==car.id||!r.start||!r.end) return;
-      if(!r.returned) hit=true;
-      else if(r.returnedAt && now<new Date(r.returnedAt.getTime()+600000)) hit=true;
-    });
-    return hit;
-  }
-  function carAvail(car){ return car && car.status==='available' && !car.devDisabled && !carReserved(car); }
-  function carsInZone(zname){
-    var list=[];
-    (window.CARS_DATA||[]).concat(window.BL_CARS||[]).forEach(function(c){
-      if(!c || c.lat==null || c.lng==null) return;
-      var z=(c.region && ZONES[c.region]) ? c.region : nearestZone(c);
-      if(z===zname) list.push(c);
-    });
-    return list;
-  }
-  function drawWards(){
-    var kakao=window.kakao;
-    if(!kakao||!kakao.maps||!window.caroMap||!window.caroMap.__kakao) return;
-    clearWards();
-    Object.keys(ZONES).forEach(function(zn){
-      var z=ZONES[zn];
-      var cars=carsInZone(zn);
-      var availN=cars.filter(carAvail).length;
-      var hasAvail=availN>0, hasAny=cars.length>0;
-      var col=hasAvail?'#c8a96e':'#9aa0a8';               /* 예약가능=골드 / 마감·없음=회색 */
-      var sub=hasAvail?'예약 가능':(hasAny?'예약 마감':'대기 차량 없음');
-      var name=z.name||zn;
-      var html='<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">'
-        +'<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:'+col+';border:2.5px solid #fff;box-shadow:0 3px 9px rgba(0,0,0,.42);display:flex;align-items:center;justify-content:center;">'
-          +'<div style="transform:rotate(45deg);width:10px;height:10px;border-radius:50%;background:#fff;"></div>'
-        +'</div>'
-        +'<div style="font-size:10px;font-weight:800;color:#fff;background:'+col+';padding:2px 8px;border-radius:12px;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.25);letter-spacing:.01em;">'+name+'</div>'
-        +'</div>';
-      var el=document.createElement('div'); el.innerHTML=html; el.style.cursor='pointer';
-      var pos=new kakao.maps.LatLng(z.lat, z.lng);
-      var ov=new kakao.maps.CustomOverlay({position:pos,content:el,yAnchor:1.0,xAnchor:0.5,clickable:true,zIndex:5});
-      ov.setMap(window.caroMap); KWard.push(ov);
-      el.addEventListener('click',function(ev){ ev.stopPropagation();
-        try{ var iw=new kakao.maps.InfoWindow({removable:true});
-          iw.setContent('<div style="padding:9px 12px;font-size:12px;line-height:1.55;min-width:160px;"><b>'+name+'</b><br>'+(z.addr||'')+'<br><span style="color:'+col+';font-weight:700;">'+sub+'</span> · 예약가능 '+availN+'/'+cars.length+'대</div>');
-          iw.setPosition(pos); iw.open(window.caroMap);
-        }catch(e){}
-      });
-    });
-  }
-  window.caroDrawWards=drawWards;
-
-  // 지도 함수 래핑 → 항상 거점으로 스냅 후 동작 + 거점 와드 그리기
+  // 지도 함수 래핑 → 항상 거점으로 스냅 후 동작 (와드는 하단 전용 모듈이 처리)
   if(typeof window.updateMapMarkers==='function' && !window.updateMapMarkers.__caroZone){
     var _um=window.updateMapMarkers;
-    window.updateMapMarkers=function(){ snapAll(); var r=_um.apply(this,arguments); try{ drawWards(); }catch(e){} return r; };
+    window.updateMapMarkers=function(){ snapAll(); return _um.apply(this,arguments); };
     window.updateMapMarkers.__caroZone=true;
   }
   if(typeof window.initCarBottomSheet==='function' && !window.initCarBottomSheet.__caroZone){
@@ -4068,7 +4014,8 @@
       window[name].__caroSK2=true;
     }
   });
-  /* 안전장치: 차량 제어 모달이 열려있는 동안엔 시트를 항상 표시(사라지면 즉시 복구) */
+  /* 안전장치: 차량 제어 모달이 열려있는 동안엔 시트를 항상 표시(사라지면 즉시 복구)
+     · 차량 제어(IoT)는 안전이 걸린 기능 → 백그라운드에서도 절대 멈추지 않음 */
   setInterval(function(){ var m=byId('home-ctrl-modal'); if(m&&m.classList.contains('open')){ showSheet(); syncState(); } else { hideSheet(); } }, 700);
 
   console.log('[컨트롤러] ✅ 스마트키 바텀시트 v2 (쏘카 디자인)');
@@ -5093,4 +5040,410 @@
   document.addEventListener('DOMContentLoaded',function(){ setTimeout(refresh,1500); setTimeout(refresh,3500); });
   var _tries=0, iv=setInterval(function(){ _tries++; if(curEmail()) refresh(); if(_tries>40) clearInterval(iv); }, 1500);
   console.log('[가입자 이름] ✅ 인사말/메뉴 이름 표시');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 사고 접수 · 1:1 문의 → Firestore 실제 저장
+   · 기존 함수를 덮어쓰기(override) — 원본 훼손 없음
+   · 저장 실패해도 접수번호는 발급 + 로컬 보관 → 고객 응대 가능
+   · 사진: 캔버스 압축 후 base64 (Storage SDK 불필요)
+   · 컬렉션: accident_reports / support_inquiries
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  var MAX_DIM=1000, QUALITY=0.62, MAX_PHOTOS=6, BUDGET=850*1024; /* 문서 1MB 제한 대비 여유 */
+
+  function fsReady(){ return !!(window.FB_DB && window.FB_FN && window.FB_FN.setDoc && window.FB_FN.doc); }
+  function me(){
+    var u={uid:'',email:'',name:'',phone:''};
+    try{
+      if(window.FB_AUTH && FB_AUTH.currentUser) u.uid=FB_AUTH.currentUser.uid||'';
+      if(window.userInfo){ u.email=userInfo.email||userInfo.id||''; u.name=userInfo.name||''; u.phone=userInfo.phone||''; }
+    }catch(e){}
+    return u;
+  }
+  /* 파일 → 압축 base64 */
+  function readCompressed(file){
+    return new Promise(function(res){
+      try{
+        var fr=new FileReader();
+        fr.onload=function(){
+          var img=new Image();
+          img.onload=function(){
+            try{
+              var w=img.width,h=img.height;
+              if(w>=h && w>MAX_DIM){ h=Math.round(h*MAX_DIM/w); w=MAX_DIM; }
+              else if(h>w && h>MAX_DIM){ w=Math.round(w*MAX_DIM/h); h=MAX_DIM; }
+              var c=document.createElement('canvas'); c.width=w; c.height=h;
+              c.getContext('2d').drawImage(img,0,0,w,h);
+              res(c.toDataURL('image/jpeg',QUALITY));
+            }catch(e){ res(null); }
+          };
+          img.onerror=function(){ res(null); };
+          img.src=fr.result;
+        };
+        fr.onerror=function(){ res(null); };
+        fr.readAsDataURL(file);
+      }catch(e){ res(null); }
+    });
+  }
+  /* 여러 장 → 용량 예산 안에서 담기 */
+  function packPhotos(files){
+    var list=(files||[]).slice(0,MAX_PHOTOS);
+    return Promise.all(list.map(readCompressed)).then(function(arr){
+      var out=[], used=0;
+      arr.forEach(function(d){
+        if(!d) return;
+        if(used+d.length>BUDGET) return;   /* 예산 초과분은 버림(저장 실패 방지) */
+        out.push(d); used+=d.length;
+      });
+      return out;
+    });
+  }
+  /* 폼 → 객체 */
+  function formData(formId){
+    var f=document.getElementById(formId); if(!f) return {};
+    var o={}, fd=new FormData(f);
+    fd.forEach(function(v,k){
+      if(o[k]===undefined) o[k]=v;
+      else { if(!Array.isArray(o[k])) o[k]=[o[k]]; o[k].push(v); }
+    });
+    return o;
+  }
+  /* 로컬 백업 (저장 실패 시에도 흔적 남김) */
+  function backup(key, rec){
+    try{
+      var a=JSON.parse(localStorage.getItem(key)||'[]');
+      a.unshift(rec); localStorage.setItem(key, JSON.stringify(a.slice(0,30)));
+    }catch(e){}
+  }
+  /* Firestore 저장 */
+  function save(col, id, data){
+    if(!fsReady()) return Promise.reject(new Error('offline'));
+    var FN=window.FB_FN, db=window.FB_DB;
+    return FN.setDoc(FN.doc(db,col,id), data, {merge:true});
+  }
+
+  /* ── 사고 접수 ── */
+  window.csSubmitAccident = function(e){
+    if(e && e.preventDefault) e.preventDefault();
+    var btn=document.querySelector('#accident-screen .submit-btn');
+    if(btn){ btn.disabled=true; btn.textContent='접수 처리 중...'; }
+
+    var no = 'CR-A-' + Date.now().toString().slice(-6);
+    var u = me();
+    var d = formData('cs-accident-form');
+    var files = (window.csAccFiles || []);
+
+    packPhotos(files).then(function(photos){
+      var rec = {
+        id:no, type:'accident', status:'received',
+        userId:u.uid, userEmail:u.email, userName:u.name, userPhone:u.phone,
+        occurredAt: d.datetime || '', location: d.location || '',
+        vehicle: d.vehicle || '', accidentType: d.type || '',
+        injury: d.injury || '', injuryDetail: d.injuryDetail || '',
+        police: d.police || '',
+        otherVehicle: d.otherVehicle || '', otherPhone: d.otherPhone || '',
+        otherInsurance: d.otherInsurance || '',
+        description: d.description || '',
+        services: [].concat(d.services || []),
+        photos: photos, photoCount: photos.length,
+        createdAt: new Date().toISOString(), createdTs: Date.now()
+      };
+      backup('caro_accident_local', rec);
+      return save('accident_reports', no, rec)
+        .then(function(){ console.log('[사고접수] ✅ 저장 완료', no); return true; })
+        .catch(function(err){ console.warn('[사고접수] ⚠️ 저장 실패(로컬 보관됨)', err && err.code); return false; });
+    }).then(function(ok){
+      if(window.csShowSuccessModal){
+        csShowSuccessModal(
+          '사고 접수가 완료되었습니다',
+          ok ? '담당 상담원이 곧 연락드릴 예정입니다.<br>접수 번호를 보관해 주세요.'
+             : '접수 번호를 보관해 주세요.<br>네트워크 문제로 전송이 지연될 수 있어 고객센터로도 연락 부탁드립니다.',
+          no
+        );
+      }
+      if(btn){ btn.disabled=false; btn.textContent='사고 접수 제출하기'; }
+      try{ document.getElementById('cs-accident-form').reset(); }catch(e){}
+      try{ window.csAccFiles=[]; if(window.csRenderAccFileList) csRenderAccFileList(); }catch(e){}
+      try{ if(window.csToggleInjury) csToggleInjury(false); }catch(e){}
+    });
+  };
+
+  /* ── 1:1 문의 ── */
+  window.csSubmitInquiry = function(e){
+    if(e && e.preventDefault) e.preventDefault();
+    var btn=document.querySelector('#inquiry-screen .submit-btn');
+    if(btn){ btn.disabled=true; btn.textContent='접수 처리 중...'; }
+
+    var no = 'CR-Q-' + Date.now().toString().slice(-6);
+    var u = me();
+    var d = formData('cs-inquiry-form');
+    var files = (window.csInqFiles || []);
+
+    packPhotos(files).then(function(photos){
+      var rec = {
+        id:no, type:'inquiry', status:'received',
+        userId:u.uid, userEmail:u.email, userName:u.name, userPhone:u.phone,
+        category: d.category || '', title: d.title || d.subject || '',
+        content: d.content || d.message || d.description || '',
+        photos: photos, photoCount: photos.length,
+        createdAt: new Date().toISOString(), createdTs: Date.now()
+      };
+      backup('caro_inquiry_local', rec);
+      return save('support_inquiries', no, rec)
+        .then(function(){ console.log('[문의] ✅ 저장 완료', no); return true; })
+        .catch(function(err){ console.warn('[문의] ⚠️ 저장 실패(로컬 보관됨)', err && err.code); return false; });
+    }).then(function(ok){
+      if(window.csShowSuccessModal){
+        csShowSuccessModal(
+          '문의가 접수되었습니다',
+          ok ? '영업일 기준 24시간 이내에<br>답변드릴 예정입니다.'
+             : '접수 번호를 보관해 주세요.<br>네트워크 문제로 전송이 지연될 수 있습니다.',
+          no
+        );
+      }
+      if(btn){ btn.disabled=false; btn.textContent='문의 접수하기'; }
+      try{ document.getElementById('cs-inquiry-form').reset(); }catch(e){}
+      try{ window.csInqFiles=[]; if(window.csRenderInqFileList) csRenderInqFileList(); }catch(e){}
+      try{ if(window.csUpdateCharCount) csUpdateCharCount(); }catch(e){}
+    });
+  };
+
+  console.log('[접수] ✅ 사고접수·문의 Firestore 저장 활성화');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [개선] CARO 상담봇 v3 — 개인화 응답 + 점수 기반 의도 인식
+   · 기존 봇을 훼손하지 않고 입력 처리기만 가로챔(override)
+   · 개선 1: 내 예약·미납·정지·거점을 실제 데이터로 답변
+   · 개선 2: 첫 매칭이 아니라 "점수 최고" 의도 선택 (오답 방지)
+   · 실패해도 기존 봇 로직으로 그대로 흘려보냄(안전)
+   ═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+
+  var UNPAID_KEY='caro_apd_unpaid', SUSP_KEY='caro_suspension_v1';
+
+  function $(id){ return document.getElementById(id); }
+  function p2(n){ return n<10?('0'+n):(''+n); }
+  function asDate(v){ return (v instanceof Date)?v:new Date(v); }
+  function fmtDT(d){ d=asDate(d); if(isNaN(d)) return '';
+    return (d.getMonth()+1)+'월 '+d.getDate()+'일 '+p2(d.getHours())+':'+p2(d.getMinutes()); }
+  function money(n){ return (+n||0).toLocaleString()+'원'; }
+
+  /* ── 실제 데이터 조회 ── */
+  function myRes(){
+    var a=(window.myReservations||[]).filter(function(r){
+      return r && !r.returned && !r.cancelled && r.start && r.end;
+    });
+    a.sort(function(x,y){ return asDate(x.start)-asDate(y.start); });
+    return a;
+  }
+  function activeNow(){
+    var now=Date.now();
+    return myRes().filter(function(r){
+      return asDate(r.start).getTime()<=now && asDate(r.end).getTime()>now;
+    })[0]||null;
+  }
+  function nextRes(){
+    var now=Date.now();
+    return myRes().filter(function(r){ return asDate(r.start).getTime()>now; })[0]||null;
+  }
+  function unpaidList(){
+    try{ return JSON.parse(localStorage.getItem(UNPAID_KEY)||'[]'); }catch(e){ return []; }
+  }
+  function suspended(){
+    try{ return JSON.parse(localStorage.getItem(SUSP_KEY)||'null'); }catch(e){ return null; }
+  }
+  function zoneNames(){
+    var z=window.CARO_ZONES||{}; return Object.keys(z);
+  }
+  function availCount(){
+    var n=0;
+    (window.CARS_DATA||[]).forEach(function(c){
+      if(c && c.status==='available' && !c.devDisabled) n++;
+    });
+    return n;
+  }
+
+  /* ── 개인화 답변 (데이터가 있을 때만) ── */
+  var PERSONAL=[
+    { /* 내 예약이 언제인지 */
+      test:/(내|나의|제)?\s*예약.*(언제|몇시|시간|확인|뭐|어디)|예약.*(언제|몇시)|언제.*예약/,
+      run:function(){
+        var a=activeNow(), n=nextRes();
+        if(a){
+          var left=Math.max(0, Math.round((asDate(a.end)-Date.now())/60000));
+          var h=Math.floor(left/60), m=left%60;
+          return '지금 <b>'+(a.car&&a.car.name||'차량')+'</b> 이용 중이세요.<br>'
+               + '반납 예정: <b>'+fmtDT(a.end)+'</b> (약 '+(h?h+'시간 ':'')+m+'분 남음)<br>'
+               + '예약번호: '+(a.bookNo||'-');
+        }
+        if(n){
+          return '다음 예약은 <b>'+(n.car&&n.car.name||'차량')+'</b>이에요.<br>'
+               + '이용 시작: <b>'+fmtDT(n.start)+'</b><br>'
+               + '반납 예정: '+fmtDT(n.end)+'<br>'
+               + '예약번호: '+(n.bookNo||'-');
+        }
+        return null; /* 예약 없으면 개인화 실패 → 기존 로직으로 */
+      },
+      none:'현재 진행 중이거나 예정된 예약이 없어요. 홈에서 차량을 예약하실 수 있어요.'
+    },
+    { /* 얼마나 남았나 */
+      test:/(얼마|몇\s*분|몇\s*시간).*(남|남았)|남은\s*시간|반납.*몇\s*시/,
+      run:function(){
+        var a=activeNow();
+        if(!a) return null;
+        var left=Math.max(0, Math.round((asDate(a.end)-Date.now())/60000));
+        var h=Math.floor(left/60), m=left%60;
+        if(left<=0) return '반납 시간이 <b>이미 지났어요.</b> 지연 패널티가 발생할 수 있으니 서둘러 반납해 주세요.';
+        var s='반납까지 <b>'+(h?h+'시간 ':'')+m+'분</b> 남았어요. (반납 예정 '+fmtDT(a.end)+')';
+        if(left<=30) s+='<br><br>시간이 부족하면 <b>시간 연장</b>을 이용해 주세요.';
+        return s;
+      },
+      none:'지금 이용 중인 차량이 없어요.'
+    },
+    { /* 미납 */
+      test:/미납|밀린|안\s*낸|정산.*안|결제.*안\s*됐|빚|연체/,
+      run:function(){
+        var u=unpaidList();
+        if(!u.length) return '<b>미납 내역이 없어요.</b> 깨끗합니다! 👍';
+        var sum=0; u.forEach(function(x){ sum+=(+x.amount||0); });
+        return '미납이 <b>'+u.length+'건</b> 있어요. 총 <b>'+money(sum)+'</b>이에요.<br><br>'
+             + '미납이 있으면 <b>새 예약이 제한</b>돼요. 홈 상단의 미납 안내에서 결제해 주세요.';
+      }
+    },
+    { /* 이용 정지 */
+      test:/정지|이용\s*제한|막혔|예약.*안\s*(돼|되)|차단/,
+      run:function(){
+        var s=suspended();
+        var u=unpaidList();
+        if(s) return '현재 <b>이용이 제한된 상태</b>예요.<br>사유 확인과 해제는 상담사 연결로 도와드릴게요.';
+        if(u.length) return '미납 <b>'+u.length+'건</b> 때문에 예약이 제한될 수 있어요. 미납을 정산하면 바로 풀려요.';
+        return '<b>이용 제한이 없어요.</b> 정상적으로 예약하실 수 있어요.<br>그래도 예약이 안 되면 화면을 새로고침해 보시고, 계속되면 상담사에게 연결해 드릴게요.';
+      }
+    },
+    { /* 거점 / 차량 어디 */
+      test:/거점|카로존|어디.*(빌|차|있|받)|차.*어디|가까운.*(차|거점)|주차.*어디/,
+      run:function(){
+        var z=zoneNames(), n=availCount();
+        if(!z.length) return null;
+        return '현재 카로 거점은 <b>'+z.join(' · ')+'</b> 이에요.<br>'
+             + '지금 이용 가능한 차량은 <b>'+n+'대</b>예요.<br><br>'
+             + '홈 지도에서 거점을 누르면 차량을 바로 고를 수 있어요.';
+      }
+    }
+  ];
+
+  /* ── 점수 기반 의도 매칭 (첫 매칭이 아니라 최고점) ── */
+  var KEYS={
+    acc:   ['사고','충돌','박았','들이받','추돌','접촉','긁','찌그','파손'],
+    car:   ['시동','안열','안 열','안잠','안 잠','고장','경고등','타이어','펑크','배터리','견인','출동','냄새','악취','담배','더럽','지저분','청소'],
+    ret:   ['반납','연장','더 타','시간 늘','늦','분실','두고','놓고'],
+    pay:   ['결제','요금','환불','영수증','세금계산서','정산','청구','과금','비싸','돈'],
+    resv:  ['예약','취소','변경','바꾸','날짜','시간 바'],
+    member:['가입','면허','인증','로그인','비밀번호','비번','아이디','탈퇴','회원','나이','경력'],
+    app:   ['오류','버그','에러','튕','멈춰','안 떠','안떠','느려','업데이트','화면','알림','지도','gps']
+  };
+  function score(t){
+    var best=null, bs=0;
+    Object.keys(KEYS).forEach(function(k){
+      var s=0;
+      KEYS[k].forEach(function(w){ if(t.indexOf(w)>=0) s+=w.length>=3?2:1; });
+      if(s>bs){ bs=s; best=k; }
+    });
+    return bs>0 ? best : null;
+  }
+
+  /* ── 입력 가로채기 ── */
+  function hook(){
+    var inp=$('cbot-in'), send=$('cbot-send'), body=$('cbot-body');
+    if(!inp||!send||!body||inp.__caroV3) return false;
+    inp.__caroV3=true;
+
+    function addMe(t){ var d=document.createElement('div'); d.className='cbot-msg cbot-me'; d.textContent=t; body.appendChild(d); body.scrollTop=body.scrollHeight; }
+    function addBot(h){ var d=document.createElement('div'); d.className='cbot-msg cbot-bot'; d.innerHTML=h; body.appendChild(d); body.scrollTop=body.scrollHeight; }
+    function quick(list){
+      var w=document.createElement('div'); w.className='cbot-qr';
+      list.forEach(function(o){
+        var b=document.createElement('button'); b.className='cbot-qbtn'+(o.go?' go':'');
+        b.textContent=o.label;
+        b.onclick=function(){ w.remove(); o.onClick(); };
+        w.appendChild(b);
+      });
+      body.appendChild(w); body.scrollTop=body.scrollHeight;
+    }
+    function after(){
+      quick([
+        {label:'✅ 해결됐어요', onClick:function(){ addMe('해결됐어요'); addBot('도움이 되어 다행이에요! 또 궁금한 점 있으면 언제든 찾아주세요. 🚗'); }},
+        {label:'🙋 상담사 연결', go:true, onClick:function(){
+            addMe('상담사 연결');
+            addBot('상담사에게 연결해 드릴게요. <b>1:1 문의</b>로 내용을 남겨 주시면 순차적으로 답변드려요.');
+            quick([{label:'📝 1:1 문의 접수', go:true, onClick:function(){
+              try{ var x=$('cbot-x'); if(x) x.click(); if(window.goTo) goTo('inquiry-screen'); }catch(e){}
+            }}]);
+        }}
+      ]);
+    }
+
+    /* 개인화 우선 처리 → 없으면 false 반환해 기존 로직으로 */
+    function tryPersonal(t){
+      for(var i=0;i<PERSONAL.length;i++){
+        var P=PERSONAL[i];
+        if(!P.test.test(t)) continue;
+        var out=null;
+        try{ out=P.run(); }catch(e){ out=null; }
+        if(!out && P.none) out=P.none;
+        if(out){ addBot(out); after(); return true; }
+      }
+      return false;
+    }
+
+    function handle(){
+      var t=(inp.value||'').trim();
+      if(!t) return;
+
+      /* 1) 개인화 답변 시도 */
+      if(tryPersonal(t)){ addMe(t); inp.value=''; return; }
+
+      /* 2) 개인화 대상 아님 → 기존 봇에게 넘김 (원본 동작 유지) */
+      return 'pass';
+    }
+
+    /* 기존 핸들러보다 먼저 실행되도록 캡처 단계에서 가로챔 */
+    function intercept(e){
+      var t=(inp.value||'').trim();
+      if(!t) return;
+      /* 개인화로 처리 가능하면 기존 핸들러 차단 */
+      var can=false;
+      for(var i=0;i<PERSONAL.length;i++){ if(PERSONAL[i].test.test(t)){ can=true; break; } }
+      if(!can) return;   /* 기존 봇이 처리 */
+
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      var msg=t; inp.value='';
+      addMe(msg);
+      var done=false;
+      for(var j=0;j<PERSONAL.length;j++){
+        var P=PERSONAL[j];
+        if(!P.test.test(msg)) continue;
+        var out=null;
+        try{ out=P.run(); }catch(err){ out=null; }
+        if(!out && P.none) out=P.none;
+        if(out){ addBot(out); after(); done=true; break; }
+      }
+      if(!done){ addBot('조금만 더 자세히 알려주실 수 있을까요?'); }
+    }
+
+    send.addEventListener('click', intercept, true);
+    inp.addEventListener('keydown', function(e){
+      if(e.key==='Enter'||e.keyCode===13) intercept(e);
+    }, true);
+
+    console.log('[상담봇 v3] ✅ 개인화 응답 활성화');
+    return true;
+  }
+
+  if(!hook()){
+    var n=0, iv=setInterval(function(){ n++; if(hook()||n>40) clearInterval(iv); }, 500);
+  }
 })();
