@@ -2459,6 +2459,12 @@
       logSave(resolved);
     }catch(e){}
   };
+  /* 상담 종료 시 세션 초기화 — 다음 상담은 완전히 새 기록으로 시작
+     (Firestore에 이미 저장된 이전 상담은 그대로 보존됨) */
+  window.__caroBotReset = function(){
+    chatId=null; msgs=[]; curCat=null;
+    try{ missCount=0; }catch(e){}
+  };
 
   var st=document.createElement('style');
   st.textContent=
@@ -5519,4 +5525,47 @@
   s.textContent=css;
   (document.head||document.documentElement).appendChild(s);
   console.log('[상담봇] ✅ 전체화면 레이아웃 적용');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [수정] 상담 종료 시 화면 초기화 (개인정보 보호)
+   · 문제: 봇을 닫아도 대화가 화면에 남아, 다시 열면 이전 상담이 보임
+   · 조치: 닫을 때 화면·메시지·상담ID를 비움 → 매번 새 상담으로 시작
+   · Firestore(support_chats) 기록은 그대로 보존 (관리자 통계용)
+   · 공용 태블릿에서 다음 고객이 이전 고객 상담을 보는 것을 방지
+   ═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  function $(id){ return document.getElementById(id); }
+
+  function wipe(){
+    var body=$('cbot-body');
+    if(body) body.innerHTML='';          /* 화면의 대화 전부 삭제 */
+    var inp=$('cbot-in');
+    if(inp) inp.value='';                /* 입력창도 비움 */
+    /* 원본 봇의 내부 상태(msgs/chatId/curCat) 초기화 → 새 상담 세션으로 */
+    try{ if(window.__caroBotReset) window.__caroBotReset(); }catch(e){}
+  }
+
+  function hook(){
+    var bot=$('caro-bot'), x=$('cbot-x');
+    if(!bot || !x || x.__caroWipe) return false;
+    x.__caroWipe=true;
+
+    /* 닫기(X) 누르면 → 원본 close 실행 후 화면 비우기 */
+    x.addEventListener('click', function(){ setTimeout(wipe, 260); });
+
+    /* '상담 끝내기'로 자동 닫히는 경우도 커버:
+       show 클래스가 사라지면 화면 비우기 */
+    if(window.MutationObserver){
+      new MutationObserver(function(){
+        if(!bot.classList.contains('show')) setTimeout(wipe, 260);
+      }).observe(bot,{attributes:true, attributeFilter:['class']});
+    }
+    console.log('[상담봇] ✅ 종료 시 대화 초기화 (다음 고객 보호)');
+    return true;
+  }
+
+  if(!hook()){
+    var n=0, iv=setInterval(function(){ n++; if(hook()||n>40) clearInterval(iv); }, 500);
+  }
 })();
