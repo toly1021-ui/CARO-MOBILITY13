@@ -2451,6 +2451,14 @@
       FN.setDoc(FN.doc(db,'support_chats',chatId), data, {merge:true}).catch(function(e){ console.warn('[상담] 기록 실패', e&&e.code); });
     }catch(e){}
   }
+  /* v3 개인화 레이어에서도 상담 기록을 남길 수 있도록 노출 */
+  window.__caroBotLog = function(resolved, userText, botText){
+    try{
+      if(userText) msgs.push({role:'user', text:userText, at:now()});
+      if(botText)  msgs.push({role:'bot',  text:botText,  at:now()});
+      logSave(resolved);
+    }catch(e){}
+  };
 
   var st=document.createElement('style');
   st.textContent=
@@ -2498,8 +2506,19 @@
     quick([{label:'📝 간편 문의 접수', go:true, onClick:function(){ try{ close(); if(window.goTo) goTo('inquiry-screen'); }catch(e){} }},
            {label:'카테고리 다시 보기', onClick:showCats}]);
   }
+  function askCloseChat(){
+    quick([
+      {label:'상담 끝내기', go:true, onClick:function(){
+          addBot('상담을 종료할게요. 이용해 주셔서 감사합니다 🙂');
+          setTimeout(function(){ try{ close(); }catch(e){} }, 900);
+      }},
+      {label:'더 물어볼게요', onClick:function(){
+          addBot('네, 편하게 물어보세요!'); showCats();
+      }}
+    ]);
+  }
   function resolveButtons(){
-    quick([{label:'✅ 해결됐어요', onClick:function(){ addMe('해결됐어요'); addBot('도움이 되어 다행이에요! 또 궁금한 점 있으면 언제든 다시 찾아주세요. 🚗'); logSave(true); }},
+    quick([{label:'✅ 해결됐어요', onClick:function(){ addMe('해결됐어요'); addBot('도움이 되어 다행이에요! 또 궁금한 점 있으면 언제든 다시 찾아주세요. 🚗'); logSave(true); askCloseChat(); }},
            {label:'🙋 상담사 연결', onClick:function(){ addMe('상담사 연결을 원해요'); escalate(); }}]);
   }
   function showCats(){ curCat=null;
@@ -5372,15 +5391,36 @@
       });
       body.appendChild(w); body.scrollTop=body.scrollHeight;
     }
-    function after(){
+    function log(resolved, u, b){
+      try{ if(window.__caroBotLog) window.__caroBotLog(resolved, u, b); }catch(e){}
+    }
+    function after(lastUser, lastBot){
       quick([
-        {label:'✅ 해결됐어요', onClick:function(){ addMe('해결됐어요'); addBot('도움이 되어 다행이에요! 또 궁금한 점 있으면 언제든 찾아주세요. 🚗'); }},
+        {label:'✅ 해결됐어요', onClick:function(){
+            addMe('해결됐어요');
+            addBot('도움이 되어 다행이에요! 또 궁금한 점 있으면 언제든 찾아주세요. 🚗');
+            log(true, '해결됐어요', '도움이 되어 다행이에요!');
+            askClose();
+        }},
         {label:'🙋 상담사 연결', go:true, onClick:function(){
             addMe('상담사 연결');
             addBot('상담사에게 연결해 드릴게요. <b>1:1 문의</b>로 내용을 남겨 주시면 순차적으로 답변드려요.');
+            log(false, '상담사 연결', '1:1 문의로 안내');
             quick([{label:'📝 1:1 문의 접수', go:true, onClick:function(){
               try{ var x=$('cbot-x'); if(x) x.click(); if(window.goTo) goTo('inquiry-screen'); }catch(e){}
             }}]);
+        }}
+      ]);
+    }
+    /* 상담 종료 확인 */
+    function askClose(){
+      quick([
+        {label:'상담 끝내기', go:true, onClick:function(){
+            addBot('상담을 종료할게요. 이용해 주셔서 감사합니다 🙂');
+            setTimeout(function(){ try{ var x=$('cbot-x'); if(x) x.click(); }catch(e){} }, 900);
+        }},
+        {label:'더 물어볼게요', onClick:function(){
+            addBot('네, 편하게 물어보세요!');
         }}
       ]);
     }
@@ -5393,7 +5433,7 @@
         var out=null;
         try{ out=P.run(); }catch(e){ out=null; }
         if(!out && P.none) out=P.none;
-        if(out){ addBot(out); after(); return true; }
+        if(out){ addBot(out); log(null, t, String(out).replace(/<[^>]+>/g,'')); after(); return true; }
       }
       return false;
     }
@@ -5429,7 +5469,7 @@
         var out=null;
         try{ out=P.run(); }catch(err){ out=null; }
         if(!out && P.none) out=P.none;
-        if(out){ addBot(out); after(); done=true; break; }
+        if(out){ addBot(out); log(null, msg, String(out).replace(/<[^>]+>/g,'')); after(); done=true; break; }
       }
       if(!done){ addBot('조금만 더 자세히 알려주실 수 있을까요?'); }
     }
