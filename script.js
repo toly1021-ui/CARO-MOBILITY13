@@ -1892,13 +1892,13 @@ function updateMapMarkers(){
     var available=car.status==='available'&&!car.devDisabled&&!res;
     var col=available?'#1d7a3a':'#b23a3a';
     var label=available?'이용가능':(car.devDisabled?'예약불가':'대여중');
-    var icon=L.divIcon({
-      html:'<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">'+
-        '<div style="width:13px;height:13px;border-radius:50%;background:'+col+';border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>'+
-        '<div style="font-size:9px;font-weight:700;color:'+col+';background:rgba(255,255,255,.85);padding:1px 3px;border-radius:14px;white-space:nowrap;">'+label+'</div>'+
-        '</div>',
-      className:'',iconSize:[40,28],iconAnchor:[20,13]
-    });
+    var icon = L.divIcon({
+            html: '<div style="display:flex;flex-direction:column;align-items:center;gap:1px;">' +
+              '<svg width="30" height="38" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
+              '<div style="font-size:9px;font-weight:700;color:' + col + ';background:rgba(255,255,255,.85);padding:1px 3px;border-radius:14px;white-space:nowrap;">' + label + '</div>' +
+            '</div>',
+            className: '', iconSize: [40,52], iconAnchor: [20,44]
+          });
     var marker=L.marker([car.lat,car.lng],{icon:icon}).addTo(caroMap)
       .bindPopup('<b>'+getCarName(car)+'</b><br>'+car.fuel+' · '+car.pricePerHour.toLocaleString()+'원/h<br><span style="color:'+col+';font-weight:700;">'+label+'</span>');
     mapMarkers.push(marker);
@@ -1949,13 +1949,13 @@ function updateCarSheetCount(){
     if(typeof L === 'undefined' || !caroMap) return;
     BL_CARS.forEach(function(car){
       var col='#c8a96e';
-      var icon=L.divIcon({
-        html:'<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">'+
-          '<div style="width:13px;height:13px;border-radius:50%;background:'+col+';border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>'+
-          '<div style="font-size:9px;font-weight:700;color:'+col+';background:rgba(0,0,0,.75);padding:1px 3px;border-radius:14px;white-space:nowrap;">BL</div>'+
-          '</div>',
-        className:'',iconSize:[40,28],iconAnchor:[20,13]
-      });
+      var icon = L.divIcon({
+              html: '<div style="display:flex;flex-direction:column;align-items:center;gap:1px;">' +
+                '<svg width="30" height="38" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
+                '<div style="font-size:9px;font-weight:700;color:' + col + ';background:rgba(255,255,255,.85);padding:1px 3px;border-radius:14px;white-space:nowrap;">' + label + '</div>' +
+              '</div>',
+              className: '', iconSize: [40,52], iconAnchor: [20,44]
+            });
       var marker=L.marker([car.lat,car.lng],{icon:icon}).addTo(caroMap)
         .bindPopup('<b>⭐ '+car.name+'</b><br>'+car.fuel+' · '+car.pricePerHour.toLocaleString()+'원/h<br><span style="color:#c8a96e;font-weight:700;">CARO THE BLACK</span>');
       mapMarkers.push(marker);
@@ -10631,12 +10631,12 @@ window.devUploadAllCars=function(){
       var col = available ? '#1d7a3a' : (maint ? '#e07b00' : '#b23a3a');
       var label = available ? '이용가능' : (maint ? '점검중' : '대여중');
       var icon = L.divIcon({
-        html: '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
-          '<div style="width:13px;height:13px;border-radius:50%;background:' + col + ';border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>' +
-          '<div style="font-size:9px;font-weight:700;color:' + col + ';background:rgba(255,255,255,.85);padding:1px 3px;border-radius:14px;white-space:nowrap;">' + label + '</div>' +
-          '</div>',
-        className: '', iconSize: [40,28], iconAnchor: [20,13]
-      });
+              html: '<div style="display:flex;flex-direction:column;align-items:center;gap:1px;">' +
+                '<svg width="30" height="38" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
+                '<div style="font-size:9px;font-weight:700;color:' + col + ';background:rgba(255,255,255,.85);padding:1px 3px;border-radius:14px;white-space:nowrap;">' + label + '</div>' +
+              '</div>',
+              className: '', iconSize: [40,52], iconAnchor: [20,44]
+            });
       var marker = L.marker([car.lat, car.lng], { icon: icon }).addTo(caroMap)
         .bindPopup('<b>' + getCarName(car) + '</b><br>' + car.fuel + ' · ' + car.pricePerHour.toLocaleString() + '원/h<br><span style="color:' + col + ';font-weight:700;">' + label + '</span>');
       mapMarkers.push(marker);
