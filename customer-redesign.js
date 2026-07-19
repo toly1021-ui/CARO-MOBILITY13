@@ -3358,13 +3358,23 @@
   }
 
   // ── 와드 SVG (위치핀 + C) — active면 골드, 예약마감/차량없음이면 회색 ──
-  function wardSVG(active){
-    var cCol = active ? '#c8a96e' : '#9aa0a8';
-    var pin  = active ? '#ffffff' : '#eef0f3';
-    return '<svg width="46" height="56" viewBox="0 0 46 56" xmlns="http://www.w3.org/2000/svg">'
-      +'<path d="M23 3 C13.6 3 6 10.6 6 20 C6 31 23 52 23 52 C23 52 40 31 40 20 C40 10.6 32.4 3 23 3 Z" fill="'+pin+'" stroke="rgba(0,0,0,.10)" stroke-width="1"/>'
-      +'<text x="23" y="28" text-anchor="middle" font-size="22" font-weight="700" fill="'+cCol+'" font-family="Georgia,\'Times New Roman\',serif">C</text>'
-      +'</svg>';
+  function wardSVG(active, scale){
+    var s = (typeof scale==='number' && scale>0) ? scale : 1;
+    var W = Math.round(86*s), H = Math.round(84*s);
+    var op = active ? '0.95' : '0.6';
+    var u = 'w'+Math.random().toString(36).slice(2,7);
+    var P = 'M256 396C256 396 360 292 360 208A104 104 0 0 0 152 208C152 292 256 396 256 396Z';
+    return '<svg width="'+W+'" height="'+H+'" viewBox="132 92 248 350" xmlns="http://www.w3.org/2000/svg">'
+      +'<defs><linearGradient id="'+u+'g" x1="0.22" y1="0" x2="0.78" y2="1"><stop offset="0" stop-color="#5a6470"/><stop offset="1" stop-color="#48515e"/></linearGradient>'
+      +'<filter id="'+u+'d" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#0e1115" flood-opacity="0.42"/></filter></defs>'
+      +'<g opacity="'+op+'">'
+      +'<ellipse cx="257" cy="418" rx="50" ry="9" fill="#2b3038" opacity="0.22"/>'
+      +'<g filter="url(#'+u+'d)"><path d="'+P+'" fill="url(#'+u+'g)"/></g>'
+      +'<clipPath id="'+u+'c"><path d="'+P+'"/></clipPath>'
+      +'<g clip-path="url(#'+u+'c)"><ellipse cx="204" cy="156" rx="58" ry="64" fill="#ffffff" opacity="0.1"/></g>'
+      +'<path d="M293 171A52 52 0 1 0 293 245" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round"/>'
+      +'</g>'
+    +'</svg>';
   }
 
   function clearZM(){ ZM.forEach(function(o){ try{o.setMap(null);}catch(e){} }); ZM=[]; }
@@ -3372,6 +3382,21 @@
   function drawZoneWards(){
     if(!window.caroMap || !window.caroMap.__kakao || !window.kakao || !window.CARO_ZONES) return;
     clearZM();
+    var __lv = null, __sc = 1;
+      try{
+        if(window.caroMap && typeof window.caroMap.getLevel === 'function'){
+          __lv = window.caroMap.getLevel();
+          if(__lv <= 3) __sc = 1;
+                else if(__lv === 4) __sc = 0.9;
+                else if(__lv === 5) __sc = 0.8;
+                else __sc = 0.7;
+          if(!drawZoneWards.__zoomBound && window.kakao && window.kakao.maps && window.kakao.maps.event){
+            window.kakao.maps.event.addListener(window.caroMap,'zoom_changed',function(){ drawZoneWards(); });
+            drawZoneWards.__zoomBound = true;
+          }
+        }
+      }catch(e){ __lv = null; __sc = 1; }
+      if(__lv !== null && __lv >= 7) return;
     Object.keys(window.CARO_ZONES).forEach(function(zone){
       var Z=window.CARO_ZONES[zone];
       if(!Z || Z.lat==null || Z.lng==null) return;
@@ -3382,7 +3407,7 @@
       var pos=new window.kakao.maps.LatLng(Z.lat, Z.lng);
       var el=document.createElement('div');
       el.style.cssText='cursor:pointer;filter:drop-shadow(0 4px 6px rgba(0,0,0,.32));transition:transform .12s;';
-      el.innerHTML=wardSVG(active);
+      el.innerHTML=wardSVG(active, __sc);
       el.addEventListener('mousedown',function(){ el.style.transform='scale(.92)'; });
       el.addEventListener('mouseup',function(){ el.style.transform=''; });
       el.addEventListener('click',function(e){ e.stopPropagation(); openZoneSheet(zone); });
@@ -5890,4 +5915,27 @@
   if(!hook()){
     var n=0, iv=setInterval(function(){ n++; if(hook()||n>60) clearInterval(iv); }, 500);
   }
+})();
+
+/* ── 예약 화면 진입 시 항상 500m(레벨 6)로 시작 ── */
+(function(){
+  if(window.__caroLevelPatched) return;
+  window.__caroLevelPatched = true;
+  var _im = window.initMap;
+  window.initMap = function(){
+    var r = _im ? _im.apply(this, arguments) : undefined;
+    var tries = 0;
+    var iv = setInterval(function(){
+      tries++;
+      try{
+        if(window.caroMap && typeof window.caroMap.setLevel === 'function'){
+          window.caroMap.setLevel(6);
+          clearInterval(iv);
+          return;
+        }
+      }catch(e){}
+      if(tries > 20) clearInterval(iv);
+    }, 200);
+    return r;
+  };
 })();
