@@ -3387,16 +3387,17 @@
         if(window.caroMap && typeof window.caroMap.getLevel === 'function'){
           __lv = window.caroMap.getLevel();
           if(__lv <= 3) __sc = 1;
-                else if(__lv === 4) __sc = 0.9;
-                else if(__lv === 5) __sc = 0.8;
-                else __sc = 0.7;
+                  else if(__lv === 4) __sc = 0.9;
+                  else if(__lv === 5) __sc = 0.85;
+                  else if(__lv === 6) __sc = 0.78;
+                  else __sc = 0.7;
           if(!drawZoneWards.__zoomBound && window.kakao && window.kakao.maps && window.kakao.maps.event){
             window.kakao.maps.event.addListener(window.caroMap,'zoom_changed',function(){ drawZoneWards(); });
             drawZoneWards.__zoomBound = true;
           }
         }
       }catch(e){ __lv = null; __sc = 1; }
-      if(__lv !== null && __lv >= 7) return;
+      if(__lv !== null && __lv >= 8) return;
     Object.keys(window.CARO_ZONES).forEach(function(zone){
       var Z=window.CARO_ZONES[zone];
       if(!Z || Z.lat==null || Z.lng==null) return;
@@ -5929,7 +5930,7 @@
       tries++;
       try{
         if(window.caroMap && typeof window.caroMap.setLevel === 'function'){
-          window.caroMap.setLevel(6);
+          window.caroMap.setLevel(7);
           clearInterval(iv);
           return;
         }
