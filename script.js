@@ -1949,6 +1949,7 @@ function updateCarSheetCount(){
     if(typeof L === 'undefined' || !caroMap) return;
     BL_CARS.forEach(function(car){
       var col='#c8a96e';
+      var label='CARO THE BLACK';
       var icon = L.divIcon({
               html: '<div style="display:flex;flex-direction:column;align-items:center;gap:1px;">' +
                 '<svg width="30" height="38" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
@@ -4594,19 +4595,6 @@ function openPassAuth(){
    _startSmsTimer();
  }
 
-/* HMAC-SHA256 서명 */
-function _hmacSha256(secret, message){
-  var enc = new TextEncoder();
-  return crypto.subtle.importKey(
-    'raw', enc.encode(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']
-  ).then(function(key){
-    return crypto.subtle.sign('HMAC', key, enc.encode(message));
-  }).then(function(sig){
-    return Array.from(new Uint8Array(sig)).map(function(b){
-      return b.toString(16).padStart(2,'0');
-    }).join('');
-  });
-}
 
 /* SMS 타이머 */
 function _startSmsTimer(){
