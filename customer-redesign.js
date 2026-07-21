@@ -65,18 +65,16 @@
     }catch(e){ return null; } }
   function gpt(cx,cy,r,deg){ var a=(deg-90)*Math.PI/180; return [(cx+r*Math.cos(a)).toFixed(2),(cy+r*Math.sin(a)).toFixed(2)]; }
   function arcPath(cx,cy,r,a0,a1){ var p0=gpt(cx,cy,r,a0),p1=gpt(cx,cy,r,a1); var large=(a1-a0)>180?1:0; return 'M'+p0[0]+' '+p0[1]+' A'+r+' '+r+' 0 '+large+' 1 '+p1[0]+' '+p1[1]; }
-  function fuelColor(p){ return p>50?'#2c7a52':p>20?'#c0872f':'#b0413f'; }
   function fuelGauge(pct){
     if(pct==null) return '';
     pct=Math.max(0,Math.min(100,Math.round(pct)));
-    var col=fuelColor(pct);
     var track=arcPath(50,50,45,240,480);                   /* 8시→4시 240° */
     var fill=pct>0?arcPath(50,50,45,240,240+pct*2.4):'';    /* 100% = 240° */
     return '<div class="nh-gauge"><svg viewBox="0 0 100 100">'
-      +'<path d="'+track+'" fill="none" stroke="#dfe3e8" stroke-width="4" stroke-linecap="round"/>'
-      +(fill?'<path d="'+fill+'" fill="none" stroke="'+col+'" stroke-width="4" stroke-linecap="round"/>':'')
+      +'<path d="'+track+'" fill="none" stroke="#e0e3e8" stroke-width="4" stroke-linecap="round"/>'
+      +(fill?'<path class="nh-gfill" d="'+fill+'" fill="none" stroke-width="4" stroke-linecap="round"/>':'')
       +'</svg></div>'
-      +'<div class="nh-fuel-lbl"><svg class="nh-fuel-ic" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="9" height="16" rx="1.5"/><path d="M4 11h9"/><path d="M13 8h2.4a2 2 0 0 1 2 2v6a1.4 1.4 0 0 0 2.8 0V9.2L17.6 6.6"/></svg><span style="color:'+col+'">'+pct+'%</span></div>';
+      +'<div class="nh-fuel-lbl"><svg class="nh-fuel-ic" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="9" height="16" rx="1.5"/><path d="M4 11h9"/><path d="M13 8h2.4a2 2 0 0 1 2 2v6a1.4 1.4 0 0 0 2.8 0V9.2L17.6 6.6"/></svg><span>'+pct+'%</span></div>';
   }
   function fmtD(d){ try{ d=new Date(d); var p=function(n){return n<10?'0'+n:n;}; return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate()); }catch(e){ return ''; } }
   function getRecent(){ try{
@@ -134,8 +132,9 @@
     .nh-orb p{ font-size:12px; font-weight:700; color:var(--p1-slate,#5a6470); margin-top:7px; }
     .nh-gauge{ position:absolute; top:50%; left:50%; width:252px; height:252px; transform:translate(-50%,-50%); pointer-events:none; z-index:1; }
     .nh-gauge svg{ width:100%; height:100%; display:block; }
-    .nh-fuel-lbl{ position:absolute; left:50%; bottom:16px; transform:translateX(-50%); display:flex; align-items:center; gap:4px; font-size:12.5px; font-weight:800; z-index:3; pointer-events:none; }
-    .nh-fuel-lbl .nh-fuel-ic{ width:15px; height:15px; }
+    .nh-gfill{ stroke:var(--accent,#18191c); }
+    .nh-fuel-lbl{ position:absolute; left:50%; bottom:16px; transform:translateX(-50%); display:flex; align-items:center; gap:4px; font-size:12.5px; font-weight:800; color:var(--accent,#18191c); z-index:3; pointer-events:none; }
+    .nh-fuel-lbl .nh-fuel-ic{ width:15px; height:15px; stroke:var(--accent,#18191c); }
 
     .nh-active{ position:relative; overflow:hidden; margin-top:16px; border-radius:20px; padding:20px;
       background:linear-gradient(135deg,#b4bcc7 0%,#9fa8b4 50%,#8d97a3 100%); color:#fff; }
@@ -468,7 +467,7 @@
 
     /* 이벤트 캐러셀 (자동 + 스와이프 + 탭→이벤트 화면) */
     var evView=root.querySelector('.nh-ev');
-    var evSlides=EVENTS.map(function(e){ return '<span class="nh-badge">EVENT</span><h3>'+esc(e.t)+'</h3><span class="nh-sub">'+esc(e.s)+'</span>'; });
+    var evSlides=EVENTS.map(function(e){ return '<h3>'+esc(e.t)+'</h3><span class="nh-sub">'+esc(e.s)+'</span>'; });
     var evc=carousel(evView, evSlides, { dots:evView.querySelector('.nh-dots') });
     curEv=evc;
     bindSwipe(evView, evc.next, evc.prev, function(){ go('event-screen'); });
@@ -476,7 +475,7 @@
 
     /* 멤버십 캐러셀 (스와이프 + 탭→멤버십 화면) — 우측 설명/가입버튼 없음 */
     var plView=root.querySelector('.nh-plan');
-    var plSlides=PLANS.map(function(p){ return '<span class="nh-tag">'+esc(p.tag)+'</span><h3>'+esc(p.name)+'</h3><div class="nh-price">'+esc(p.price)+'</div>'; });
+    var plSlides=PLANS.map(function(p){ return '<h3>'+esc(p.name)+'</h3><div class="nh-price">'+esc(p.price)+'</div>'; });
     var plc=carousel(plView, plSlides, { dots:root.querySelector('.nh-pl-dots'), start:1 });
     bindSwipe(plView, plc.next, plc.prev, function(){ go('membership-screen'); });
     var allEl=root.querySelector('[data-plans]'); if(allEl) allEl.onclick=function(e){ e.stopPropagation(); go('membership-screen'); };
