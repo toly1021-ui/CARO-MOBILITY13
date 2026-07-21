@@ -1,21 +1,21 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 홈 리디자인 v24 (light_P1 통합)
+   CARO MOBILITY — 고객 홈 리디자인 v25 (light_P1)
    ───────────────────────────────────────────────────────────
-   · caro-home.html(light_P1) 디자인을 실제 #home-screen에 적용
-   · 오브 히어로 / 진행중 예약카드 / 8메뉴 / 이벤트배너 / 멤버십 / 하단탭
-   · 모든 버튼을 실제 함수에 연결(없으면 안전 처리), 실데이터 사용
-   · 기존 홈 DOM은 지우지 않고 숨김(다른 스크립트 무손상)
-   적용: index.html — customer-redesign.js?v=114 (기존 v23 블록 대체)
+   · 메뉴 6개(반납·연장 제거, 3열), 오브 동심원 정렬, 안내문구 제거
+   · 이벤트/멤버십 배너: 전체폭 + 터치 스와이프·탭 회전(+이벤트 자동회전)
+   · 종=알림 패널 / 햄버거=홈 메뉴 (탭 영역 확대)
+   · 기존 홈 DOM은 숨김(무손상), 모든 버튼 실기능 연결(방어적)
+   적용: index.html — customer-redesign.js?v=115+ (기존 v24 대체)
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
-  if(window.__caroHomeV24) return; window.__caroHomeV24=true;
+  if(window.__caroHomeV24||window.__caroHomeV25) return; window.__caroHomeV25=true;
 
-  /* ── 안전 호출 유틸 ── */
-  function call(fn){ try{ if(typeof window[fn]==='function'){ return window[fn].apply(null,[].slice.call(arguments,1)); } }catch(e){ console.warn('[홈v24]',fn,e); } return undefined; }
+  function call(fn){ try{ if(typeof window[fn]==='function'){ return window[fn].apply(null,[].slice.call(arguments,1)); } }catch(e){ console.warn('[홈v25]',fn,e); } return undefined; }
   function has(fn){ return typeof window[fn]==='function'; }
   function go(id){ if(has('goTo')) call('goTo',id); }
   function toast(m){ if(has('showToast')) call('showToast',m); else try{ alert(m); }catch(e){} }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
   /* ── 실데이터 ── */
   function availCount(){ try{ return (window.CARS_DATA||[]).filter(function(c){ return c && c.status==='available'; }).length; }catch(e){ return 0; } }
@@ -24,8 +24,8 @@
       cs.forEach(function(c){ if(c && c.status==='available'){ var k=c.zone||c.station||c.area||c.region||c.location; if(k) z[k]=1; } });
       var n=Object.keys(z).length;
       if(!n && window.CARO_ZONES && window.CARO_ZONES.length) n=window.CARO_ZONES.length;
-      return n||3;
-    }catch(e){ return 3; } }
+      return n||1;
+    }catch(e){ return 1; } }
   function getActive(){ try{
       var list=window.myReservations||[], now=new Date(), best=null;
       list.forEach(function(r){ if(r && !r.returned && r.start && r.end){
@@ -50,45 +50,50 @@
     {tag:'추천', name:'CARO 플러스', price:'월 14,900원', bens:['주중 40% 할인','심야 50% 할인','주말 쿠폰 월 1장']},
     {tag:'법인', name:'CARO 비즈',   price:'월 99,000원', bens:['업무시간 50% 할인','임직원 3계정','월 3만원 크레딧']}
   ];
+  var evIdx=0, plIdx=1, evTimerOn=false;
+  function mod(i,n){ return ((i%n)+n)%n; }
 
-  /* ── CSS (모두 #home-screen 스코프 — 다른 화면에 영향 없음) ── */
+  /* ── CSS (전부 #home-screen 스코프) ── */
   function injectCss(){
     if(document.getElementById('nh-css')) return;
     var st=document.createElement('style'); st.id='nh-css';
     st.textContent=`
     #home-screen > *:not(.nh-root){ display:none !important; }
     #home-screen{ background:var(--silver-base); overflow-y:auto; -webkit-overflow-scrolling:touch; }
-    .nh-root{ max-width:460px; margin:0 auto; padding:0 20px calc(96px + var(--sab,0px)); font-family:var(--font,'Pretendard',sans-serif); color:var(--text-1); }
-    .nh-hd{ display:flex; align-items:center; justify-content:space-between; padding:14px 0 4px; }
+    .nh-root{ max-width:480px; margin:0 auto; padding:0 20px calc(96px + var(--sab,0px)); font-family:var(--font,'Pretendard',sans-serif); color:var(--text-1); }
+
+    .nh-hd{ display:flex; align-items:center; justify-content:space-between; padding:12px 0 2px; }
     .nh-logo b{ font-size:21px; font-weight:800; letter-spacing:-.3px; color:var(--text-1); }
     .nh-logo span{ font-size:10px; font-weight:700; color:var(--p1-accent,#67707c); letter-spacing:2.4px; margin-left:6px; }
-    .nh-hd-ic{ display:flex; gap:16px; position:relative; }
-    .nh-ic{ width:22px; height:22px; fill:none; stroke:var(--text-2); stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; cursor:pointer; }
-    .nh-dot{ position:absolute; top:-2px; left:16px; width:7px; height:7px; border-radius:50%; background:var(--p1-accent,#67707c); }
+    .nh-hd-ic{ display:flex; align-items:center; gap:4px; }
+    .nh-icbtn{ position:relative; width:42px; height:42px; display:flex; align-items:center; justify-content:center; background:none; border:0; padding:0; cursor:pointer; }
+    .nh-icbtn svg{ width:23px; height:23px; fill:none; stroke:var(--text-2); stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+    .nh-icbtn .nh-dot{ position:absolute; top:8px; right:9px; width:7px; height:7px; border-radius:50%; background:var(--p1-accent,#67707c); }
 
-    .nh-hero{ position:relative; display:flex; flex-direction:column; align-items:center; padding:22px 0 4px; }
-    .nh-halo{ position:absolute; top:-10px; left:50%; transform:translateX(-50%); width:310px; height:310px; border-radius:50%; background:radial-gradient(circle,#fff 52%,rgba(255,255,255,0) 72%); pointer-events:none; }
-    .nh-ring{ position:absolute; top:12px; left:50%; transform:translateX(-50%); width:262px; height:262px; border-radius:50%; border:1px solid #d3d8de; pointer-events:none; }
-    .nh-orb{ position:relative; width:232px; height:232px; border-radius:50%;
+    /* 히어로 — 동심원 완전 정렬 */
+    .nh-hero{ position:relative; height:296px; display:flex; align-items:center; justify-content:center; margin:6px 0 2px; }
+    .nh-halo,.nh-ring,.nh-orb{ position:absolute; top:50%; left:50%; border-radius:50%; }
+    .nh-halo{ width:300px; height:300px; transform:translate(-50%,-50%); background:radial-gradient(circle,#fff 52%,rgba(255,255,255,0) 72%); pointer-events:none; }
+    .nh-ring{ width:262px; height:262px; transform:translate(-50%,-50%); border:1px solid #d3d8de; pointer-events:none; }
+    .nh-orb{ width:232px; height:232px; transform:translate(-50%,-50%);
       background:linear-gradient(140deg,#fff 0%,#f3f5f8 40%,#ccd3db 100%); border:1.2px solid #c2c9d1;
       display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;
-      transition:transform .16s ease; box-shadow:0 16px 34px -16px rgba(48,56,68,.42); }
-    .nh-orb:active{ transform:scale(.965); }
-    .nh-orb .nh-pin{ width:44px; height:44px; margin-bottom:8px; color:var(--p1-slate,#5a6470); }
+      box-shadow:0 16px 34px -16px rgba(48,56,68,.42); transition:transform .16s ease; }
+    .nh-orb:active{ transform:translate(-50%,-50%) scale(.965); }
+    .nh-orb .nh-pin{ width:42px; height:42px; margin-bottom:8px; color:var(--p1-slate,#5a6470); }
     .nh-orb h1{ font-size:15.5px; font-weight:800; color:var(--text-1); }
     .nh-orb p{ font-size:11.5px; font-weight:600; color:var(--p1-slate,#5a6470); margin-top:6px; }
     .nh-orb p b{ color:var(--text-1); }
     .nh-chip{ display:inline-block; padding:6px 14px; border-radius:999px; font-size:10.5px; font-weight:700; margin-top:10px; background:var(--accent); color:#fff; }
-    .nh-carimg{ width:118px; height:60px; margin-bottom:2px; }
-    .nh-timebox{ margin-top:8px; padding:7px 18px; border-radius:999px; background:#fff; border:1.2px solid var(--p1-line2,#d5dae1); font-size:12px; font-weight:800; color:var(--text-1); }
-    .nh-remain{ margin-top:9px; font-size:11px; font-weight:700; color:var(--text-m); }
-    .nh-note{ margin-top:16px; font-size:12px; font-weight:600; color:var(--text-m); text-align:center; }
+    .nh-carimg{ width:112px; height:58px; margin-bottom:2px; }
+    .nh-timebox{ margin-top:8px; padding:6px 16px; border-radius:999px; background:#fff; border:1.2px solid var(--p1-line2,#d5dae1); font-size:12px; font-weight:800; color:var(--text-1); }
+    .nh-remain{ margin-top:8px; font-size:11px; font-weight:700; color:var(--text-m); }
 
-    .nh-active{ position:relative; overflow:hidden; margin-top:22px; border-radius:20px; padding:20px;
+    /* 진행중 예약 카드 */
+    .nh-active{ position:relative; overflow:hidden; margin-top:16px; border-radius:20px; padding:20px;
       background:linear-gradient(135deg,#b4bcc7 0%,#9fa8b4 50%,#8d97a3 100%); color:#fff; }
-    .nh-active .nh-bgpin{ position:absolute; right:-8px; bottom:-30px; width:90px; opacity:.22; color:#fff; }
     .nh-active .nh-badge{ display:inline-block; padding:5px 13px; border-radius:11px; font-size:10px; font-weight:800; background:var(--accent); color:#fff; }
-    .nh-active h3{ margin-top:18px; font-size:16px; font-weight:800; }
+    .nh-active h3{ margin-top:16px; font-size:16px; font-weight:800; }
     .nh-active .nh-sub{ display:block; margin-top:6px; font-size:11px; font-weight:600; color:rgba(255,255,255,.9); }
     .nh-active .nh-rm{ position:absolute; top:20px; right:20px; font-size:10.5px; font-weight:700; }
     .nh-act-btns{ display:flex; gap:8px; margin-top:16px; }
@@ -96,50 +101,48 @@
     .nh-abtn.dim{ background:rgba(255,255,255,.22); color:#fff; }
     .nh-abtn.solid{ background:#fff; color:var(--p1-accent-d,#57616d); }
 
-    .nh-menu{ margin-top:16px; background:var(--p1-card,#fff); border-radius:20px; padding:22px 10px 18px; display:grid; grid-template-columns:repeat(4,1fr); gap:20px 0; }
-    .nh-mi{ display:flex; flex-direction:column; align-items:center; gap:9px; cursor:pointer; }
+    /* 메뉴 6개 · 3열 */
+    .nh-menu{ margin-top:16px; background:var(--p1-card,#fff); border-radius:20px; padding:22px 12px; display:grid; grid-template-columns:repeat(3,1fr); gap:22px 0; box-shadow:0 2px 10px -6px rgba(40,48,58,.14); }
+    .nh-mi{ display:flex; flex-direction:column; align-items:center; gap:10px; cursor:pointer; }
     .nh-mi:active{ transform:scale(.95); }
-    .nh-mi .nh-box{ width:44px; height:44px; border-radius:14px; background:var(--p1-soft,#f2f3f5); display:flex; align-items:center; justify-content:center; }
+    .nh-mi .nh-box{ width:52px; height:52px; border-radius:16px; background:var(--p1-soft,#f2f3f5); display:flex; align-items:center; justify-content:center; }
     .nh-mi.prem .nh-box{ background:var(--p1-accent,#67707c); }
-    .nh-mi .nh-box svg{ width:21px; height:21px; stroke:var(--p1-slate,#5a6470); fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
+    .nh-mi .nh-box svg{ width:24px; height:24px; stroke:var(--p1-slate,#5a6470); fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
     .nh-mi.prem .nh-box svg{ stroke:#fff; }
-    .nh-mi span{ font-size:11px; font-weight:700; color:var(--text-1); }
+    .nh-mi span{ font-size:12px; font-weight:700; color:var(--text-1); }
 
-    .nh-sec{ margin-top:26px; }
+    /* 섹션/배너 — 전체폭(좌우 여백만) */
+    .nh-sec{ margin-top:22px; }
     .nh-sec-hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
     .nh-sec-hd h2{ font-size:15px; font-weight:800; color:var(--text-1); }
     .nh-sec-hd a{ font-size:11.5px; font-weight:700; color:var(--p1-accent,#67707c); cursor:pointer; }
 
-    .nh-ev{ position:relative; overflow:hidden; cursor:pointer; border-radius:20px; padding:20px;
-      background:linear-gradient(135deg,#d2d8e0 0%,#c1c9d3 50%,#b0b9c4 100%); }
-    .nh-ev .nh-bgpin{ position:absolute; right:14px; top:4px; width:74px; opacity:.20; color:#828b96; }
+    .nh-ev{ position:relative; overflow:hidden; cursor:pointer; border-radius:20px; padding:22px 20px; min-height:118px;
+      background:linear-gradient(135deg,#d2d8e0 0%,#c1c9d3 50%,#b0b9c4 100%); -webkit-user-select:none; user-select:none; }
     .nh-ev .nh-badge{ display:inline-block; padding:5px 13px; border-radius:11px; font-size:10px; font-weight:800; background:var(--p1-accent-d,#57616d); color:#fff; }
-    .nh-ev h3{ margin-top:18px; font-size:16px; font-weight:800; color:#1b2027; }
-    .nh-ev .nh-sub{ display:block; margin-top:6px; font-size:11px; font-weight:600; color:#535c66; }
+    .nh-ev h3{ margin-top:16px; font-size:17px; font-weight:800; color:#1b2027; }
+    .nh-ev .nh-sub{ display:block; margin-top:6px; font-size:11.5px; font-weight:600; color:#535c66; }
     .nh-dots{ position:absolute; right:20px; bottom:18px; display:flex; align-items:center; gap:6px; }
-    .nh-dots i{ width:6px; height:6px; border-radius:50%; background:var(--p1-accent,#67707c); opacity:.35; transition:.2s; }
+    .nh-dots i{ width:6px; height:6px; border-radius:50%; background:var(--p1-accent-d,#57616d); opacity:.35; transition:.2s; }
     .nh-dots i.on{ width:18px; border-radius:3px; opacity:.95; }
 
-    .nh-plan-wrap{ position:relative; padding-bottom:26px; }
-    .nh-stack{ position:absolute; left:10px; right:10px; top:8px; height:150px; border-radius:20px; background:#dee2e8; }
-    .nh-stack.s2{ left:5px; right:5px; top:4px; background:#ced3da; }
-    .nh-plan{ position:relative; display:flex; justify-content:space-between; overflow:hidden; cursor:pointer;
-      background:linear-gradient(135deg,#fff 0%,#f8fafb 50%,#ecf0f4 100%); border:1.3px solid var(--p1-line2,#d5dae1); border-radius:20px; padding:20px; }
-    .nh-plan .nh-pl-l{ position:relative; z-index:1; }
-    .nh-plan .nh-tag{ display:inline-block; padding:6px 14px; border-radius:999px; font-size:10.5px; font-weight:700; background:var(--p1-accent,#67707c); color:#fff; }
+    .nh-plan{ position:relative; display:flex; justify-content:space-between; overflow:hidden; cursor:pointer; -webkit-user-select:none; user-select:none;
+      background:linear-gradient(135deg,#fff 0%,#f8fafb 50%,#ecf0f4 100%); border:1.3px solid var(--p1-line2,#d5dae1); border-radius:20px; padding:22px 20px; box-shadow:0 2px 10px -6px rgba(40,48,58,.14); }
+    .nh-pl-l{ position:relative; z-index:1; }
+    .nh-tag{ display:inline-block; padding:6px 14px; border-radius:999px; font-size:10.5px; font-weight:700; background:var(--p1-accent,#67707c); color:#fff; }
     .nh-plan h3{ margin-top:14px; font-size:19px; font-weight:800; color:var(--text-1); }
-    .nh-plan .nh-price{ margin-top:8px; font-size:14px; font-weight:800; color:var(--text-1); }
-    .nh-pl-r{ position:relative; z-index:1; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; }
-    .nh-bens{ display:flex; flex-direction:column; gap:9px; }
-    .nh-ben{ display:flex; align-items:center; gap:8px; font-size:10.5px; font-weight:600; color:var(--p1-slate,#5a6470); }
+    .nh-price{ margin-top:8px; font-size:14px; font-weight:800; color:var(--text-1); }
+    .nh-pl-r{ position:relative; z-index:1; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; gap:12px; }
+    .nh-bens{ display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
+    .nh-ben{ display:flex; align-items:center; gap:7px; font-size:10.5px; font-weight:600; color:var(--p1-slate,#5a6470); }
     .nh-ben svg{ width:12px; height:12px; stroke:var(--p1-accent,#67707c); stroke-width:2.1; fill:none; stroke-linecap:round; stroke-linejoin:round; flex:0 0 auto; }
-    .nh-join{ margin-top:10px; padding:9px 16px; border-radius:999px; border:0; background:var(--accent); color:#fff; font-family:inherit; font-weight:800; font-size:11.5px; cursor:pointer; }
-    .nh-pl-dots{ position:absolute; left:50%; bottom:2px; transform:translateX(-50%); display:flex; align-items:center; gap:6px; }
+    .nh-join{ padding:9px 18px; border-radius:999px; border:0; background:var(--accent); color:#fff; font-family:inherit; font-weight:800; font-size:11.5px; cursor:pointer; }
+    .nh-pl-dots{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:12px; }
     .nh-pl-dots i{ width:6px; height:6px; border-radius:50%; background:#c5cbd3; transition:.2s; }
     .nh-pl-dots i.on{ width:20px; border-radius:3px; background:var(--p1-accent,#67707c); }
 
-    #nh-nav{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--p1-line,#e8eaee); padding-bottom:var(--sab,0px); z-index:500; }
-    #nh-nav .nh-nav-in{ max-width:460px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr); padding:10px 0 6px; }
+    #nh-nav{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--p1-line,#e8eaee); padding-bottom:var(--sab,0px); z-index:900; }
+    #nh-nav .nh-nav-in{ max-width:480px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr); padding:10px 0 6px; }
     #nh-nav .nh-nav-it{ display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--p1-line2,#c8ced6); cursor:pointer; background:none; border:0; font-family:inherit; }
     #nh-nav .nh-nav-it.on{ color:var(--text-1); }
     #nh-nav .nh-nav-it svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
@@ -149,7 +152,7 @@
     (document.head||document.documentElement).appendChild(st);
   }
 
-  /* ── SVG 스프라이트 (nh- 접두사로 충돌 방지) ── */
+  /* ── SVG 스프라이트 (nh- 접두사) ── */
   function injectSprite(){
     if(document.getElementById('nh-sprite')) return;
     var d=document.createElement('div'); d.id='nh-sprite'; d.style.display='none';
@@ -161,8 +164,6 @@
       <symbol id="nh-listnav" viewBox="0 0 24 24"><path d="M8 6.5h12M8 12h12M8 17.5h12"/><circle cx="4.2" cy="6.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.2" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="4.2" cy="17.5" r="1.2" fill="currentColor" stroke="none"/></symbol>
       <symbol id="nh-user" viewBox="0 0 24 24"><circle cx="12" cy="8.4" r="3.9"/><path d="M4.6 20.4a7.4 7.4 0 0 1 14.8 0"/></symbol>
       <symbol id="nh-car" viewBox="0 0 24 24"><path d="M4 13.5 5.7 8.9A2.5 2.5 0 0 1 8 7.4h8a2.5 2.5 0 0 1 2.3 1.5L20 13.5"/><path d="M3.6 13.5h16.8v4.4a.8.8 0 0 1-.8.8H18a2 2 0 0 1-4 0h-4a2 2 0 0 1-4 0H4.4a.8.8 0 0 1-.8-.8v-4.4Z"/><circle cx="7.6" cy="15.6" r="1"/><circle cx="16.4" cy="15.6" r="1"/></symbol>
-      <symbol id="nh-cam" viewBox="0 0 24 24"><path d="M3.5 8.6A2 2 0 0 1 5.5 6.6h2l1.4-2h6.2l1.4 2h2a2 2 0 0 1 2 2v8.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2V8.6Z"/><circle cx="12" cy="13" r="3.6"/></symbol>
-      <symbol id="nh-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.2 2"/></symbol>
       <symbol id="nh-dia" viewBox="0 0 24 24"><path d="M12 3 20 12l-8 9-8-9 8-9Z"/></symbol>
       <symbol id="nh-gift" viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="11.5" rx="2.4"/><path d="M3.5 13.4h17M12 9v11.5"/><path d="M12 9S9.6 4 7.4 5.2 9.4 9 12 9Zm0 0s2.4-5 4.6-3.8S14.6 9 12 9Z"/></symbol>
       <symbol id="nh-book" viewBox="0 0 24 24"><path d="M4 5.2A2.2 2.2 0 0 1 6.2 3H19v15.4H6.2A2.2 2.2 0 0 0 4 20.6V5.2Z"/><path d="M4 18.4A2.2 2.2 0 0 1 6.2 21H19"/></symbol>
@@ -175,11 +176,9 @@
   }
   function ic(id){ return '<svg><use href="#'+id+'"/></svg>'; }
 
-  /* ── 메뉴 정의 (라벨, 아이콘, 동작) ── */
+  /* ── 메뉴 6개 (반납·연장 제거) ── */
   var MENU=[
     {l:'내 예약', i:'nh-car',  fn:function(){ go('my-reservation-screen'); }},
-    {l:'반납하기', i:'nh-cam', fn:function(){ if(getActive()){ if(has('ctrlActionHome')) call('ctrlActionHome','return'); else go('my-reservation-screen'); } else toast('이용 중인 차량이 없습니다.'); }},
-    {l:'시간 연장', i:'nh-clock', fn:function(){ if(getActive()){ if(has('openExtendSheet')) call('openExtendSheet'); } else toast('이용 중인 예약이 없습니다.'); }},
     {l:'더 블랙', i:'nh-dia', prem:true, fn:function(){ if(has('goBlackLabel')) call('goBlackLabel'); else go('black-label-screen'); }},
     {l:'이벤트', i:'nh-gift', fn:function(){ go('event-screen'); }},
     {l:'이용 안내', i:'nh-book', fn:function(){ if(has('goToCsDetail')) call('goToCsDetail',0); else go('cs-screen'); }},
@@ -187,7 +186,33 @@
     {l:'내 정보', i:'nh-user', fn:function(){ go('mypage-screen'); }}
   ];
 
-  var evIdx=0, plIdx=1, evTimer=null;
+  /* ── 스와이프/탭 회전 헬퍼 ── */
+  function bindSwipe(el, next, prev){
+    var x0=null,y0=null,last=0;
+    el.addEventListener('touchstart',function(e){ var t=e.touches[0]; x0=t.clientX; y0=t.clientY; },{passive:true});
+    el.addEventListener('touchend',function(e){
+      if(x0==null) return; var t=(e.changedTouches&&e.changedTouches[0])||{};
+      var dx=(t.clientX||x0)-x0, dy=(t.clientY||y0)-y0; x0=null; last=Date.now();
+      if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)){ (dx<0?next:prev)(); }
+      else if(Math.abs(dx)<12 && Math.abs(dy)<12){ next(); }   /* 탭 */
+    },{passive:true});
+    el.addEventListener('click',function(){ if(Date.now()-last<600) return; next(); });  /* 데스크탑 폴백 */
+  }
+  function fillEv(root){
+    var ev=EVENTS[mod(evIdx,EVENTS.length)];
+    var t=root.querySelector('.nh-ev-t'), s=root.querySelector('.nh-ev-s'), d=root.querySelector('.nh-ev .nh-dots');
+    if(t) t.textContent=ev.t; if(s) s.textContent=ev.s;
+    if(d) d.innerHTML=EVENTS.map(function(_,i){ return '<i class="'+(i===mod(evIdx,EVENTS.length)?'on':'')+'"></i>'; }).join('');
+  }
+  function fillPl(root){
+    var p=PLANS[mod(plIdx,PLANS.length)];
+    root.querySelector('.nh-tag').textContent=p.tag;
+    root.querySelector('.nh-plan h3').textContent=p.name;
+    root.querySelector('.nh-price').textContent=p.price;
+    root.querySelector('.nh-bens').innerHTML=p.bens.map(function(b){ return '<div class="nh-ben">'+ic('nh-check')+esc(b)+'</div>'; }).join('');
+    var d=root.querySelector('.nh-pl-dots');
+    if(d) d.innerHTML=PLANS.map(function(_,i){ return '<i class="'+(i===mod(plIdx,PLANS.length)?'on':'')+'"></i>'; }).join('');
+  }
 
   /* ── 렌더 ── */
   function render(){
@@ -197,8 +222,6 @@
     if(!root){ root=document.createElement('div'); root.className='nh-root'; host.appendChild(root); }
 
     var act=getActive();
-    var avail=availCount(), zones=zoneCount();
-
     var orbInner = act
       ? '<span class="nh-chip" style="margin-bottom:8px">이용 중</span>'
         +'<svg class="nh-carimg" viewBox="0 0 100 52"><use href="#nh-carside"/></svg>'
@@ -207,58 +230,50 @@
         +'<div class="nh-remain">'+remainTxt(act.e)+'</div>'
       : '<svg class="nh-pin" viewBox="132 92 248 350"><use href="#nh-ward"/></svg>'
         +'<h1>지금 바로 타기</h1>'
-        +'<p><b>'+avail+'</b>대 이용 가능</p>'
-        +'<span class="nh-chip">인천 '+zones+'개 거점</span>';
+        +'<p><b>'+availCount()+'</b>대 이용 가능</p>'
+        +'<span class="nh-chip">인천 '+zoneCount()+'개 거점</span>';
 
     var activeCard = act
-      ? '<div class="nh-active">'
-        +'<svg class="nh-bgpin" viewBox="132 92 248 350"><use href="#nh-ward"/></svg>'
-        +'<span class="nh-badge">이용 중</span>'
+      ? '<div class="nh-active"><span class="nh-badge">이용 중</span>'
         +'<div class="nh-rm">'+remainTxt(act.e)+'</div>'
         +'<h3>'+esc(carName(act.r))+'</h3>'
         +'<span class="nh-sub">'+(carZone(act.r)?esc(carZone(act.r))+' · ':'')+hhmm(act.e)+' 반납 예정</span>'
-        +'<div class="nh-act-btns">'
-          +'<button class="nh-abtn dim" data-act="extend">시간 연장</button>'
-          +'<button class="nh-abtn solid" data-act="return">반납하기</button>'
-        +'</div></div>'
+        +'<div class="nh-act-btns"><button class="nh-abtn dim" data-act="extend">시간 연장</button>'
+        +'<button class="nh-abtn solid" data-act="return">반납하기</button></div></div>'
       : '';
 
     var menu='<div class="nh-menu">'+MENU.map(function(m,i){
       return '<div class="nh-mi'+(m.prem?' prem':'')+'" data-mi="'+i+'"><div class="nh-box">'+ic(m.i)+'</div><span>'+m.l+'</span></div>';
     }).join('')+'</div>';
 
-    var ev=EVENTS[evIdx%EVENTS.length];
-    var evBanner='<div class="nh-sec"><div class="nh-ev" data-ev="1">'
-      +'<svg class="nh-bgpin" viewBox="132 92 248 350"><use href="#nh-ward"/></svg>'
+    var evBanner='<div class="nh-sec"><div class="nh-ev">'
       +'<span class="nh-badge">EVENT</span>'
-      +'<h3>'+esc(ev.t)+'</h3><span class="nh-sub">'+esc(ev.s)+'</span>'
-      +'<div class="nh-dots">'+EVENTS.map(function(_,i){ return '<i class="'+(i===evIdx%EVENTS.length?'on':'')+'"></i>'; }).join('')+'</div>'
-      +'</div></div>';
+      +'<h3 class="nh-ev-t"></h3><span class="nh-sub nh-ev-s"></span>'
+      +'<div class="nh-dots"></div></div></div>';
 
-    var p=PLANS[plIdx%PLANS.length];
     var plan='<div class="nh-sec"><div class="nh-sec-hd"><h2>멤버십 플랜</h2><a data-plans="1">전체 보기</a></div>'
-      +'<div class="nh-plan-wrap"><div class="nh-stack"></div><div class="nh-stack s2"></div>'
-      +'<div class="nh-plan" data-plan="1"><div class="nh-pl-l">'
-        +'<span class="nh-tag">'+esc(p.tag)+'</span><h3>'+esc(p.name)+'</h3><div class="nh-price">'+esc(p.price)+'</div>'
-      +'</div><div class="nh-pl-r"><div class="nh-bens">'
-        +p.bens.map(function(b){ return '<div class="nh-ben">'+ic('nh-check')+esc(b)+'</div>'; }).join('')
-      +'</div><button class="nh-join" data-join="1">가입하기</button></div>'
-      +'<div class="nh-pl-dots">'+PLANS.map(function(_,i){ return '<i class="'+(i===plIdx%PLANS.length?'on':'')+'"></i>'; }).join('')+'</div>'
-      +'</div></div></div>';
+      +'<div class="nh-plan"><div class="nh-pl-l">'
+        +'<span class="nh-tag"></span><h3></h3><div class="nh-price"></div>'
+      +'</div><div class="nh-pl-r"><div class="nh-bens"></div>'
+      +'<button class="nh-join" data-join="1">가입하기</button></div></div>'
+      +'<div class="nh-pl-dots"></div></div>';
 
     root.innerHTML=
       '<div class="nh-hd"><div class="nh-logo"><b>CARO</b><span>MOBILITY</span></div>'
-      +'<div class="nh-hd-ic"><svg class="nh-ic" data-bell="1"><use href="#nh-bell"/></svg><i class="nh-dot"></i>'
-      +'<svg class="nh-ic" data-menu="1"><use href="#nh-menu"/></svg></div></div>'
+      +'<div class="nh-hd-ic">'
+      +'<button class="nh-icbtn" data-bell="1">'+ic('nh-bell')+'<i class="nh-dot"></i></button>'
+      +'<button class="nh-icbtn" data-menu="1">'+ic('nh-menu')+'</button></div></div>'
       +'<div class="nh-hero"><div class="nh-halo"></div><div class="nh-ring"></div>'
-      +'<div class="nh-orb" data-orb="1">'+orbInner+'</div>'
-      +'<div class="nh-note">폰이 곧 열쇠입니다 · 무인 24시간</div></div>'
+      +'<div class="nh-orb" data-orb="1">'+orbInner+'</div></div>'
       +activeCard+menu+evBanner+plan;
 
-    /* ── 이벤트 바인딩 ── */
+    /* 데이터 채우기 */
+    fillEv(root); fillPl(root);
+
+    /* 바인딩 */
     root.querySelector('[data-orb]').onclick=function(){ go('rental-screen'); };
-    var bell=root.querySelector('[data-bell]'); if(bell) bell.onclick=function(){ var ov=document.getElementById('caro-notif-ov'); if(ov){ ov.classList.add('open'); } else if(has('openHomeMenu')) call('openHomeMenu'); };
-    var mbtn=root.querySelector('[data-menu]'); if(mbtn) mbtn.onclick=function(){ if(has('openHomeMenu')) call('openHomeMenu'); };
+    root.querySelector('[data-bell]').onclick=function(){ if(has('caroOpenNotif')) call('caroOpenNotif'); else if(has('openHomeMenu')) call('openHomeMenu'); };
+    root.querySelector('[data-menu]').onclick=function(){ if(has('openHomeMenu')) call('openHomeMenu'); };
     root.querySelectorAll('[data-mi]').forEach(function(el){ el.onclick=function(){ MENU[+el.getAttribute('data-mi')].fn(); }; });
     var actEl=root.querySelector('.nh-active');
     if(actEl){ actEl.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){
@@ -266,13 +281,23 @@
       if(a==='extend'){ if(has('openExtendSheet')) call('openExtendSheet'); }
       else { if(has('ctrlActionHome')) call('ctrlActionHome','return'); else go('my-reservation-screen'); }
     }; }); }
-    var evEl=root.querySelector('[data-ev]'); if(evEl) evEl.onclick=function(){ go('event-screen'); };
-    var planEl=root.querySelector('[data-plan]'); if(planEl) planEl.onclick=function(e){ if(e.target.closest('[data-join]')) return; plIdx=(plIdx+1)%PLANS.length; render(); };
-    var joinEl=root.querySelector('[data-join]'); if(joinEl) joinEl.onclick=function(e){ e.stopPropagation(); go('membership-screen'); };
-    var allplan=root.querySelector('[data-plans]'); if(allplan) allplan.onclick=function(){ go('membership-screen'); };
-  }
 
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+    /* 이벤트 배너 — 스와이프/탭 회전 */
+    var evEl=root.querySelector('.nh-ev');
+    bindSwipe(evEl, function(){ evIdx++; fillEv(root); }, function(){ evIdx--; fillEv(root); });
+    /* 멤버십 — 스와이프/탭 회전 (가입/전체보기는 예외) */
+    var planEl=root.querySelector('.nh-plan');
+    bindSwipe(planEl, function(){ plIdx++; fillPl(root); }, function(){ plIdx--; fillPl(root); });
+    var joinEl=root.querySelector('[data-join]'); if(joinEl) joinEl.onclick=function(e){ e.stopPropagation(); go('membership-screen'); };
+    var allEl=root.querySelector('[data-plans]'); if(allEl) allEl.onclick=function(e){ e.stopPropagation(); go('membership-screen'); };
+
+    /* 이벤트 자동 회전 (한 번만 등록) */
+    if(!evTimerOn){ evTimerOn=true; setInterval(function(){
+      var h=document.getElementById('home-screen'); if(!h||!h.classList.contains('active')) return;
+      var r=h.querySelector('.nh-root'); if(!r||!r.querySelector('.nh-ev')) return;
+      evIdx++; fillEv(r);
+    }, 4500); }
+  }
 
   /* ── 하단 탭바 ── */
   function tabbar(){
@@ -289,12 +314,7 @@
     }).join('')+'</div>';
     document.body.appendChild(nav);
     nav.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick=function(){ go(b.getAttribute('data-tab')); }; });
-    /* 홈 화면일 때만 탭바 표시 + 현재 탭 하이라이트 */
-    function sync(){
-      var home=document.getElementById('home-screen');
-      var onHome=home && home.classList.contains('active');
-      nav.style.display=onHome?'block':'none';
-    }
+    function sync(){ var home=document.getElementById('home-screen'); nav.style.display=(home && home.classList.contains('active'))?'block':'none'; }
     sync();
     var home=document.getElementById('home-screen');
     if(home && window.MutationObserver){ new MutationObserver(sync).observe(home,{attributes:true,attributeFilter:['class']}); }
@@ -303,22 +323,12 @@
   /* ── 부팅 ── */
   function boot(){
     render(); tabbar();
-    /* 홈 진입 시 재렌더 (데이터 갱신) */
-    if(has('goTo')){
-      var _g=window.goTo;
-      window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='home-screen') setTimeout(render,30); return r; };
-    }
-    /* 홈 화면이 active 되는 순간 재렌더 (goTo 외 경로 대비) */
+    if(has('goTo')){ var _g=window.goTo; window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='home-screen') setTimeout(render,30); return r; }; }
     var home=document.getElementById('home-screen');
-    if(home && window.MutationObserver){
-      new MutationObserver(function(){ if(home.classList.contains('active')) render(); })
-        .observe(home,{attributes:true,attributeFilter:['class']});
-    }
-    /* 초기 데이터(Firebase 비동기) 로딩 후 몇 차례 재렌더 */
+    if(home && window.MutationObserver){ new MutationObserver(function(){ if(home.classList.contains('active')) render(); }).observe(home,{attributes:true,attributeFilter:['class']}); }
     [600,1600,3200].forEach(function(t){ setTimeout(render,t); });
-    /* 남은시간 갱신 */
     setInterval(function(){ var h=document.getElementById('home-screen'); if(h && h.classList.contains('active') && getActive()) render(); }, 60000);
-    console.log('[디자인] ✅ 홈 리디자인 v24 (light_P1 통합)');
+    console.log('[디자인] ✅ 홈 리디자인 v25 (light_P1)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
@@ -1504,6 +1514,7 @@
     var btn=document.createElement('button'); btn.id='caro-bell'; btn.type='button'; btn.setAttribute('aria-label','알림');
     btn.innerHTML=BELL+'<span class="cnf-dot" id="caro-bell-dot"></span>';
     btn.addEventListener('click',openPanel);
+    window.caroOpenNotif=openPanel;
     hdr.appendChild(btn);
     updateBadge();
   }
