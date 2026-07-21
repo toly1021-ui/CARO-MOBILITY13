@@ -1,11 +1,11 @@
 /* ══════════════════════════════════════════
-   CARO MOBILITY — Service Worker v8
+   CARO MOBILITY — Service Worker (caro-v22)
    - 앱 파일: 네트워크 우선 (항상 최신, 오프라인 시 캐시)
    - Firebase/Firestore: 서비스워커 개입 안 함(브라우저 직접 처리)
    - chrome-extension 등 비-HTTP 요청: 완전 무시
    - 캐시 번호 안 올려도 수정이 바로 반영됨
 ══════════════════════════════════════════ */
-const CACHE_NAME = 'caro-v21';
+const CACHE_NAME = 'caro-v22';
 
 /* ★ 백업 서버 주소 (boot.html / index.html 의 BACKUP 과 동일하게) ★
    캐시도 없고 호스트도 죽었을 때, 첫 페이지를 백업으로 리다이렉트. */
@@ -33,13 +33,18 @@ const BYPASS_DOMAINS = [
   'firebasestorage.googleapis.com'
 ];
 
-/* 설치 — 기본 파일 캐시 후 즉시 활성화 */
+/* 설치 — 기본 파일 캐시 후 즉시 활성화
+   ※ 파일별 개별 캐시(add) — 아이콘 등 일부가 404여도 설치가 통째로 실패하지 않음
+     (기존 addAll은 하나라도 실패하면 skipWaiting까지 건너뛰는 문제가 있었음) */
 self.addEventListener('install', function(e){
   e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(c){ return c.addAll(CACHE_ASSETS); })
-      .then(function(){ return self.skipWaiting(); })
-      .catch(function(err){ console.warn('[SW] install error:', err); })
+    caches.open(CACHE_NAME).then(function(c){
+      return Promise.all(CACHE_ASSETS.map(function(u){
+        return c.add(u).catch(function(){ /* 개별 자산 실패 무시 */ });
+      }));
+    })
+    .then(function(){ return self.skipWaiting(); })
+    .catch(function(err){ console.warn('[SW] install error:', err); return self.skipWaiting(); })
   );
 });
 
