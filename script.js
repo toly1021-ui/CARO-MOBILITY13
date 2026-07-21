@@ -1806,6 +1806,13 @@ function handleLogout(){
   }catch(e){if(id)id.value='';if(pw)pw.value='';}
   clearSession();
   userInfo={id:'',email:'',license:'',name:''};
+  /* 🔒 보안: 로그아웃 시 이전 계정의 예약·이용내역·카드 정보 메모리/캐시 완전 제거 */
+  myReservations=[]; cancelledHistory=[]; savedCards=[];
+  try{
+    localStorage.removeItem('caro_apd_cards');
+    localStorage.removeItem('caro_pay_data');
+    localStorage.removeItem('caro_pay_uid');
+  }catch(e){}
   /* 컨트롤러 버튼 숨김 */
   var sw=document.getElementById('home-ctrl-switch');
   if(sw) sw.classList.remove('visible');
@@ -4807,6 +4814,8 @@ function saveUserData(){
 }
 
 function loadUserData(uid){
+  /* 🔒 보안: 계정 전환 시 이전 계정 데이터를 먼저 완전 초기화(빈 계정이어도 남지 않도록) */
+  myReservations=[]; cancelledHistory=[]; savedCards=[];
   var key='caro_data_'+uid;
   try{
     var raw=localStorage.getItem(key);
