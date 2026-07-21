@@ -1,31 +1,27 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 홈 리디자인 v25 (light_P1)
+   CARO MOBILITY — 고객 홈 리디자인 v26 (light_P1)
    ───────────────────────────────────────────────────────────
-   · 메뉴 6개(반납·연장 제거, 3열), 오브 동심원 정렬, 안내문구 제거
-   · 이벤트/멤버십 배너: 전체폭 + 터치 스와이프·탭 회전(+이벤트 자동회전)
-   · 종=알림 패널 / 햄버거=홈 메뉴 (탭 영역 확대)
-   · 기존 홈 DOM은 숨김(무손상), 모든 버튼 실기능 연결(방어적)
-   적용: index.html — customer-redesign.js?v=115+ (기존 v24 대체)
+   · 오브 = 예약 상태 위젯: 예약중이면 [차량 이미지 + 남은시간],
+     예약 없으면 [와드 + "예약한 차량이 없습니다"]
+   · 와드 인라인 렌더(깨짐 수정), 배너 좌우 전체폭, 회전 속도 ↑
+   · 스플래시(로딩) 화면도 동일 디자인 적용
+   적용: index.html — customer-redesign.js?v=117 (기존 v25 대체)
 ═══════════════════════════════════════════════════════════ */
 (function(){
   'use strict';
-  if(window.__caroHomeV24||window.__caroHomeV25) return; window.__caroHomeV25=true;
+  if(window.__caroHomeV24||window.__caroHomeV25||window.__caroHomeV26) return; window.__caroHomeV26=true;
 
-  function call(fn){ try{ if(typeof window[fn]==='function'){ return window[fn].apply(null,[].slice.call(arguments,1)); } }catch(e){ console.warn('[홈v25]',fn,e); } return undefined; }
+  function call(fn){ try{ if(typeof window[fn]==='function'){ return window[fn].apply(null,[].slice.call(arguments,1)); } }catch(e){ console.warn('[홈v26]',fn,e); } return undefined; }
   function has(fn){ return typeof window[fn]==='function'; }
   function go(id){ if(has('goTo')) call('goTo',id); }
   function toast(m){ if(has('showToast')) call('showToast',m); else try{ alert(m); }catch(e){} }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
+  /* 와드 마커 — 인라인(‹use›의 이중 viewBox 문제 회피) */
+  var WARD='<path d="M256 396C256 396 360 292 360 208A104 104 0 0 0 152 208C152 292 256 396 256 396Z" fill="currentColor"/><path d="M293 171A52 52 0 1 0 293 245" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round"/>';
+  function wardSvg(cls){ return '<svg class="'+cls+'" viewBox="132 92 248 350" xmlns="http://www.w3.org/2000/svg">'+WARD+'</svg>'; }
+
   /* ── 실데이터 ── */
-  function availCount(){ try{ return (window.CARS_DATA||[]).filter(function(c){ return c && c.status==='available'; }).length; }catch(e){ return 0; } }
-  function zoneCount(){ try{
-      var cs=window.CARS_DATA||[], z={};
-      cs.forEach(function(c){ if(c && c.status==='available'){ var k=c.zone||c.station||c.area||c.region||c.location; if(k) z[k]=1; } });
-      var n=Object.keys(z).length;
-      if(!n && window.CARO_ZONES && window.CARO_ZONES.length) n=window.CARO_ZONES.length;
-      return n||1;
-    }catch(e){ return 1; } }
   function getActive(){ try{
       var list=window.myReservations||[], now=new Date(), best=null;
       list.forEach(function(r){ if(r && !r.returned && r.start && r.end){
@@ -34,10 +30,19 @@
       }});
       return best;
     }catch(e){ return null; } }
-  function remainTxt(e){ var ms=e-new Date(); if(ms<=0) return '반납 시간 초과'; var m=Math.floor(ms/60000), h=Math.floor(m/60); m=m%60; return (h>0?h+'시간 ':'')+m+'분 남음'; }
+  function remainTxt(e){ var ms=e-new Date(); if(ms<=0) return '반납 시간 초과'; var m=Math.floor(ms/60000), h=Math.floor(m/60); m=m%60; return '남은 시간 '+(h>0?h+'시간 ':'')+m+'분'; }
   function hhmm(d){ var p=function(n){ return n<10?'0'+n:n; }; return p(d.getHours())+':'+p(d.getMinutes()); }
   function carName(r){ try{ return (r.car&&r.car.name)||r.carName||'예약 차량'; }catch(e){ return '예약 차량'; } }
   function carZone(r){ try{ return (r.car&&(r.car.zone||r.car.station))||r.zone||''; }catch(e){ return ''; } }
+  function carImgSrc(r){ try{
+      var src=(r.car&&(r.car.img||r.car.image||r.car.photo)); if(src) return src;
+      var nm=carName(r);
+      var c=(window.CARS_DATA||[]).filter(Boolean).filter(function(x){ return (x.name||x.carName)===nm; })[0];
+      if(c) return c.img||c.image||c.photo||null;
+    }catch(e){} return null; }
+  function carImgTag(r){ var s=carImgSrc(r);
+    return s ? '<img class="nh-carimg" src="'+esc(s)+'" alt="">'
+             : '<svg class="nh-carimg" viewBox="0 0 100 52"><use href="#nh-carside"/></svg>'; }
 
   var EVENTS=[
     {t:'첫 이용 30% 할인', s:'신규 가입 고객이라면 누구나'},
@@ -53,16 +58,16 @@
   var evIdx=0, plIdx=1, evTimerOn=false;
   function mod(i,n){ return ((i%n)+n)%n; }
 
-  /* ── CSS (전부 #home-screen 스코프) ── */
+  /* ── CSS (전부 #home-screen / #splash-screen 스코프) ── */
   function injectCss(){
     if(document.getElementById('nh-css')) return;
     var st=document.createElement('style'); st.id='nh-css';
     st.textContent=`
     #home-screen > *:not(.nh-root){ display:none !important; }
     #home-screen{ background:var(--silver-base); overflow-y:auto; -webkit-overflow-scrolling:touch; }
-    .nh-root{ max-width:480px; margin:0 auto; padding:0 20px calc(96px + var(--sab,0px)); font-family:var(--font,'Pretendard',sans-serif); color:var(--text-1); }
+    .nh-root{ width:100%; max-width:720px; margin:0 auto; padding:0 16px calc(96px + var(--sab,0px)); box-sizing:border-box; font-family:var(--font,'Pretendard',sans-serif); color:var(--text-1); }
 
-    .nh-hd{ display:flex; align-items:center; justify-content:space-between; padding:12px 0 2px; }
+    .nh-hd{ display:flex; align-items:center; justify-content:space-between; padding:12px 2px 2px; }
     .nh-logo b{ font-size:21px; font-weight:800; letter-spacing:-.3px; color:var(--text-1); }
     .nh-logo span{ font-size:10px; font-weight:700; color:var(--p1-accent,#67707c); letter-spacing:2.4px; margin-left:6px; }
     .nh-hd-ic{ display:flex; align-items:center; gap:4px; }
@@ -78,16 +83,12 @@
     .nh-orb{ width:232px; height:232px; transform:translate(-50%,-50%);
       background:linear-gradient(140deg,#fff 0%,#f3f5f8 40%,#ccd3db 100%); border:1.2px solid #c2c9d1;
       display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer;
-      box-shadow:0 16px 34px -16px rgba(48,56,68,.42); transition:transform .16s ease; }
+      box-shadow:0 16px 34px -16px rgba(48,56,68,.42); transition:transform .16s ease; text-align:center; padding:0 18px; }
     .nh-orb:active{ transform:translate(-50%,-50%) scale(.965); }
     .nh-orb .nh-pin{ width:42px; height:42px; margin-bottom:8px; color:var(--p1-slate,#5a6470); }
+    .nh-orb .nh-carimg{ width:128px; height:70px; object-fit:contain; margin-bottom:4px; display:block; }
     .nh-orb h1{ font-size:15.5px; font-weight:800; color:var(--text-1); }
-    .nh-orb p{ font-size:11.5px; font-weight:600; color:var(--p1-slate,#5a6470); margin-top:6px; }
-    .nh-orb p b{ color:var(--text-1); }
-    .nh-chip{ display:inline-block; padding:6px 14px; border-radius:999px; font-size:10.5px; font-weight:700; margin-top:10px; background:var(--accent); color:#fff; }
-    .nh-carimg{ width:112px; height:58px; margin-bottom:2px; }
-    .nh-timebox{ margin-top:8px; padding:6px 16px; border-radius:999px; background:#fff; border:1.2px solid var(--p1-line2,#d5dae1); font-size:12px; font-weight:800; color:var(--text-1); }
-    .nh-remain{ margin-top:8px; font-size:11px; font-weight:700; color:var(--text-m); }
+    .nh-orb p{ font-size:12px; font-weight:700; color:var(--p1-slate,#5a6470); margin-top:7px; }
 
     /* 진행중 예약 카드 */
     .nh-active{ position:relative; overflow:hidden; margin-top:16px; border-radius:20px; padding:20px;
@@ -111,22 +112,22 @@
     .nh-mi.prem .nh-box svg{ stroke:#fff; }
     .nh-mi span{ font-size:12px; font-weight:700; color:var(--text-1); }
 
-    /* 섹션/배너 — 전체폭(좌우 여백만) */
+    /* 섹션/배너 — 전체폭 */
     .nh-sec{ margin-top:22px; }
     .nh-sec-hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
     .nh-sec-hd h2{ font-size:15px; font-weight:800; color:var(--text-1); }
     .nh-sec-hd a{ font-size:11.5px; font-weight:700; color:var(--p1-accent,#67707c); cursor:pointer; }
 
-    .nh-ev{ position:relative; overflow:hidden; cursor:pointer; border-radius:20px; padding:22px 20px; min-height:118px;
+    .nh-ev{ position:relative; overflow:hidden; cursor:pointer; border-radius:20px; padding:22px 20px; min-height:120px;
       background:linear-gradient(135deg,#d2d8e0 0%,#c1c9d3 50%,#b0b9c4 100%); -webkit-user-select:none; user-select:none; }
     .nh-ev .nh-badge{ display:inline-block; padding:5px 13px; border-radius:11px; font-size:10px; font-weight:800; background:var(--p1-accent-d,#57616d); color:#fff; }
-    .nh-ev h3{ margin-top:16px; font-size:17px; font-weight:800; color:#1b2027; }
-    .nh-ev .nh-sub{ display:block; margin-top:6px; font-size:11.5px; font-weight:600; color:#535c66; }
+    .nh-ev h3{ margin-top:16px; font-size:17px; font-weight:800; color:#1b2027; padding-right:70px; }
+    .nh-ev .nh-sub{ display:block; margin-top:6px; font-size:11.5px; font-weight:600; color:#535c66; padding-right:78px; }
     .nh-dots{ position:absolute; right:20px; bottom:18px; display:flex; align-items:center; gap:6px; }
     .nh-dots i{ width:6px; height:6px; border-radius:50%; background:var(--p1-accent-d,#57616d); opacity:.35; transition:.2s; }
     .nh-dots i.on{ width:18px; border-radius:3px; opacity:.95; }
 
-    .nh-plan{ position:relative; display:flex; justify-content:space-between; overflow:hidden; cursor:pointer; -webkit-user-select:none; user-select:none;
+    .nh-plan{ position:relative; display:flex; justify-content:space-between; gap:14px; overflow:hidden; cursor:pointer; -webkit-user-select:none; user-select:none;
       background:linear-gradient(135deg,#fff 0%,#f8fafb 50%,#ecf0f4 100%); border:1.3px solid var(--p1-line2,#d5dae1); border-radius:20px; padding:22px 20px; box-shadow:0 2px 10px -6px rgba(40,48,58,.14); }
     .nh-pl-l{ position:relative; z-index:1; }
     .nh-tag{ display:inline-block; padding:6px 14px; border-radius:999px; font-size:10.5px; font-weight:700; background:var(--p1-accent,#67707c); color:#fff; }
@@ -134,25 +135,35 @@
     .nh-price{ margin-top:8px; font-size:14px; font-weight:800; color:var(--text-1); }
     .nh-pl-r{ position:relative; z-index:1; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-end; gap:12px; }
     .nh-bens{ display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
-    .nh-ben{ display:flex; align-items:center; gap:7px; font-size:10.5px; font-weight:600; color:var(--p1-slate,#5a6470); }
+    .nh-ben{ display:flex; align-items:center; gap:7px; font-size:10.5px; font-weight:600; color:var(--p1-slate,#5a6470); white-space:nowrap; }
     .nh-ben svg{ width:12px; height:12px; stroke:var(--p1-accent,#67707c); stroke-width:2.1; fill:none; stroke-linecap:round; stroke-linejoin:round; flex:0 0 auto; }
-    .nh-join{ padding:9px 18px; border-radius:999px; border:0; background:var(--accent); color:#fff; font-family:inherit; font-weight:800; font-size:11.5px; cursor:pointer; }
+    .nh-join{ padding:9px 18px; border-radius:999px; border:0; background:var(--accent); color:#fff; font-family:inherit; font-weight:800; font-size:11.5px; cursor:pointer; white-space:nowrap; }
     .nh-pl-dots{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:12px; }
     .nh-pl-dots i{ width:6px; height:6px; border-radius:50%; background:#c5cbd3; transition:.2s; }
     .nh-pl-dots i.on{ width:20px; border-radius:3px; background:var(--p1-accent,#67707c); }
 
     #nh-nav{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--p1-line,#e8eaee); padding-bottom:var(--sab,0px); z-index:900; }
-    #nh-nav .nh-nav-in{ max-width:480px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr); padding:10px 0 6px; }
+    #nh-nav .nh-nav-in{ width:100%; max-width:720px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr); padding:10px 0 6px; }
     #nh-nav .nh-nav-it{ display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--p1-line2,#c8ced6); cursor:pointer; background:none; border:0; font-family:inherit; }
     #nh-nav .nh-nav-it.on{ color:var(--text-1); }
     #nh-nav .nh-nav-it svg{ width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
     #nh-nav .nh-nav-it span{ font-size:10.5px; font-weight:600; }
     #nh-nav .nh-nav-it.on span{ font-weight:700; }
+
+    /* ── 스플래시(로딩) — P1 통일 ── */
+    #splash-screen{ background:var(--silver-base); }
+    #splash-screen .csp-brand{ color:var(--text-1); }
+    #splash-screen .csp-tag{ color:var(--text-m); }
+    #splash-screen .csp-line{ background:var(--p1-line2,#d5dae1); }
+    .nh-splash-orb{ width:158px; height:158px; border-radius:50%; margin-bottom:26px;
+      background:linear-gradient(140deg,#fff 0%,#f3f5f8 45%,#ccd3db 100%); border:1.2px solid #c2c9d1;
+      display:flex; align-items:center; justify-content:center; box-shadow:0 18px 38px -18px rgba(48,56,68,.42); }
+    .nh-splash-orb svg{ width:58px; height:58px; color:var(--p1-slate,#5a6470); }
     `;
     (document.head||document.documentElement).appendChild(st);
   }
 
-  /* ── SVG 스프라이트 (nh- 접두사) ── */
+  /* ── SVG 스프라이트(메뉴/탭/차량 등) ── */
   function injectSprite(){
     if(document.getElementById('nh-sprite')) return;
     var d=document.createElement('div'); d.id='nh-sprite'; d.style.display='none';
@@ -169,14 +180,12 @@
       <symbol id="nh-book" viewBox="0 0 24 24"><path d="M4 5.2A2.2 2.2 0 0 1 6.2 3H19v15.4H6.2A2.2 2.2 0 0 0 4 20.6V5.2Z"/><path d="M4 18.4A2.2 2.2 0 0 1 6.2 21H19"/></symbol>
       <symbol id="nh-head" viewBox="0 0 24 24"><path d="M4.6 15v-3a7.4 7.4 0 0 1 14.8 0v3"/><rect x="2.6" y="13.6" width="4.2" height="6.2" rx="2"/><rect x="17.2" y="13.6" width="4.2" height="6.2" rx="2"/></symbol>
       <symbol id="nh-check" viewBox="0 0 12 12"><path d="M1.5 6.4 4.6 9.5 10.5 2.8"/></symbol>
-      <symbol id="nh-ward" viewBox="132 92 248 350"><path d="M256 396C256 396 360 292 360 208A104 104 0 0 0 152 208C152 292 256 396 256 396Z" fill="currentColor"/><path d="M293 171A52 52 0 1 0 293 245" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round"/></symbol>
       <symbol id="nh-carside" viewBox="0 0 100 52"><path d="M4 36 L8 23 C9.5 19.5 13 17.5 17.5 17.5 L54 17.5 C60 17.5 64.5 19.5 68.5 23 L80 27.5 C88 29.5 93 31.5 93 36.5 L93 40 C93 42 92 43 90 43 L84 43 A9 9 0 0 0 66 43 L34 43 A9 9 0 0 0 16 43 L7 43 C5 43 4 42 4 40 Z" fill="#c8cfd7"/><path d="M15 22.5 C17.5 20.5 20 19.5 23.5 19.5 L44 19.5 L44 27.5 L13 27.5 Z" fill="#eef1f4"/><path d="M48 19.5 L54 19.5 C58.5 19.5 62 21 65 23.5 L71 27.5 L48 27.5 Z" fill="#eef1f4"/><circle cx="25" cy="43" r="9.5" fill="#3a424c"/><circle cx="25" cy="43" r="4.2" fill="#dfe3e8"/><circle cx="75" cy="43" r="9.5" fill="#3a424c"/><circle cx="75" cy="43" r="4.2" fill="#dfe3e8"/></symbol>
     </defs></svg>`;
     document.body.appendChild(d);
   }
   function ic(id){ return '<svg><use href="#'+id+'"/></svg>'; }
 
-  /* ── 메뉴 6개 (반납·연장 제거) ── */
   var MENU=[
     {l:'내 예약', i:'nh-car',  fn:function(){ go('my-reservation-screen'); }},
     {l:'더 블랙', i:'nh-dia', prem:true, fn:function(){ if(has('goBlackLabel')) call('goBlackLabel'); else go('black-label-screen'); }},
@@ -186,7 +195,6 @@
     {l:'내 정보', i:'nh-user', fn:function(){ go('mypage-screen'); }}
   ];
 
-  /* ── 스와이프/탭 회전 헬퍼 ── */
   function bindSwipe(el, next, prev){
     var x0=null,y0=null,last=0;
     el.addEventListener('touchstart',function(e){ var t=e.touches[0]; x0=t.clientX; y0=t.clientY; },{passive:true});
@@ -194,9 +202,9 @@
       if(x0==null) return; var t=(e.changedTouches&&e.changedTouches[0])||{};
       var dx=(t.clientX||x0)-x0, dy=(t.clientY||y0)-y0; x0=null; last=Date.now();
       if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)){ (dx<0?next:prev)(); }
-      else if(Math.abs(dx)<12 && Math.abs(dy)<12){ next(); }   /* 탭 */
+      else if(Math.abs(dx)<12 && Math.abs(dy)<12){ next(); }
     },{passive:true});
-    el.addEventListener('click',function(){ if(Date.now()-last<600) return; next(); });  /* 데스크탑 폴백 */
+    el.addEventListener('click',function(){ if(Date.now()-last<600) return; next(); });
   }
   function fillEv(root){
     var ev=EVENTS[mod(evIdx,EVENTS.length)];
@@ -214,24 +222,21 @@
     if(d) d.innerHTML=PLANS.map(function(_,i){ return '<i class="'+(i===mod(plIdx,PLANS.length)?'on':'')+'"></i>'; }).join('');
   }
 
-  /* ── 렌더 ── */
   function render(){
     var host=document.getElementById('home-screen'); if(!host) return;
-    injectCss(); injectSprite();
+    injectCss(); injectSprite(); styleSplash();
     var root=host.querySelector('.nh-root');
     if(!root){ root=document.createElement('div'); root.className='nh-root'; host.appendChild(root); }
 
     var act=getActive();
     var orbInner = act
-      ? '<span class="nh-chip" style="margin-bottom:8px">이용 중</span>'
-        +'<svg class="nh-carimg" viewBox="0 0 100 52"><use href="#nh-carside"/></svg>'
+      ? '<span class="nh-chip" style="display:inline-block;padding:5px 13px;border-radius:11px;font-size:10px;font-weight:800;background:var(--accent);color:#fff;margin-bottom:10px">이용 중</span>'
+        +carImgTag(act.r)
         +'<h1>'+esc(carName(act.r))+'</h1>'
-        +'<div class="nh-timebox">'+hhmm(act.s)+' — '+hhmm(act.e)+'</div>'
-        +'<div class="nh-remain">'+remainTxt(act.e)+'</div>'
-      : '<svg class="nh-pin" viewBox="132 92 248 350"><use href="#nh-ward"/></svg>'
+        +'<p>'+remainTxt(act.e)+'</p>'
+      : wardSvg('nh-pin')
         +'<h1>지금 바로 타기</h1>'
-        +'<p><b>'+availCount()+'</b>대 이용 가능</p>'
-        +'<span class="nh-chip">인천 '+zoneCount()+'개 거점</span>';
+        +'<p>예약한 차량이 없습니다</p>';
 
     var activeCard = act
       ? '<div class="nh-active"><span class="nh-badge">이용 중</span>'
@@ -267,11 +272,9 @@
       +'<div class="nh-orb" data-orb="1">'+orbInner+'</div></div>'
       +activeCard+menu+evBanner+plan;
 
-    /* 데이터 채우기 */
     fillEv(root); fillPl(root);
 
-    /* 바인딩 */
-    root.querySelector('[data-orb]').onclick=function(){ go('rental-screen'); };
+    root.querySelector('[data-orb]').onclick=function(){ go(getActive()?'my-reservation-screen':'rental-screen'); };
     root.querySelector('[data-bell]').onclick=function(){ if(has('caroOpenNotif')) call('caroOpenNotif'); else if(has('openHomeMenu')) call('openHomeMenu'); };
     root.querySelector('[data-menu]').onclick=function(){ if(has('openHomeMenu')) call('openHomeMenu'); };
     root.querySelectorAll('[data-mi]').forEach(function(el){ el.onclick=function(){ MENU[+el.getAttribute('data-mi')].fn(); }; });
@@ -282,24 +285,30 @@
       else { if(has('ctrlActionHome')) call('ctrlActionHome','return'); else go('my-reservation-screen'); }
     }; }); }
 
-    /* 이벤트 배너 — 스와이프/탭 회전 */
     var evEl=root.querySelector('.nh-ev');
     bindSwipe(evEl, function(){ evIdx++; fillEv(root); }, function(){ evIdx--; fillEv(root); });
-    /* 멤버십 — 스와이프/탭 회전 (가입/전체보기는 예외) */
     var planEl=root.querySelector('.nh-plan');
     bindSwipe(planEl, function(){ plIdx++; fillPl(root); }, function(){ plIdx--; fillPl(root); });
     var joinEl=root.querySelector('[data-join]'); if(joinEl) joinEl.onclick=function(e){ e.stopPropagation(); go('membership-screen'); };
     var allEl=root.querySelector('[data-plans]'); if(allEl) allEl.onclick=function(e){ e.stopPropagation(); go('membership-screen'); };
 
-    /* 이벤트 자동 회전 (한 번만 등록) */
     if(!evTimerOn){ evTimerOn=true; setInterval(function(){
       var h=document.getElementById('home-screen'); if(!h||!h.classList.contains('active')) return;
       var r=h.querySelector('.nh-root'); if(!r||!r.querySelector('.nh-ev')) return;
       evIdx++; fillEv(r);
-    }, 4500); }
+    }, 3200); }
   }
 
-  /* ── 하단 탭바 ── */
+  /* ── 스플래시 와드 오브 삽입 ── */
+  function styleSplash(){
+    var sc=document.querySelector('#splash-screen .splash-center');
+    if(sc && !sc.querySelector('.nh-splash-orb')){
+      var o=document.createElement('div'); o.className='nh-splash-orb';
+      o.innerHTML=wardSvg('');
+      sc.insertBefore(o, sc.firstChild);
+    }
+  }
+
   function tabbar(){
     if(document.getElementById('nh-nav')) return;
     var TABS=[
@@ -320,15 +329,15 @@
     if(home && window.MutationObserver){ new MutationObserver(sync).observe(home,{attributes:true,attributeFilter:['class']}); }
   }
 
-  /* ── 부팅 ── */
   function boot(){
+    injectCss(); styleSplash();
     render(); tabbar();
     if(has('goTo')){ var _g=window.goTo; window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='home-screen') setTimeout(render,30); return r; }; }
     var home=document.getElementById('home-screen');
     if(home && window.MutationObserver){ new MutationObserver(function(){ if(home.classList.contains('active')) render(); }).observe(home,{attributes:true,attributeFilter:['class']}); }
     [600,1600,3200].forEach(function(t){ setTimeout(render,t); });
     setInterval(function(){ var h=document.getElementById('home-screen'); if(h && h.classList.contains('active') && getActive()) render(); }, 60000);
-    console.log('[디자인] ✅ 홈 리디자인 v25 (light_P1)');
+    console.log('[디자인] ✅ 홈 리디자인 v26 (light_P1)');
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
