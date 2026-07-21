@@ -3796,7 +3796,7 @@
           }
         }
       }catch(e){ __lv = null; __sc = 1; }
-      if(__lv !== null && __lv >= 8) return;
+      if(__lv !== null && __lv >= 9) return;   /* 레벨9(≈4km)부터 숨김 — 2km(레벨8) 화면에서도 와드 표시 */
     Object.keys(window.CARO_ZONES).forEach(function(zone){
       var Z=window.CARO_ZONES[zone];
       if(!Z || Z.lat==null || Z.lng==null) return;
@@ -3949,14 +3949,14 @@
     '.car-bottom-strip{display:none !important;}'              /* 하단 차량목록 제거 */
    +'.caro-cat-btn{display:none !important;}'                  /* 기존 떠있던 차종버튼 숨김 */
    +'.caro-rental-controls{position:absolute;top:52px;left:0;right:0;z-index:24;padding:9px 12px 0;box-sizing:border-box;background:transparent;pointer-events:none;}'
-   +'.caro-timebar{pointer-events:auto;display:flex;align-items:center;background:rgba(255,255,255,.97);border:1px solid rgba(0,0,0,.06);border-radius:13px;padding:7px 4px;box-shadow:0 3px 12px rgba(0,0,0,.16);}'
-   +'.ctb-field{flex:1;background:none;border:none;text-align:center;font-family:inherit;cursor:pointer;padding:4px 6px;border-radius:9px;}'
-   +'.ctb-field:active{background:#f0f1f3;}'
-   +'.ctb-label{display:block;font-size:11px;color:#888d98;margin-bottom:3px;}'
-   +'.ctb-val{display:block;font-size:13.5px;font-weight:700;color:#18191c;white-space:nowrap;}'
-   +'.ctb-arrow{color:#b0b4bb;font-size:15px;padding:0 2px;flex:0 0 auto;}'
-   +'.crt-cat-row{display:flex;justify-content:flex-end;margin-top:10px;pointer-events:none;}'
-   +'.crt-cat-btn{pointer-events:auto;width:46px;height:46px;border-radius:50%;background:#6b7280;color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);}'
+   +'.caro-timebar{pointer-events:auto;display:flex;align-items:center;background:rgba(255,255,255,.98);border:1px solid var(--p1-line2,#d5dae1);border-radius:16px;padding:8px 4px;box-shadow:0 6px 18px -8px rgba(40,48,58,.28);}'
+   +'.ctb-field{flex:1;background:none;border:none;text-align:center;font-family:inherit;cursor:pointer;padding:5px 6px;border-radius:11px;}'
+   +'.ctb-field:active{background:#eef1f5;}'
+   +'.ctb-label{display:block;font-size:11px;font-weight:600;color:var(--text-2,#5a6470);margin-bottom:3px;}'
+   +'.ctb-val{display:block;font-size:13.5px;font-weight:800;color:var(--text-1,#18191c);white-space:nowrap;}'
+   +'.ctb-arrow{color:var(--p1-line2,#b0b4bb);font-size:15px;padding:0 2px;flex:0 0 auto;}'
+   +'.crt-cat-row{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:10px;pointer-events:none;}'
+   +'.crt-cat-btn{pointer-events:auto;width:46px;height:46px;border-radius:50%;background:var(--accent,#18191c);color:#fff;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 16px -6px rgba(24,25,28,.5);}'
    +'.crt-cat-btn:active{transform:scale(.94);}';
   (document.head||document.documentElement).appendChild(st);
 
@@ -4016,6 +4016,65 @@
   window.addEventListener('resize', function(){ syncMapTop(); });
   setTimeout(ensureRentalLayout, 1000);
   console.log('[예약화면] ✅ 상단 시간바+차종버튼 / 지도 전체 / 와드로 차량선택');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 내 위치 버튼 — 사용자 위치로 이동 + 500m(레벨6) 확대 + 위치 마커
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var myOv=null;
+  function toast(m){ try{ if(window.showToast) showToast(m); }catch(e){} }
+
+  var LOC_ICON='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#18191c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.4"/><path d="M12 2.5v3.2M12 18.3v3.2M2.5 12h3.2M18.3 12h3.2"/></svg>';
+
+  function showMyLoc(lat,lng){
+    var kakao=window.kakao, map=window.caroMap;
+    if(!kakao||!kakao.maps||!map||!map.__kakao){ toast('지도를 불러온 뒤 다시 시도해 주세요.'); return; }
+    var pos=new kakao.maps.LatLng(lat,lng);
+    if(myOv){ try{ myOv.setMap(null); }catch(e){} myOv=null; }
+    var el=document.createElement('div');
+    el.innerHTML='<div class="caro-myloc"><span class="caro-myloc-core"></span></div>';
+    myOv=new kakao.maps.CustomOverlay({position:pos,content:el,yAnchor:0.5,xAnchor:0.5,zIndex:9999});
+    myOv.setMap(map);
+    try{ map.setCenter(pos); }catch(e){}
+    try{ map.setLevel(6); }catch(e){}   /* ≈500m */
+  }
+  function locateMe(){
+    if(!navigator.geolocation){ toast('이 기기에서는 위치를 사용할 수 없어요.'); return; }
+    toast('현재 위치를 찾는 중…');
+    navigator.geolocation.getCurrentPosition(
+      function(p){ showMyLoc(p.coords.latitude, p.coords.longitude); },
+      function(){ toast('위치를 가져올 수 없어요. 위치 권한을 확인해 주세요.'); },
+      {enableHighAccuracy:true, timeout:9000, maximumAge:30000}
+    );
+  }
+  window.caroLocateMe=locateMe;
+
+  var st=document.createElement('style'); st.id='caro-loc-css';
+  st.textContent=
+    '.crt-loc-btn{pointer-events:auto;width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid var(--p1-line2,#d5dae1);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 16px -6px rgba(40,48,58,.34);}'
+   +'.crt-loc-btn:active{transform:scale(.94);}'
+   +'.caro-myloc{width:22px;height:22px;border-radius:50%;background:rgba(90,100,112,.22);display:flex;align-items:center;justify-content:center;}'
+   +'.caro-myloc-core{width:12px;height:12px;border-radius:50%;background:var(--accent,#18191c);border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(90,100,112,.5);}';
+  (document.head||document.documentElement).appendChild(st);
+
+  function ensureLocBtn(){
+    var row=document.querySelector('#rental-screen .crt-cat-row');
+    if(!row || row.querySelector('.crt-loc-btn')) return;
+    var b=document.createElement('button'); b.type='button'; b.className='crt-loc-btn'; b.setAttribute('aria-label','내 위치');
+    b.innerHTML=LOC_ICON;
+    b.onclick=function(e){ e.stopPropagation(); locateMe(); };
+    row.insertBefore(b, row.firstChild);   /* [내위치][차종] 순 배치 */
+  }
+  window.caroEnsureLocBtn=ensureLocBtn;
+
+  if(typeof window.goTo==='function' && !window.goTo.__caroLocWrap){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='rental-screen'){ setTimeout(ensureLocBtn,220); setTimeout(ensureLocBtn,700); } return r; };
+    window.goTo.__caroLocWrap=true;
+  }
+  setTimeout(ensureLocBtn, 1200);
+  console.log('[지도] ✅ 내 위치 버튼 (500m 확대)');
 })();
 
 /* ═══════════════════════════════════════════════════════════
