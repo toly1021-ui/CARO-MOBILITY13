@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 고객 홈 리디자인 v29 (light_P1)
+   CARO MOBILITY — 고객 홈 리디자인 v30 (light_P1)
    ───────────────────────────────────────────────────────────
    · 배너: 진짜 슬라이드 캐러셀(트랙 이동) — 사라졌다 나오지 않음
    · 메뉴: 월 렌트 추가 / 내 정보 제거, 더 블랙 = CARO THE BLACK 3줄
@@ -27,6 +27,17 @@
       }});
       return best;
     }catch(e){ return null; } }
+  function getBooking(){ try{
+      var list=window.myReservations||[], now=new Date(), cur=null, up=null;
+      list.forEach(function(r){ if(r && !r.returned && r.start && r.end){
+        var s=new Date(r.start), e=new Date(r.end);
+        if(now>=s && now<=e){ if(!cur||s<cur.s) cur={r:r,s:s,e:e,active:true}; }
+        else if(now<s){ if(!up||s<up.s) up={r:r,s:s,e:e,active:false}; }
+      }});
+      return cur||up;
+    }catch(e){ return null; } }
+  function fmtDHM(d){ d=new Date(d); var p=function(n){return n<10?'0'+n:n;}; var t=new Date(); var same=d.toDateString()===t.toDateString(); return (same?'오늘 ':(d.getMonth()+1)+'/'+d.getDate()+' ')+p(d.getHours())+':'+p(d.getMinutes()); }
+  function startTxt(x){ var ms=new Date(x)-new Date(); if(ms>0&&ms<3600000) return Math.ceil(ms/60000)+'분 후 시작'; return fmtDHM(x)+' 시작'; }
   function remainTxt(e){ var ms=e-new Date(); if(ms<=0) return '반납 시간 초과'; var m=Math.floor(ms/60000), h=Math.floor(m/60); m=m%60; return '남은 시간 '+(h>0?h+'시간 ':'')+m+'분'; }
   function hhmm(d){ var p=function(n){ return n<10?'0'+n:n; }; return p(d.getHours())+':'+p(d.getMinutes()); }
   function carName(r){ try{ return (r.car&&r.car.name)||r.carName||'예약 차량'; }catch(e){ return '예약 차량'; } }
@@ -45,11 +56,14 @@
              : '<svg class="nh-recent-thumb" viewBox="0 0 100 52"><use href="#nh-carside"/></svg>'; }
   function fmtD(d){ try{ d=new Date(d); var p=function(n){return n<10?'0'+n:n;}; return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate()); }catch(e){ return ''; } }
   function getRecent(){ try{
-      var now=new Date();
-      var past=(window.myReservations||[]).filter(function(r){ return r&&r.start&&r.end && (r.returned || new Date(r.end)<now); });
-      past.sort(function(a,b){ return new Date(b.end)-new Date(a.end); });
-      return past[0]||null;
+      var list=(window.myReservations||[]).filter(function(r){ return r&&r.start&&r.end; });
+      list.sort(function(a,b){ return new Date(b.start)-new Date(a.start); });
+      return list[0]||null;
     }catch(e){ return null; } }
+  function recentLabel(r){ var now=new Date(), s=new Date(r.start), e=new Date(r.end);
+    if(r.returned || e<now) return fmtD(e)+' 반납';
+    if(now>=s && now<=e) return '이용 중';
+    return fmtD(s)+' 이용 예정'; }
 
   var EVENTS=[
     {t:'첫 이용 30% 할인', s:'신규 가입 고객이라면 누구나'},
@@ -115,7 +129,7 @@
     .nh-mi .nh-box svg{ width:24px; height:24px; stroke:var(--p1-slate,#5a6470); fill:none; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
     .nh-mi.prem .nh-box svg{ stroke:#c8a96e; }
     .nh-mi span{ font-size:12px; font-weight:700; color:var(--text-1); text-align:center; line-height:1.2; }
-    .nh-tbmk{ display:block; font-size:6.8px; font-weight:800; letter-spacing:.3px; line-height:1.3; color:#c8a96e; text-align:center; }
+    .nh-tbmk{ display:block; font-size:9px; font-weight:800; letter-spacing:.5px; line-height:1.34; color:#dcc28f; text-align:center; }
 
     .nh-sec{ margin-top:22px; }
     .nh-sec-hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
@@ -123,7 +137,7 @@
     .nh-sec-hd a{ font-size:11.5px; font-weight:700; color:var(--p1-accent,#67707c); cursor:pointer; }
 
     /* 슬라이드 캐러셀 공통 */
-    .nh-track{ display:flex; transition:transform .36s cubic-bezier(.22,1,.36,1); }
+    .nh-track{ display:flex; transition:transform .55s cubic-bezier(.33,0,.2,1); }
     .nh-slide{ flex:0 0 100%; box-sizing:border-box; padding:22px 20px; }
     .nh-dots{ display:flex; align-items:center; gap:6px; }
     .nh-dots i{ width:6px; height:6px; border-radius:50%; opacity:.35; transition:.2s; }
@@ -246,7 +260,7 @@
     var idx=opts.start||0;
     function dots(){ if(!opts.dots) return; var r=((idx%n)+n)%n; opts.dots.innerHTML=slides.map(function(_,i){ return '<i class="'+(i===r?'on':'')+'"></i>'; }).join(''); }
     function setX(anim){ track.style.transition=anim?'':'none'; track.style.transform='translateX('+(-idx*100)+'%)'; if(!anim){ void track.offsetWidth; track.style.transition=''; } }
-    function jump(i){ idx=i; setX(true); dots(); if(idx>=n){ setTimeout(function(){ idx=0; setX(false); dots(); },380); } }
+    function jump(i){ idx=i; setX(true); dots(); if(idx>=n){ setTimeout(function(){ idx=0; setX(false); dots(); },580); } }
     function next(){ jump(idx+1); }
     function prev(){ if(idx<=0){ idx=n; setX(false); } jump(idx-1); }
     setX(false); dots();
@@ -260,9 +274,10 @@
     if(!root){ root=document.createElement('div'); root.className='nh-root'; host.appendChild(root); }
 
     var act=getActive();
-    var orbInner = act
-      ? '<span class="nh-chip" style="display:inline-block;padding:5px 13px;border-radius:11px;font-size:10px;font-weight:800;background:var(--accent);color:#fff;margin-bottom:10px">이용 중</span>'
-        +carImgTag(act.r)+'<h1>'+esc(carName(act.r))+'</h1><p>'+remainTxt(act.e)+'</p>'
+    var bk=getBooking();
+    var orbInner = bk
+      ? '<span class="nh-chip" style="display:inline-block;padding:5px 13px;border-radius:11px;font-size:10px;font-weight:800;background:var(--accent);color:#fff;margin-bottom:10px">'+(bk.active?'이용 중':'예약됨')+'</span>'
+        +carImgTag(bk.r)+'<h1>'+esc(carName(bk.r))+'</h1><p>'+(bk.active?remainTxt(bk.e):startTxt(bk.s))+'</p>'
       : wardSvg('nh-pin')+'<h1>지금 바로 타기</h1><p>예약한 차량이 없습니다</p>';
 
     var activeCard = act
@@ -277,7 +292,7 @@
     var rec=getRecent();
     var recent='<div class="nh-recent" data-recent="1"><div class="nh-recent-hd">최근 대여한 차량</div>'
       +(rec
-        ? '<div class="nh-recent-row">'+carThumb(rec)+'<div class="nh-recent-info"><div class="nh-recent-car">'+esc(carName(rec))+'</div><div class="nh-recent-date">'+fmtD(rec.end)+' 반납</div></div><svg class="nh-recent-arr" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+        ? '<div class="nh-recent-row">'+carThumb(rec)+'<div class="nh-recent-info"><div class="nh-recent-car">'+esc(carName(rec))+'</div><div class="nh-recent-date">'+recentLabel(rec)+'</div></div><svg class="nh-recent-arr" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
         : '<div class="nh-recent-empty">최근 대여한 차량이 없습니다</div>')
       +'</div>';
     var menu='<div class="nh-menu">'+MENU.map(function(m,i){
@@ -591,7 +606,7 @@
     var pct=fuelOf(car); if(!pct){ return; }
     var isEV=(car.fuel==='전기'||car.fuel==='EV'||car.fuel==='ev');
     var label=isEV?'배터리':'연료';
-    var color=pct>60?'#1d7a3a':pct>30?'#b07800':'#b23a3a';
+    var color=pct>60?'#2c7a52':pct>30?'#57616d':'#b0413f';
     var el=document.getElementById('caro-ctrl-fuel');
     if(!el){ el=document.createElement('div'); el.id='caro-ctrl-fuel'; el.className='caro-ctrl-fuel'; sec.parentNode.insertBefore(el, sec.nextSibling); }
     el.innerHTML='<div class="cf-top"><span>'+label+'</span><span class="cf-pct" style="color:'+color+'">'+pct+'%</span></div>'
