@@ -164,9 +164,9 @@
 
     /* CARO THE BLACK 배너 (프리미엄 — 독립 배치) */
     .nh-black{ display:flex; align-items:center; justify-content:space-between; gap:14px; cursor:pointer; border-radius:18px; padding:16px 18px; height:104px; box-sizing:border-box; background:linear-gradient(135deg,#23262e 0%,#141519 100%); border:1px solid rgba(200,169,110,.30); box-shadow:0 8px 20px -10px rgba(0,0,0,.5); -webkit-user-select:none; user-select:none; }
+    .nh-black-l{ flex:1 1 auto; min-width:0; }
     .nh-black-t{ font-family:var(--font-brand,'Oswald',sans-serif); font-size:16px; font-weight:700; letter-spacing:.12em; color:#f3d38a; }
     .nh-black-s{ font-size:11.5px; font-weight:600; color:#9a958c; margin-top:6px; }
-    .nh-black-arr{ color:#c8a96e; font-size:24px; font-weight:300; line-height:1; flex:0 0 auto; }
 
     .nh-sec{ margin-top:22px; }
     .nh-sec-hd{ display:flex; align-items:center; justify-content:space-between; margin:0 2px 8px; }
@@ -289,7 +289,7 @@
     document.body.appendChild(d);
   }
   function ic(id){ return '<svg><use href="#'+id+'"/></svg>'; }
-  function secHd(title,key){ return '<div class="nh-sec-hd"><h2>'+esc(title)+'</h2><a data-all="'+key+'">전체보기 ›</a></div>'; }
+  function secHd(title,key,noAll){ return '<div class="nh-sec-hd"><h2>'+esc(title)+'</h2>'+(noAll?'':'<a data-all="'+key+'">전체보기 ›</a>')+'</div>'; }
 
   /* ── 결제·면허 — 전체화면(보안 마스킹) ── */
   function maskLicense(l){
@@ -429,11 +429,11 @@
         ? '<div class="nh-recent-row">'+carThumb(rec)+'<div class="nh-recent-info"><div class="nh-recent-car">'+esc(carName(rec))+'</div><div class="nh-recent-date">'+recentLabel(rec)+'</div></div><svg class="nh-recent-arr" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
         : '<div class="nh-recent-empty">최근 대여한 차량이 없습니다</div>')
       +'</div>';
-    var black='<div class="nh-sec">'+secHd('CARO The Black','black')
+    var black='<div class="nh-sec">'+secHd('CARO The Black','black',true)
       +'<div class="nh-black" data-black="1"><div class="nh-black-l">'
       +'<div class="nh-black-t">◆ CARO THE BLACK</div>'
       +'<div class="nh-black-s">프리미엄 차량 · 전담 컨시어지</div></div>'
-      +'<span class="nh-black-arr">›</span></div></div>';
+      +'</div></div>';
     var menu='<div class="nh-menu">'+MENU.map(function(m,i){
       return '<div class="nh-mi'+(m.prem?' prem':'')+'" data-mi="'+i+'"><div class="nh-box">'+(m.boxHtml||ic(m.i))+'</div><span>'+(m.html||esc(m.l))+'</span></div>';
     }).join('')+'</div>';
