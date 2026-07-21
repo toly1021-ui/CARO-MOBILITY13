@@ -54,6 +54,30 @@
   function carThumb(r){ var s=carImgSrc(r);
     return s ? '<img class="nh-recent-thumb" src="'+esc(s)+'" alt="">'
              : '<svg class="nh-recent-thumb" viewBox="0 0 100 52"><use href="#nh-carside"/></svg>'; }
+  /* ── 주유량 게이지 (7시→5시, 300°) ── */
+  function carKey(r){ try{ return (r&&r.car&&(r.car.id||r.car.name))||carName(r)||'unknown'; }catch(e){ return 'unknown'; } }
+  function hashPct(s){ s=String(s||''); var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))&0xffffff; } return 35+(h%61); } /* 35~95 고정 */
+  function getFuel(r){ try{
+      var key=carKey(r);
+      if(has('getFuelLevel')){ var v=call('getFuelLevel',key); if(typeof v==='number'&&!isNaN(v)) return Math.max(0,Math.min(100,Math.round(v))); }
+      if(window.fuelLevels && window.fuelLevels[key]!=null) return Math.max(0,Math.min(100,Math.round(window.fuelLevels[key])));
+      return hashPct(key);
+    }catch(e){ return null; } }
+  function gpt(cx,cy,r,deg){ var a=(deg-90)*Math.PI/180; return [(cx+r*Math.cos(a)).toFixed(2),(cy+r*Math.sin(a)).toFixed(2)]; }
+  function arcPath(cx,cy,r,a0,a1){ var p0=gpt(cx,cy,r,a0),p1=gpt(cx,cy,r,a1); var large=(a1-a0)>180?1:0; return 'M'+p0[0]+' '+p0[1]+' A'+r+' '+r+' 0 '+large+' 1 '+p1[0]+' '+p1[1]; }
+  function fuelColor(p){ return p>50?'#2c7a52':p>20?'#c0872f':'#b0413f'; }
+  function fuelGauge(pct){
+    if(pct==null) return '';
+    pct=Math.max(0,Math.min(100,Math.round(pct)));
+    var col=fuelColor(pct);
+    var track=arcPath(50,50,45,240,480);                   /* 8시→4시 240° */
+    var fill=pct>0?arcPath(50,50,45,240,240+pct*2.4):'';    /* 100% = 240° */
+    return '<div class="nh-gauge"><svg viewBox="0 0 100 100">'
+      +'<path d="'+track+'" fill="none" stroke="#dfe3e8" stroke-width="4" stroke-linecap="round"/>'
+      +(fill?'<path d="'+fill+'" fill="none" stroke="'+col+'" stroke-width="4" stroke-linecap="round"/>':'')
+      +'</svg></div>'
+      +'<div class="nh-fuel-lbl"><svg class="nh-fuel-ic" viewBox="0 0 24 24" fill="none" stroke="'+col+'" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="9" height="16" rx="1.5"/><path d="M4 11h9"/><path d="M13 8h2.4a2 2 0 0 1 2 2v6a1.4 1.4 0 0 0 2.8 0V9.2L17.6 6.6"/></svg><span style="color:'+col+'">'+pct+'%</span></div>';
+  }
   function fmtD(d){ try{ d=new Date(d); var p=function(n){return n<10?'0'+n:n;}; return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate()); }catch(e){ return ''; } }
   function getRecent(){ try{
       var list=(window.myReservations||[]).filter(function(r){ return r&&r.start&&r.end; });
@@ -108,6 +132,10 @@
     .nh-orb .nh-carimg{ width:128px; height:70px; object-fit:contain; margin-bottom:4px; display:block; }
     .nh-orb h1{ font-size:15.5px; font-weight:800; color:var(--text-1); }
     .nh-orb p{ font-size:12px; font-weight:700; color:var(--p1-slate,#5a6470); margin-top:7px; }
+    .nh-gauge{ position:absolute; top:50%; left:50%; width:252px; height:252px; transform:translate(-50%,-50%); pointer-events:none; z-index:1; }
+    .nh-gauge svg{ width:100%; height:100%; display:block; }
+    .nh-fuel-lbl{ position:absolute; left:50%; bottom:16px; transform:translateX(-50%); display:flex; align-items:center; gap:4px; font-size:12.5px; font-weight:800; z-index:3; pointer-events:none; }
+    .nh-fuel-lbl .nh-fuel-ic{ width:15px; height:15px; }
 
     .nh-active{ position:relative; overflow:hidden; margin-top:16px; border-radius:20px; padding:20px;
       background:linear-gradient(135deg,#b4bcc7 0%,#9fa8b4 50%,#8d97a3 100%); color:#fff; }
@@ -132,37 +160,37 @@
     .nh-mi.prem .nh-box .nh-tbmk{ display:block; font-size:9.5px; font-weight:800; letter-spacing:.4px; line-height:1.36; color:#f3d38a !important; text-align:center; text-shadow:0 1px 2px rgba(0,0,0,.55); }
 
     /* CARO THE BLACK 배너 (프리미엄 — 독립 배치) */
-    .nh-black{ margin-top:16px; display:flex; align-items:center; justify-content:space-between; gap:14px; cursor:pointer; border-radius:20px; padding:20px; height:140px; box-sizing:border-box; background:linear-gradient(135deg,#23262e 0%,#141519 100%); border:1px solid rgba(200,169,110,.30); box-shadow:0 8px 20px -10px rgba(0,0,0,.5); -webkit-user-select:none; user-select:none; }
+    .nh-black{ display:flex; align-items:center; justify-content:space-between; gap:14px; cursor:pointer; border-radius:18px; padding:16px 18px; height:104px; box-sizing:border-box; background:linear-gradient(135deg,#23262e 0%,#141519 100%); border:1px solid rgba(200,169,110,.30); box-shadow:0 8px 20px -10px rgba(0,0,0,.5); -webkit-user-select:none; user-select:none; }
     .nh-black-t{ font-family:var(--font-brand,'Oswald',sans-serif); font-size:16px; font-weight:700; letter-spacing:.12em; color:#f3d38a; }
     .nh-black-s{ font-size:11.5px; font-weight:600; color:#9a958c; margin-top:6px; }
     .nh-black-arr{ color:#c8a96e; font-size:24px; font-weight:300; line-height:1; flex:0 0 auto; }
 
     .nh-sec{ margin-top:22px; }
-    .nh-sec-hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .nh-sec-hd{ display:flex; align-items:center; justify-content:space-between; margin:0 2px 8px; }
     .nh-sec-hd h2{ font-size:15px; font-weight:800; color:var(--text-1); }
     .nh-sec-hd a{ font-size:11.5px; font-weight:700; color:var(--p1-accent,#67707c); cursor:pointer; }
 
     /* 슬라이드 캐러셀 공통 */
     .nh-track{ display:flex; transition:transform .55s cubic-bezier(.33,0,.2,1); }
-    .nh-slide{ flex:0 0 100%; box-sizing:border-box; padding:20px; height:140px; display:flex; flex-direction:column; justify-content:center; }
+    .nh-slide{ flex:0 0 100%; box-sizing:border-box; padding:14px 18px; height:104px; display:flex; flex-direction:column; justify-content:center; }
     .nh-dots{ display:flex; align-items:center; gap:6px; }
     .nh-dots i{ width:6px; height:6px; border-radius:50%; opacity:.35; transition:.2s; }
     .nh-dots i.on{ width:18px; border-radius:3px; opacity:.95; }
 
-    .nh-ev{ position:relative; overflow:hidden; border-radius:20px; height:140px; box-sizing:border-box; cursor:pointer; -webkit-user-select:none; user-select:none;
+    .nh-ev{ position:relative; overflow:hidden; border-radius:18px; height:104px; box-sizing:border-box; cursor:pointer; -webkit-user-select:none; user-select:none;
       background:linear-gradient(135deg,#d2d8e0 0%,#c1c9d3 50%,#b0b9c4 100%); }
-    .nh-ev .nh-badge{ display:inline-block; padding:5px 13px; border-radius:11px; font-size:10px; font-weight:800; background:var(--p1-accent-d,#57616d); color:#fff; }
-    .nh-ev .nh-slide h3{ margin-top:16px; font-size:17px; font-weight:800; color:#1b2027; padding-right:70px; }
-    .nh-ev .nh-slide .nh-sub{ display:block; margin-top:6px; font-size:11.5px; font-weight:600; color:#535c66; padding-right:78px; }
-    .nh-ev .nh-dots{ position:absolute; right:20px; bottom:18px; z-index:2; }
+    .nh-ev .nh-badge{ display:inline-block; padding:4px 11px; border-radius:10px; font-size:9.5px; font-weight:800; background:var(--p1-accent-d,#57616d); color:#fff; }
+    .nh-ev .nh-slide h3{ margin-top:8px; font-size:16px; font-weight:800; color:#1b2027; padding-right:70px; }
+    .nh-ev .nh-slide .nh-sub{ display:block; margin-top:4px; font-size:11px; font-weight:600; color:#535c66; padding-right:78px; }
+    .nh-ev .nh-dots{ position:absolute; right:18px; bottom:12px; z-index:2; }
     .nh-ev .nh-dots i{ background:var(--p1-accent-d,#57616d); }
 
-    .nh-plan{ position:relative; overflow:hidden; border-radius:20px; height:140px; box-sizing:border-box; cursor:pointer; -webkit-user-select:none; user-select:none;
+    .nh-plan{ position:relative; overflow:hidden; border-radius:18px; height:104px; box-sizing:border-box; cursor:pointer; -webkit-user-select:none; user-select:none;
       background:linear-gradient(135deg,#fff 0%,#f8fafb 50%,#ecf0f4 100%); border:1.3px solid var(--p1-line2,#d5dae1); box-shadow:0 2px 10px -6px rgba(40,48,58,.14); }
-    .nh-plan .nh-tag{ display:inline-block; padding:6px 14px; border-radius:999px; font-size:10.5px; font-weight:700; background:var(--p1-accent,#67707c); color:#fff; }
-    .nh-plan .nh-slide h3{ margin-top:14px; font-size:20px; font-weight:800; color:var(--text-1); }
-    .nh-plan .nh-price{ margin-top:8px; font-size:15px; font-weight:800; color:var(--text-1); }
-    .nh-pl-dots{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:12px; }
+    .nh-plan .nh-tag{ display:inline-block; padding:5px 12px; border-radius:999px; font-size:10px; font-weight:700; background:var(--p1-accent,#67707c); color:#fff; }
+    .nh-plan .nh-slide h3{ margin-top:7px; font-size:18px; font-weight:800; color:var(--text-1); }
+    .nh-plan .nh-price{ margin-top:5px; font-size:14px; font-weight:800; color:var(--text-1); }
+    .nh-pl-dots{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:10px; }
     .nh-pl-dots i{ background:#c5cbd3; }
     .nh-pl-dots i.on{ background:var(--p1-accent,#67707c); }
 
@@ -258,6 +286,7 @@
     document.body.appendChild(d);
   }
   function ic(id){ return '<svg><use href="#'+id+'"/></svg>'; }
+  function secHd(title,key){ return '<div class="nh-sec-hd"><h2>'+esc(title)+'</h2><a data-all="'+key+'">전체보기 ›</a></div>'; }
 
   /* ── 결제·면허 — 전체화면(보안 마스킹) ── */
   function maskLicense(l){
@@ -328,10 +357,11 @@
     requestAnimationFrame(function(){ w.classList.add('open'); });
   }
 
-  /* 메뉴 6개: 내 예약, 더 블랙, 월 렌트 / 이벤트, 이용 안내, 고객센터 */
+  /* 메뉴 6개: 내 예약, 월 렌트, 이벤트 / 이용 안내, 결제·면허, 고객센터 */
   var MENU=[
     {l:'내 예약', i:'nh-car', fn:function(){ go('my-reservation-screen'); }},
     {l:'월 렌트', i:'nh-cal', fn:function(){ if(has('openMonthly')) call('openMonthly'); else toast('월 렌트 준비 중입니다.'); }},
+    {l:'이벤트', i:'nh-gift', fn:function(){ go('event-screen'); }},
     {l:'이용 안내', i:'nh-book', fn:function(){ if(has('goToCsDetail')) call('goToCsDetail',0); else go('cs-screen'); }},
     {l:'결제·면허', i:'nh-wallet', fn:function(){ openWallet(); }},
     {l:'고객센터', i:'nh-head', fn:function(){ go('cs-screen'); }}
@@ -395,16 +425,17 @@
         ? '<div class="nh-recent-row">'+carThumb(rec)+'<div class="nh-recent-info"><div class="nh-recent-car">'+esc(carName(rec))+'</div><div class="nh-recent-date">'+recentLabel(rec)+'</div></div><svg class="nh-recent-arr" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
         : '<div class="nh-recent-empty">최근 대여한 차량이 없습니다</div>')
       +'</div>';
-    var black='<div class="nh-black" data-black="1"><div class="nh-black-l">'
+    var black='<div class="nh-sec">'+secHd('CARO The Black','black')
+      +'<div class="nh-black" data-black="1"><div class="nh-black-l">'
       +'<div class="nh-black-t">◆ CARO THE BLACK</div>'
       +'<div class="nh-black-s">프리미엄 차량 · 전담 컨시어지</div></div>'
-      +'<span class="nh-black-arr">›</span></div>';
+      +'<span class="nh-black-arr">›</span></div></div>';
     var menu='<div class="nh-menu">'+MENU.map(function(m,i){
       return '<div class="nh-mi'+(m.prem?' prem':'')+'" data-mi="'+i+'"><div class="nh-box">'+(m.boxHtml||ic(m.i))+'</div><span>'+(m.html||esc(m.l))+'</span></div>';
     }).join('')+'</div>';
 
-    var evBanner='<div class="nh-sec"><div class="nh-ev"><div class="nh-dots"></div></div></div>';
-    var plan='<div class="nh-sec"><div class="nh-plan"></div><div class="nh-pl-dots"></div></div>';
+    var evBanner='<div class="nh-sec">'+secHd('이벤트','event')+'<div class="nh-ev"><div class="nh-dots"></div></div></div>';
+    var plan='<div class="nh-sec">'+secHd('멤버십 플랜','plan')+'<div class="nh-plan"></div><div class="nh-pl-dots"></div></div>';
 
     root.innerHTML=
       '<div class="nh-hd"><div class="nh-logo"><b>CARO</b><span>MOBILITY</span></div>'
@@ -412,12 +443,19 @@
       +'<button class="nh-icbtn" data-bell="1">'+ic('nh-bell')+'<i class="nh-dot"></i></button>'
       +'<button class="nh-icbtn" data-menu="1">'+ic('nh-menu')+'</button></div></div>'
       +'<div class="nh-hero"><div class="nh-halo"></div><div class="nh-ring"></div>'
+      +(bk?fuelGauge(getFuel(bk.r)):'')
       +'<div class="nh-orb" data-orb="1">'+orbInner+'</div></div>'
       +(act?activeCard:recent)+menu+black+evBanner+plan;
 
     root.querySelector('[data-orb]').onclick=function(){ go(getActive()?'my-reservation-screen':'rental-screen'); };
     var recEl=root.querySelector('[data-recent]'); if(recEl) recEl.onclick=function(){ go('usage-history-screen'); };
     var blkEl=root.querySelector('[data-black]'); if(blkEl) blkEl.onclick=function(){ if(has('goBlackLabel')) call('goBlackLabel'); else go('black-label-screen'); };
+    root.querySelectorAll('[data-all]').forEach(function(a){ a.onclick=function(e){ e.stopPropagation();
+      var k=a.getAttribute('data-all');
+      if(k==='black'){ if(has('goBlackLabel')) call('goBlackLabel'); else go('black-label-screen'); }
+      else if(k==='event'){ go('event-screen'); }
+      else if(k==='plan'){ go('membership-screen'); }
+    }; });
     root.querySelector('[data-bell]').onclick=function(){ if(has('caroOpenNotif')) call('caroOpenNotif'); else if(has('openHomeMenu')) call('openHomeMenu'); };
     root.querySelector('[data-menu]').onclick=function(){ if(has('openHomeMenu')) call('openHomeMenu'); };
     root.querySelectorAll('[data-mi]').forEach(function(el){ el.onclick=function(){ MENU[+el.getAttribute('data-mi')].fn(); }; });
@@ -498,48 +536,6 @@
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
   else boot();
 })();
-
-      b.onclick=function(){ go('home-screen'); };
-      ev.appendChild(b);
-    }
-  }
-
-  function tabbar(){
-    if(document.getElementById('nh-nav')) return;
-    var TABS=[
-      {l:'홈', i:'nh-home', id:'home-screen'},
-      {l:'거점', i:'nh-pinnav', id:'rental-screen'},
-      {l:'이용내역', i:'nh-listnav', id:'usage-history-screen'},
-      {l:'내정보', i:'nh-user', id:'mypage-screen'}
-    ];
-    var nav=document.createElement('nav'); nav.id='nh-nav';
-    nav.innerHTML='<div class="nh-nav-in">'+TABS.map(function(t){
-      return '<button class="nh-nav-it'+(t.id==='home-screen'?' on':'')+'" data-tab="'+t.id+'">'+ic(t.i)+'<span>'+t.l+'</span></button>';
-    }).join('')+'</div>';
-    document.body.appendChild(nav);
-    nav.querySelectorAll('[data-tab]').forEach(function(b){ b.onclick=function(){ go(b.getAttribute('data-tab')); }; });
-    function sync(){ var home=document.getElementById('home-screen'); nav.style.display=(home && home.classList.contains('active'))?'block':'none'; }
-    sync();
-    var home=document.getElementById('home-screen');
-    if(home && window.MutationObserver){ new MutationObserver(sync).observe(home,{attributes:true,attributeFilter:['class']}); }
-  }
-
-  function boot(){
-    injectCss(); styleSplash(); styleEvent();
-    render(); tabbar();
-    if(has('goTo')){ var _g=window.goTo; window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='home-screen') setTimeout(render,30); if(id==='event-screen') setTimeout(styleEvent,30); return r; }; }
-    var home=document.getElementById('home-screen');
-    if(home && window.MutationObserver){ new MutationObserver(function(){ if(home.classList.contains('active')) render(); }).observe(home,{attributes:true,attributeFilter:['class']}); }
-    [600,1600,3200].forEach(function(t){ setTimeout(render,t); });
-    setInterval(function(){ var h=document.getElementById('home-screen'); if(h && h.classList.contains('active') && getActive()) render(); }, 60000);
-    console.log('[디자인] ✅ 홈 리디자인 v28 (light_P1)');
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
-  else boot();
-})();
-
-
-
 
 /* ═══════════════════════════════════════════════════════════
    CARO MOBILITY — 컨트롤러 v14 + 이모지 v2 + 계정관리·뒤로가기 THE BLACK
