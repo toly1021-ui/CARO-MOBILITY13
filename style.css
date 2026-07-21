@@ -25,6 +25,8 @@
   --p1-accent:#67707c;--p1-accent-d:#57616d;
   --p1-line:#e8eaee;--p1-line2:#d5dae1;
   --p1-shadow:0 2px 10px -4px rgba(40,48,58,.12);
+  --p1-g-active:linear-gradient(135deg,#b4bcc7 0%,#9fa8b4 50%,#8d97a3 100%);
+  --p1-g-event:linear-gradient(135deg,#d2d8e0 0%,#c1c9d3 50%,#b0b9c4 100%);
 
   /* 안드로이드 상태바 높이 대응 */
   --android-status-bar: env(safe-area-inset-top, 24px);
@@ -4401,3 +4403,185 @@ textarea::-webkit-scrollbar {
 .bl-transition-diamonds {
   display: none !important;
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   [흡수] caro-theme.css (P1 오버레이) → style.css 끝에 통합
+   · 기존과 동일하게 '맨 뒤'에 위치해 캐스케이드 100% 보존
+   · :root 변수는 위 :root에 이미 반영되어 여기선 제외
+   · index.html의 caro-theme.css 링크는 제거함
+   ══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────
+   2) 바탕
+   ───────────────────────────────────────────── */
+body{ background:var(--silver-base); color:var(--text-1); }
+
+/* ─────────────────────────────────────────────
+   3) 버튼
+   ───────────────────────────────────────────── */
+.submit-btn,
+.res-submit-btn{
+  background:var(--accent);
+  color:#ffffff;
+  border-radius:var(--r);
+  box-shadow:0 6px 18px -8px rgba(24,25,28,.42);
+  letter-spacing:0;
+  font-weight:800;
+}
+.submit-btn:hover,
+.res-submit-btn:hover{ background:var(--accent-2); }
+.submit-btn:active,
+.res-submit-btn:active{ transform:scale(.985); }
+
+.main-btn{
+  background:var(--p1-card);
+  border:1px solid var(--p1-line2);
+  border-radius:var(--r);
+  box-shadow:var(--p1-shadow);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  color:var(--text-1);
+  font-weight:700;
+}
+.main-btn:hover{ border-color:var(--p1-accent); }
+.main-btn:active{ transform:scale(.985); }
+
+.back-bottom-btn{
+  border:1px solid var(--p1-line2);
+  border-radius:var(--r);
+  color:var(--text-2);
+  background:var(--p1-card);
+  font-weight:700;
+}
+.back-bottom-btn:hover{ border-color:var(--p1-accent); color:var(--text-1); }
+
+.res-inline-btn,
+.cs-contact-btn,
+.csd-send-btn,
+.apd-btn-primary{
+  border-radius:var(--r);
+  font-weight:700;
+}
+.apd-btn-primary{ background:var(--accent); color:#fff; }
+
+/* ─────────────────────────────────────────────
+   4) 입력창
+   ───────────────────────────────────────────── */
+.form-input,
+.csd-select,
+input[type="text"],
+input[type="tel"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea,
+select{
+  background:var(--p1-card);
+  border:1px solid var(--p1-line2);
+  border-radius:var(--r);
+  color:var(--text-1);
+}
+.form-input:focus,
+.csd-select:focus,
+input:focus,
+textarea:focus,
+select:focus{
+  border-color:var(--p1-accent);
+  box-shadow:0 0 0 3px rgba(103,112,124,.12);
+}
+::placeholder{ color:var(--text-m); }
+
+/* ─────────────────────────────────────────────
+   5) 카드 / 모달 / 시트
+   ───────────────────────────────────────────── */
+.modal-box{
+  background:var(--silver-base);
+  border-radius:24px 24px 0 0;
+}
+.modal-body{ background:transparent; }
+
+.csd-info-box,
+.csd-agree-box,
+.csd-table,
+.apd-credit-box,
+.check-wrap,
+.price-row,
+.done-info-row{
+  border-radius:var(--r);
+}
+
+/* 카드류 공통 — 흰 배경 + 옅은 선 */
+.csd-info-box,
+.csd-agree-box,
+.apd-credit-box{
+  background:var(--p1-card);
+  border:1px solid var(--p1-line);
+  box-shadow:var(--p1-shadow);
+}
+
+/* ─────────────────────────────────────────────
+   6) 일반 화면에 남아 있던 골드 → 슬레이트로
+      (.bl-* 더 블랙은 제외 — 아래 8번에서 보존)
+   ───────────────────────────────────────────── */
+.ctrl-timer:not(.bl-mode .ctrl-timer),
+.cs-call,
+.cs-chat,
+.apd-card-icon,
+.apd-credit-amount,
+#account-detail-screen .apd-sns-btn.connected{
+  color:var(--p1-accent-d) !important;
+}
+.apd-credit-box{ border-color:var(--p1-line2) !important; }
+
+/* ─────────────────────────────────────────────
+   7) 선택 / 활성 상태
+   ───────────────────────────────────────────── */
+.selected,
+.csd-radio-item.selected,
+.csd-check-item.selected,
+.insurance-item.selected{
+  border-color:var(--p1-accent) !important;
+  background:var(--p1-soft);
+}
+.check-wrap input:checked + .check-custom{
+  border-color:var(--accent);
+  background:var(--accent);
+}
+.step.active{ color:var(--accent); }
+
+/* ─────────────────────────────────────────────
+   8) 카로 더 블랙 — 골드 그대로 보존
+      (혹시 위 규칙이 침범하면 여기서 되돌립니다)
+   ───────────────────────────────────────────── */
+.bl-mode .ctrl-timer,
+.bl-title,
+.bl-car-price,
+.bl-rent-btn,
+.bl-transition-logo{ color:#c8a96e !important; }
+.bl-diamond{ background:#c8a96e !important; }
+.bl-mode .res-submit-btn,
+.bl-mode .submit-btn{
+  color:#c8a96e !important;
+  background:#18191c !important;
+}
+.bl-mode .insurance-item.selected{
+  border-color:#c8a96e !important;
+  background:transparent !important;
+}
+.bl-mode .check-wrap input:checked + .check-custom{
+  border-color:#c8a96e !important;
+  background:transparent !important;
+}
+
+/* ─────────────────────────────────────────────
+   9) 스크롤바 (있는 경우)
+   ───────────────────────────────────────────── */
+::-webkit-scrollbar{ width:6px;height:6px; }
+::-webkit-scrollbar-thumb{ background:var(--p1-line2);border-radius:3px; }
+::-webkit-scrollbar-track{ background:transparent; }
+
+/* ── P1 마무리: 일반화면 잔여 골드 → 슬레이트 (흰 크레딧카드 위) ── */
+.apd-card-default-badge{ background:rgba(103,112,124,.14); }
+.apd-credit-label{ color:var(--p1-accent-d); }
+.apd-credit-amount small{ color:var(--p1-accent-d); }
