@@ -68,13 +68,17 @@
   function fuelGauge(pct){
     if(pct==null) return '';
     pct=Math.max(0,Math.min(100,Math.round(pct)));
-    var track=arcPath(50,50,45,240,480);                   /* 8시→4시 240° */
-    var fill=pct>0?arcPath(50,50,45,240,240+pct*2.4):'';    /* 100% = 240° */
+    var track=arcPath(50,50,46,240,480);                   /* 8시→4시 240° */
+    var fill=pct>0?arcPath(50,50,46,240,240+pct*2.4):'';    /* 100% = 240° */
     return '<div class="nh-gauge"><svg viewBox="0 0 100 100">'
-      +'<path d="'+track+'" fill="none" stroke="#e0e3e8" stroke-width="4" stroke-linecap="round"/>'
-      +(fill?'<path class="nh-gfill" d="'+fill+'" fill="none" stroke-width="4" stroke-linecap="round"/>':'')
-      +'</svg></div>'
-      +'<div class="nh-fuel-lbl"><svg class="nh-fuel-ic" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="9" height="16" rx="1.5"/><path d="M4 11h9"/><path d="M13 8h2.4a2 2 0 0 1 2 2v6a1.4 1.4 0 0 0 2.8 0V9.2L17.6 6.6"/></svg><span>'+pct+'%</span></div>';
+      +'<path d="'+track+'" fill="none" stroke="#e0e3e8" stroke-width="2.8" stroke-linecap="round"/>'
+      +(fill?'<path class="nh-gfill" d="'+fill+'" fill="none" stroke-width="2.8" stroke-linecap="round"/>':'')
+      +'</svg></div>';
+  }
+  function fuelText(pct){
+    if(pct==null) return '';
+    pct=Math.max(0,Math.min(100,Math.round(pct)));
+    return '<div class="nh-orb-fuel"><svg class="nh-fuel-ic" viewBox="0 0 24 24" fill="none" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="9" height="16" rx="1.5"/><path d="M4 11h9"/><path d="M13 8h2.4a2 2 0 0 1 2 2v6a1.4 1.4 0 0 0 2.8 0V9.2L17.6 6.6"/></svg><span>연료 '+pct+'%</span></div>';
   }
   function fmtD(d){ try{ d=new Date(d); var p=function(n){return n<10?'0'+n:n;}; return d.getFullYear()+'.'+p(d.getMonth()+1)+'.'+p(d.getDate()); }catch(e){ return ''; } }
   function getRecent(){ try{
@@ -98,7 +102,7 @@
     {tag:'추천', name:'CARO 플러스', price:'월 14,900원'},
     {tag:'법인', name:'CARO 비즈',   price:'월 99,000원'}
   ];
-  var evTimerOn=false, curEv=null;
+  var evTimerOn=false, curEv=null, plTimerOn=false, curPl=null;
 
   /* ── CSS ── */
   function injectCss(){
@@ -130,11 +134,11 @@
     .nh-orb .nh-carimg{ width:128px; height:70px; object-fit:contain; margin-bottom:4px; display:block; }
     .nh-orb h1{ font-size:15.5px; font-weight:800; color:var(--text-1); }
     .nh-orb p{ font-size:12px; font-weight:700; color:var(--p1-slate,#5a6470); margin-top:7px; }
-    .nh-gauge{ position:absolute; top:50%; left:50%; width:252px; height:252px; transform:translate(-50%,-50%); pointer-events:none; z-index:1; }
+    .nh-gauge{ position:absolute; top:50%; left:50%; width:268px; height:268px; transform:translate(-50%,-50%); pointer-events:none; z-index:1; }
     .nh-gauge svg{ width:100%; height:100%; display:block; }
     .nh-gfill{ stroke:var(--accent,#18191c); }
-    .nh-fuel-lbl{ position:absolute; left:50%; bottom:16px; transform:translateX(-50%); display:flex; align-items:center; gap:4px; font-size:12.5px; font-weight:800; color:var(--accent,#18191c); z-index:3; pointer-events:none; }
-    .nh-fuel-lbl .nh-fuel-ic{ width:15px; height:15px; stroke:var(--accent,#18191c); }
+    .nh-orb-fuel{ display:flex; align-items:center; justify-content:center; gap:4px; margin-top:6px; font-size:12px; font-weight:800; color:var(--accent,#18191c); }
+    .nh-orb-fuel .nh-fuel-ic{ width:14px; height:14px; stroke:var(--accent,#18191c); }
 
     .nh-active{ position:relative; overflow:hidden; margin-top:16px; border-radius:20px; padding:20px;
       background:linear-gradient(135deg,#b4bcc7 0%,#9fa8b4 50%,#8d97a3 100%); color:#fff; }
@@ -178,7 +182,7 @@
 
     .nh-ev{ position:relative; overflow:hidden; border-radius:18px; height:104px; box-sizing:border-box; cursor:pointer; -webkit-user-select:none; user-select:none;
       background:linear-gradient(135deg,#d2d8e0 0%,#c1c9d3 50%,#b0b9c4 100%); }
-    .nh-ev .nh-badge{ display:inline-block; padding:4px 11px; border-radius:10px; font-size:9.5px; font-weight:800; background:var(--p1-accent-d,#57616d); color:#fff; }
+    .nh-ev .nh-badge{ display:inline-block; padding:2.5px 8px; border-radius:8px; font-size:8.5px; font-weight:800; letter-spacing:.06em; background:var(--p1-accent-d,#57616d); color:#fff; align-self:flex-start; }
     .nh-ev .nh-slide h3{ margin-top:8px; font-size:16px; font-weight:800; color:#1b2027; padding-right:70px; }
     .nh-ev .nh-slide .nh-sub{ display:block; margin-top:4px; font-size:11px; font-weight:600; color:#535c66; padding-right:78px; }
     .nh-ev .nh-dots{ position:absolute; right:18px; bottom:12px; z-index:2; }
@@ -404,9 +408,10 @@
 
     var act=getActive();
     var bk=getBooking();
+    var fuelPct = bk ? getFuel(bk.r) : null;
     var orbInner = bk
       ? '<span class="nh-chip" style="display:inline-block;padding:5px 13px;border-radius:11px;font-size:10px;font-weight:800;background:var(--accent);color:#fff;margin-bottom:10px">'+(bk.active?'이용 중':'예약됨')+'</span>'
-        +carImgTag(bk.r)+'<h1>'+esc(carName(bk.r))+'</h1><p>'+(bk.active?remainTxt(bk.e):startTxt(bk.s))+'</p>'
+        +carImgTag(bk.r)+'<h1>'+esc(carName(bk.r))+'</h1><p>'+(bk.active?remainTxt(bk.e):startTxt(bk.s))+'</p>'+fuelText(fuelPct)
       : wardSvg('nh-pin')+'<h1>지금 바로 타기</h1><p>예약한 차량이 없습니다</p>';
 
     var activeCard = act
@@ -442,7 +447,7 @@
       +'<button class="nh-icbtn" data-bell="1">'+ic('nh-bell')+'<i class="nh-dot"></i></button>'
       +'<button class="nh-icbtn" data-menu="1">'+ic('nh-menu')+'</button></div></div>'
       +'<div class="nh-hero"><div class="nh-halo"></div><div class="nh-ring"></div>'
-      +(bk?fuelGauge(getFuel(bk.r)):'')
+      +(bk&&fuelPct!=null?fuelGauge(fuelPct):'')
       +'<div class="nh-orb" data-orb="1">'+orbInner+'</div></div>'
       +(act?activeCard:recent)+menu+black+evBanner+plan;
 
@@ -467,7 +472,7 @@
 
     /* 이벤트 캐러셀 (자동 + 스와이프 + 탭→이벤트 화면) */
     var evView=root.querySelector('.nh-ev');
-    var evSlides=EVENTS.map(function(e){ return '<h3>'+esc(e.t)+'</h3><span class="nh-sub">'+esc(e.s)+'</span>'; });
+    var evSlides=EVENTS.map(function(e){ return '<span class="nh-badge">EVENT</span><h3>'+esc(e.t)+'</h3><span class="nh-sub">'+esc(e.s)+'</span>'; });
     var evc=carousel(evView, evSlides, { dots:evView.querySelector('.nh-dots') });
     curEv=evc;
     bindSwipe(evView, evc.next, evc.prev, function(){ go('event-screen'); });
@@ -477,6 +482,7 @@
     var plView=root.querySelector('.nh-plan');
     var plSlides=PLANS.map(function(p){ return '<h3>'+esc(p.name)+'</h3><div class="nh-price">'+esc(p.price)+'</div>'; });
     var plc=carousel(plView, plSlides, { dots:root.querySelector('.nh-pl-dots'), start:1 });
+    curPl=plc;
     bindSwipe(plView, plc.next, plc.prev, function(){ go('membership-screen'); });
     var allEl=root.querySelector('[data-plans]'); if(allEl) allEl.onclick=function(e){ e.stopPropagation(); go('membership-screen'); };
 
@@ -484,6 +490,10 @@
       var h=document.getElementById('home-screen'); if(!h||!h.classList.contains('active')) return;
       if(curEv) curEv.next();
     }, 3800); }
+    if(!plTimerOn){ plTimerOn=true; setInterval(function(){
+      var h=document.getElementById('home-screen'); if(!h||!h.classList.contains('active')) return;
+      if(curPl) curPl.next();
+    }, 4600); }
   }
 
   function styleSplash(){
