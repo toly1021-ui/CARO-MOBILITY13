@@ -12,15 +12,19 @@
   --sal: env(safe-area-inset-left, 0px);
   --sar: env(safe-area-inset-right, 0px);
 
-  --silver-base:#c8cdd4;--silver-light:#e2e6ea;--silver-dark:#9aa0a8;
-  --accent:#18191c;--accent-2:#2e3138;--accent-hov:#3a3f47;
-  --text-1:#18191c;--text-2:#44474f;--text-m:#888d98;
-  --border:rgba(140,148,160,.28);--border-l:rgba(200,208,218,.45);
-  --glass:rgba(220,226,234,.62);--glass2:rgba(240,244,250,.78);
-  --success:#1d7a3a;--error:#b23a3a;
+  --silver-base:#eff1f4;--silver-light:#f7f9fb;--silver-dark:#b0b6bd;
+  --accent:#18191c;--accent-2:#2c3037;--accent-hov:#3a414b;
+  --text-1:#18191c;--text-2:#5a6470;--text-m:#8b929d;
+  --border:rgba(134,146,162,.22);--border-l:rgba(206,214,224,.55);
+  --glass:rgba(255,255,255,.72);--glass2:rgba(255,255,255,.86);
+  --success:#2c7a52;--error:#b0413f;
   --font:'Pretendard',sans-serif;
   --font-brand:'Oswald',sans-serif;
-  --r:14px;--r2:18px;
+  --r:16px;--r2:20px;
+  --p1-card:#ffffff;--p1-soft:#f2f3f5;--p1-slate:#5a6470;
+  --p1-accent:#67707c;--p1-accent-d:#57616d;
+  --p1-line:#e8eaee;--p1-line2:#d5dae1;
+  --p1-shadow:0 2px 10px -4px rgba(40,48,58,.12);
 
   /* 안드로이드 상태바 높이 대응 */
   --android-status-bar: env(safe-area-inset-top, 24px);
@@ -167,14 +171,8 @@ button:active{opacity:.82;}
 
 /* ══ LANG PICKER (기타 화면용 — 메인에서 제거됨) ══ */
 .lang-picker{position:relative;z-index:10}
-.lang-cur{display:flex;align-items:center;gap:6px;background:var(--glass);border:1px solid var(--border-l);border-radius:var(--r);padding:7px 12px;cursor:pointer;font-family:var(--font);font-size:.82rem;font-weight:500;color:var(--text-1);transition:all .2s;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
-.lang-cur:hover{border-color:var(--silver-dark);background:rgba(235,240,248,.9)}
-.lang-arrow{font-size:.65rem;color:var(--text-m);transition:transform .22s;margin-left:2px}
 .lang-picker.open .lang-arrow{transform:rotate(180deg)}
-.lang-menu{position:absolute;top:calc(100% + 6px);right:0;background:rgba(228,233,242,.97);border:1px solid var(--border-l);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.15);display:none;min-width:130px;z-index:20}
 .lang-picker.open .lang-menu{display:block}
-.lang-opt{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;background:none;border:none;font-family:var(--font);font-size:.88rem;color:var(--text-1);cursor:pointer;transition:background .16s;text-align:left}
-.lang-opt:hover{background:rgba(200,208,218,.5)}
 
 /* ══ MAIN ══ */
 #main-screen{
@@ -221,11 +219,10 @@ button:active{opacity:.82;}
   display:flex;flex-direction:column;align-items:center;
   width:100%;
 }
-.main-tagline{font-size:.9rem;font-weight:400;letter-spacing:.04em;color:var(--text-2);margin-bottom:24px;text-align:center;}
 .btn-group{display:flex;flex-direction:column;gap:11px;width:100%}
-.main-btn{width:100%;padding:15px;border:1px solid var(--border);border-radius:var(--r);background:var(--glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:pointer;font-family:var(--font);font-size:.95rem;font-weight:600;color:var(--text-1);text-align:center;letter-spacing:.03em;transition:all .22s ease;box-shadow:inset 0 1px 0 rgba(255,255,255,.52),0 2px 10px rgba(0,0,0,.07)}
+.main-btn{width:100%;padding:15px;border:1px solid var(--border);border-radius:var(--r);background:var(--p1-card);box-shadow:var(--p1-shadow);cursor:pointer;font-family:var(--font);font-size:.95rem;font-weight:600;color:var(--text-1);text-align:center;letter-spacing:.03em;transition:all .22s ease;box-shadow:inset 0 1px 0 rgba(255,255,255,.52),0 2px 10px rgba(0,0,0,.07)}
 .main-btn:hover{background:rgba(238,242,247,.82);border-color:var(--silver-dark);transform:translateY(-2px)}
-.main-btn.primary{background:var(--accent);color:#e2e6ea;border-color:transparent;box-shadow:0 4px 14px rgba(0,0,0,.22)}
+.main-btn.primary{background:var(--accent);color:#ffffff;border-color:transparent;box-shadow:0 4px 14px rgba(0,0,0,.22)}
 .main-btn.primary:hover{background:var(--accent-hov)}
 .main-footer{position:absolute;bottom:20px;z-index:2;font-size:.64rem;letter-spacing:.08em;color:var(--text-m)}
 
@@ -253,20 +250,19 @@ button:active{opacity:.82;}
 .form-container{position:relative;z-index:2;width:100%;max-width:400px;margin:18px auto 32px;padding:22px 20px;background:var(--glass2);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--border-l);border-radius:var(--r2);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 6px 24px rgba(0,0,0,.09)}
 /* 로그인 폼 마진 — form-container 뒤에 선언해야 덮음 */
 .login-form.form-container{margin:6px auto 6px;max-width:400px;}
-.form-brand{font-family:var(--font-brand);font-size:2rem;font-weight:500;letter-spacing:.3em;color:var(--text-2);text-align:center;margin-bottom:20px}
 .input-group{margin-bottom:14px}
 .input-label{display:block;font-size:.8rem;font-weight:700;letter-spacing:.04em;color:var(--text-2);margin-bottom:5px;text-transform:uppercase}
 .required{color:var(--error)}
-.form-input{width:100%;padding:12px 13px;background:rgba(242,245,250,.88);border:1px solid var(--border);border-radius:var(--r);font-family:var(--font);font-size:.95rem;color:var(--text-1);outline:none;transition:border-color .2s,box-shadow .2s;box-shadow:inset 0 2px 4px rgba(0,0,0,.04)}
+.form-input{width:100%;padding:12px 13px;background:var(--p1-card);border:1px solid var(--p1-line2);border-radius:var(--r);font-family:var(--font);font-size:.95rem;color:var(--text-1);outline:none;transition:border-color .2s,box-shadow .2s;box-shadow:inset 0 2px 4px rgba(0,0,0,.04)}
 .form-input::placeholder{color:var(--text-m)}
 .form-input:focus{border-color:var(--accent-2);box-shadow:inset 0 2px 4px rgba(0,0,0,.04),0 0 0 3px rgba(46,49,56,.12)}
 .input-row{display:flex;gap:8px;align-items:center}
 .flex1{flex:1;min-width:0}
 .input-hint{display:block;font-size:.74rem;color:var(--text-m);margin-top:4px}
-.inline-btn{padding:12px 13px;background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r);font-family:var(--font);font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .2s}
+.inline-btn{padding:12px 13px;background:var(--accent);color:#ffffff;border:none;border-radius:var(--r);font-family:var(--font);font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .2s}
 .inline-btn:hover{background:var(--accent-hov)}
 .timer{font-size:.86rem;font-weight:700;color:var(--error);min-width:38px;text-align:center;flex-shrink:0}
-.submit-btn{width:100%;padding:15px;margin-top:6px;background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r);font-family:var(--font);font-size:.97rem;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:all .22s ease;box-shadow:0 4px 12px rgba(0,0,0,.18);text-align:center}
+.submit-btn{width:100%;padding:15px;margin-top:6px;background:var(--accent);color:#ffffff;border:none;border-radius:var(--r);font-family:var(--font);font-size:.97rem;font-weight:700;letter-spacing:.04em;cursor:pointer;transition:all .22s ease;box-shadow:0 4px 12px rgba(0,0,0,.18);text-align:center}
 .submit-btn:hover{background:var(--accent-hov);transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.2)}
 .submit-btn.small{width:auto;padding:10px 28px}
 .submit-btn.mt24{margin-top:20px}
@@ -346,7 +342,6 @@ button:active{opacity:.82;}
 .black-card{background:var(--accent)!important;border-color:var(--accent-2)!important}
 .hg-label-en{font-family:var(--font-brand);font-size:.82rem;font-weight:500;letter-spacing:.14em;color:#e2e6ea;text-transform:uppercase;text-align:center}
 
-
 /* 홈 컨트롤러 열기 버튼 (하단 사다리꼴) */
 .home-ctrl-switch{
   position:fixed;bottom:0;left:50%;transform:translateX(-50%);
@@ -374,7 +369,6 @@ button:active{opacity:.82;}
 .sg2{background:linear-gradient(135deg,#141414 0%,#2a2010 50%,#1a1000 100%)}
 .sg3{background:linear-gradient(135deg,#1a4a2a 0%,#235e34 50%,#0e2a1a 100%)}
 .sg4{background:linear-gradient(135deg,#4a2a1a 0%,#6b3d24 50%,#2a1000 100%)}
-.sg5{background:linear-gradient(135deg,#0a2a24 0%,#0e4030 50%,#051a14 100%)}
 /* 하위 호환용 */
 .s1{background:linear-gradient(135deg,#1a3a5c,#1e4f82)}
 .s2{background:linear-gradient(135deg,#141414,#2a2a2a)}
@@ -389,31 +383,9 @@ button:active{opacity:.82;}
 .ev-card-badge.ev-b{background:rgba(60,200,140,.45)}
 /* 홈 브랜드 로고 크게 */
 .home-brand{font-size:1.18rem!important;letter-spacing:.18em!important;}
-/* 마름모 핸들 — 홈 화면 하단 sticky */
-.ctrl-diamond-handle{
-  display:flex;justify-content:center;align-items:center;
-  padding:14px 0 6px;cursor:pointer;
-  position:sticky;bottom:0;
-  background:linear-gradient(to top,rgba(240,244,250,.98) 60%,transparent);
-  z-index:10;
-}
-.ctrl-diamond-shape{
-  width:22px;height:22px;
-  background:#4a4e57;
-  transform:rotate(45deg);
-  border-radius:14px;
-  transition:background .2s,transform .2s;
-  box-shadow:0 2px 6px rgba(0,0,0,.2);
-}
-.ctrl-diamond-handle:hover .ctrl-diamond-shape{background:#5a5e68;transform:rotate(45deg) scale(1.15)}
 /* 액션 토스트 */
 .ctrl-action-toast{text-align:center;font-size:.8rem;font-weight:600;color:var(--accent);min-height:20px;margin:2px 20px 4px;transition:opacity .3s;opacity:0;}
-.ctrl-action-toast.show{opacity:1}
-/* 컨트롤러 타이틀 */
-.ctrl-modal-title{text-align:center;font-family:var(--font-brand);font-size:1rem;font-weight:500;letter-spacing:.08em;color:var(--text-1);padding:2px 0 10px;}
-/* 컨트롤러 버튼 새 3열 그리드 */
-/* 컨트롤러 정사각형 그리드 (3열×2행) */
-.ctrl-sq-grid{display:none;} /* 미사용 — ctrl-row 방식으로 교체 */
+.ctrl-action-toast.show{opacity:1} /* 미사용 — ctrl-row 방식으로 교체 */
 .ctrl-row{display:flex;gap:5px;width:100%;}
 .ctrl-row-3{justify-content:space-between;}
 .ctrl-row-3 .ctrl-sq-btn{flex:1;}
@@ -447,32 +419,8 @@ button:active{opacity:.82;}
 .ctrl-sq-extend:hover{border-color:rgba(29,122,58,.5);background:rgba(29,122,58,.1);}
 .ctrl-sq-return{border-color:rgba(178,58,58,.25);background:rgba(178,58,58,.04);}
 .ctrl-sq-return:hover{border-color:rgba(178,58,58,.5);background:rgba(178,58,58,.1);}
-.ctrl-sq-empty{display:none;}
 .ctrl-sq-btn-active{border-color:rgba(29,122,58,.45)!important;background:rgba(29,122,58,.08)!important;}
-
-/* ── 컨트롤러 사진 촬영 레이아웃 ── */
-.ctrl-photo-layout{display:flex;flex-direction:column;align-items:center;gap:4px;padding:0 4px 2px;}
-.ctrl-photo-top,.ctrl-photo-bottom{width:100%;display:flex;justify-content:center;}
-.ctrl-photo-mid{width:100%;display:flex;align-items:center;gap:6px;}
-.ctrl-car-mini{width:56px;height:84px;flex-shrink:0;}
-.ctrl-photo-btn{
-  flex:1;min-width:0;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  background:rgba(240,244,250,.72);border:1px solid rgba(180,190,210,.35);
-  border-radius:14px;padding:8px 6px 7px;cursor:pointer;
-  font-family:var(--font);transition:background .18s,border-color .18s;position:relative;
-}
-.ctrl-photo-btn.ctrl-photo-side{height:80px;}
-.ctrl-photo-btn:active{background:rgba(200,220,250,.6);}
 .ctrl-photo-btn.ctrl-photo-done{border-color:rgba(29,122,58,.5);background:rgba(29,122,58,.08);}
-.ctrl-photo-icon{font-size:.9rem;color:var(--accent);}
-.ctrl-photo-label{font-size:.7rem;font-weight:700;color:var(--text-2);}
-.ctrl-photo-count{
-  position:absolute;top:4px;right:5px;
-  font-size:.6rem;font-weight:700;
-  color:rgba(29,122,58,.8);background:rgba(29,122,58,.1);
-  padding:1px 4px;border-radius:12px;
-}
 .ctrl-misc-btn{
   width:100%;margin:4px 0 2px;padding:9px 14px;
   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -482,31 +430,6 @@ button:active{opacity:.82;}
   transition:background .18s;
 }
 .ctrl-misc-btn:active{background:rgba(200,169,110,.16);}
-.ctrl-misc-count{font-size:.65rem;color:rgba(200,169,110,.7);font-weight:700;}
-
-/* 사진 촬영 토글 버튼 */
-.ctrl-photo-toggle-btn{
-  width:100%;margin:8px 0 0;
-  display:flex;align-items:center;justify-content:center;gap:8px;
-  background:rgba(240,244,250,.72);border:1px solid rgba(180,190,210,.35);
-  border-radius:var(--r);padding:10px 14px;
-  font-family:var(--font);font-size:.86rem;font-weight:700;color:var(--text-1);
-  cursor:pointer;transition:background .18s;position:relative;
-}
-.ctrl-photo-toggle-btn:active{background:rgba(200,220,250,.6);}
-.ctrl-photo-toggle-count{
-  font-size:.72rem;color:#1d7a3a;font-weight:700;
-  background:rgba(29,122,58,.1);padding:1px 7px;border-radius:14px;
-  min-width:24px;text-align:center;
-}
-.ctrl-photo-toggle-arrow{font-size:.7rem;color:var(--text-m);margin-left:auto;}
-
-/* 사진 패널 접이식 */
-.ctrl-photo-panel{
-  max-height:0;overflow:hidden;
-  transition:max-height .32s ease,opacity .25s ease;
-  opacity:0;
-}
 .ctrl-photo-panel.open{
   max-height:400px;opacity:1;
 }
@@ -542,7 +465,7 @@ button:active{opacity:.82;}
 /* ══ MODAL ══ */
 .modal-overlay{position:fixed;inset:0;z-index:800;background:rgba(0,0,0,0);pointer-events:none;display:flex;align-items:flex-end;justify-content:center;transition:background .3s}
 .modal-overlay.open{background:rgba(0,0,0,.42);pointer-events:all}
-.modal-box{width:100%;max-width:480px;background:#f0f3f7;border-radius:var(--r2) var(--r2) 0 0;overflow:hidden;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:80vh;display:flex;flex-direction:column}
+.modal-box{width:100%;max-width:480px;background:var(--silver-base);border-radius:24px 24px 0 0;overflow:hidden;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:80vh;display:flex;flex-direction:column}
 .modal-overlay.open .modal-box{transform:translateY(0)}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border)}
 .modal-title{font-family:var(--font-brand);font-size:1rem;font-weight:500;letter-spacing:.06em;color:var(--text-1)}
@@ -554,7 +477,6 @@ button:active{opacity:.82;}
 /* ══ TOAST ══ */
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(24,25,28,.92);color:#e8ecf0;padding:10px 20px;border-radius:30px;font-size:.84rem;font-weight:600;z-index:300;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
 
 /* ══ HOME MENU BUTTON (홈 화면 우측 상단 3줄 버튼) ══ */
 .home-menu-btn{
@@ -656,7 +578,6 @@ button:active{opacity:.82;}
 .ext-overlay{position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .28s}
 .ext-overlay.show{opacity:1;pointer-events:all}
 .extend-sheet.open{transform:translateX(-50%) translateY(0)}
-.extend-sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 10px;border-bottom:1px solid var(--border)}
 .extend-sheet-title{font-family:var(--font-brand);font-size:.96rem;font-weight:500;letter-spacing:.06em;color:var(--text-1);text-align:center;width:100%;padding:14px 20px 10px;border-bottom:1px solid var(--border);}
 .ext-info{font-size:.8rem;color:var(--text-m);padding:10px 20px 6px}
 .ext-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 16px 12px}
@@ -667,14 +588,11 @@ button:active{opacity:.82;}
 .ext-cost{display:block;font-size:.74rem;color:var(--text-m)}
 .ext-confirm-box{padding:0 16px 12px;display:none}
 .ext-confirm-box.show{display:block}
-.ext-confirm-rows{background:rgba(240,244,250,.7);border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:.82rem}
-.ext-confirm-row{display:flex;justify-content:space-between;padding:3px 0}
-.ext-confirm-total{font-weight:700;border-top:1px solid var(--border);margin-top:5px;padding-top:6px}
 
 /* ══ PHOTO MODAL ══ */
 .photo-modal-overlay{position:fixed;inset:0;z-index:1010;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .28s;display:flex;align-items:flex-end;justify-content:center}
 .photo-modal-overlay.open{opacity:1;pointer-events:all}
-.photo-modal-box{width:100%;max-width:480px;background:#f0f3f7;border-radius:var(--r2) var(--r2) 0 0;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+.photo-modal-box{width:100%;max-width:480px;background:var(--silver-base);border-radius:24px 24px 0 0;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
 .photo-modal-overlay.open .photo-modal-box{transform:translateY(0)}
 .photo-modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);min-height:52px}
 .photo-modal-title{font-family:var(--font-brand);font-size:.94rem;font-weight:500;letter-spacing:.06em;color:var(--text-1);flex:1;text-align:center}
@@ -693,9 +611,7 @@ button:active{opacity:.82;}
 .photo-list-misc{border-style:dashed;border-color:rgba(200,169,110,.3);background:rgba(200,169,110,.04)}
 .photo-list-misc .photo-list-name{color:rgba(160,120,40,.9)}
 .photo-list-misc .photo-list-count{background:rgba(200,169,110,.15);color:rgba(160,110,30,.9)}
-.photo-car-thumb{width:64px;height:42px;flex-shrink:0;border-radius:10px;overflow:hidden;background:rgba(220,225,232,.6);display:flex;align-items:center;justify-content:center}
-.photo-car-thumb svg{width:100%;height:100%}
-.photo-done-btn{width:calc(100% - 32px);margin:8px 16px 16px;padding:13px;background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r);font-family:var(--font);font-size:.9rem;font-weight:700;cursor:pointer;transition:background .2s;text-align:center}
+.photo-done-btn{width:calc(100% - 32px);margin:8px 16px 16px;padding:13px;background:var(--accent);color:#ffffff;border:none;border-radius:var(--r);font-family:var(--font);font-size:.9rem;font-weight:700;cursor:pointer;transition:background .2s;text-align:center}
 .photo-done-btn:hover{background:var(--accent-hov)}
 
 /* ══ SIDE CAPTURE ══ */
@@ -705,11 +621,6 @@ button:active{opacity:.82;}
 .side-capture-overlay.open .side-capture-box{transform:translateY(0)}
 .side-capture-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;border-bottom:1px solid var(--border)}
 .side-capture-title{font-family:var(--font-brand);font-size:.94rem;font-weight:500;letter-spacing:.06em;color:var(--text-1);flex:1;text-align:center}
-.side-capture-body{padding:0 16px 8px}
-.side-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;min-height:60px}
-.side-thumb-item{position:relative;width:70px;height:56px;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
-.side-thumb-item img{width:100%;height:100%;object-fit:cover}
-.side-empty-msg{font-size:.78rem;color:var(--text-m);align-self:center}
 
 /* 썸네일 행 — + 슬롯 대칭 */
 .side-thumb-row{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px 4px;min-height:72px;}
@@ -735,7 +646,7 @@ button:active{opacity:.82;}
 .side-cam-btn{
   display:flex;align-items:center;justify-content:center;gap:8px;
   width:100%;padding:13px;
-  background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r);
+  background:var(--accent);color:#ffffff;border:none;border-radius:var(--r);
   font-family:var(--font);font-size:.9rem;font-weight:700;cursor:pointer;
 }
 .side-cam-icon{font-size:1.1rem;line-height:1;}
@@ -854,49 +765,9 @@ button:active{opacity:.82;}
 .drum-selector{position:absolute;top:66px;left:6%;right:6%;height:44px;border-top:1.5px solid rgba(24,25,28,.13);border-bottom:1.5px solid rgba(24,25,28,.13);border-radius:8px;pointer-events:none;background:rgba(24,25,28,.025)}
 .drum-fade-top{position:absolute;top:0;left:0;right:0;height:66px;z-index:2;pointer-events:none;background:linear-gradient(to bottom,rgba(248,249,251,1) 0%,rgba(248,249,251,0) 100%)}
 .drum-fade-bot{position:absolute;bottom:0;left:0;right:0;height:66px;z-index:2;pointer-events:none;background:linear-gradient(to top,rgba(248,249,251,1) 0%,rgba(248,249,251,0) 100%)}
-
-/* ══ EVENT ══ */
-.event-header{position:relative;z-index:2;width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;padding:50px 22px 0}
-.event-body{position:relative;z-index:2;width:100%;max-width:480px;padding:14px 18px 60px}
-.event-item{background:var(--glass2);border:1px solid var(--border-l);border-radius:var(--r2);overflow:hidden;margin-bottom:12px;cursor:pointer;transition:all .22s;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 2px 8px rgba(0,0,0,.07)}
-.event-item:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.12)}
-.event-thumb{width:100%;height:120px;object-fit:cover;background:#dde2ea}
-.event-info{padding:12px 14px}
-.event-badge{display:inline-block;font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(35,38,43,.1);color:var(--accent);margin-bottom:6px;font-family:var(--font)}
-.event-title{font-size:.92rem;font-weight:700;color:var(--text-1);margin-bottom:4px}
-.event-date{font-size:.74rem;color:var(--text-m)}
 .event-detail-modal{display:flex;flex-direction:column;gap:12px}
-.event-detail-img{width:100%;border-radius:var(--r);max-height:200px;object-fit:cover;background:#dde2ea}
-.event-detail-title{font-size:1rem;font-weight:700;color:var(--text-1)}
-.event-detail-date{font-size:.8rem;color:var(--text-m)}
-.event-detail-body{font-size:.84rem;color:var(--text-2);line-height:1.8;white-space:pre-wrap}
-
-/* ══ FIND / SIGNUP ══ */
-.find-header{position:relative;z-index:2;width:100%;max-width:480px;display:flex;align-items:center;gap:14px;padding:54px 22px 0}
-.find-body{position:relative;z-index:2;width:100%;max-width:480px;padding:14px 18px 60px}
-.find-tabs{display:flex;gap:0;margin-bottom:18px;border-radius:var(--r2);overflow:hidden;border:1px solid var(--border)}
-.find-tab{flex:1;padding:11px;text-align:center;font-size:.86rem;font-weight:600;color:var(--text-m);cursor:pointer;background:none;border:none;transition:all .2s;font-family:var(--font)}
 .find-tab.active{background:var(--accent);color:#e2e6ea}
-.verify-row{display:flex;gap:8px;align-items:flex-end}
 .verify-row .input-group{flex:1}
-.send-code-btn{flex-shrink:0;padding:11px 14px;background:var(--accent-2);color:#e2e6ea;border:none;border-radius:var(--r);font-family:var(--font);font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;height:44px;transition:background .2s;text-align:center}
-.send-code-btn:hover{background:var(--accent)}
-.find-result{background:rgba(29,122,58,.08);border:1px solid rgba(29,122,58,.25);border-radius:var(--r);padding:12px 14px;margin-top:10px;font-size:.84rem;font-weight:600;color:#1d7a3a;display:none}
-
-/* ══ MYPAGE ══ */
-.mypage-header{position:relative;z-index:2;width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;padding:50px 22px 0}
-.mypage-body{position:relative;z-index:2;width:100%;max-width:480px;padding:36px 18px 60px}
-.mypage-profile{display:flex;align-items:center;gap:14px;padding:16px 14px;background:var(--glass2);border:1px solid var(--border-l);border-radius:var(--r2);margin-bottom:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
-.mypage-avatar{width:52px;height:52px;border-radius:50%;background:var(--accent-2);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#e2e6ea;flex-shrink:0}
-.mypage-name{font-size:1rem;font-weight:700;color:var(--text-1);margin-bottom:2px}
-.mypage-email{font-size:.76rem;color:var(--text-m)}
-.mypage-section{background:var(--glass2);border:1px solid var(--border-l);border-radius:var(--r2);overflow:hidden;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
-.mypage-section-title{font-size:.72rem;font-weight:700;color:var(--text-m);letter-spacing:.08em;padding:12px 16px 6px}
-.mypage-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .18s;font-size:.88rem;color:var(--text-1)}
-.mypage-item:last-child{border-bottom:none}
-.mypage-item:hover{background:rgba(35,38,43,.04)}
-.mypage-item-icon{font-size:1rem;margin-right:8px}
-.mypage-item-arrow{color:var(--text-m);font-size:.8rem}
 .mypage-item.danger{color:#b23a3a}
 .pw-strength{height:4px;border-radius:2px;margin-top:5px;transition:all .3s;background:var(--border)}
 .pw-strength.weak{background:#b23a3a;width:30%}
@@ -907,11 +778,6 @@ button:active{opacity:.82;}
 .notice-title{font-size:.88rem;font-weight:700;color:var(--text-1);margin-bottom:3px}
 .card-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(240,244,250,.8);border:1px solid var(--border-l);border-radius:var(--r2);margin-bottom:8px}
 .card-icon{font-size:1.4rem;flex-shrink:0}
-.card-info{flex:1}
-.card-last4{font-size:.9rem;font-weight:700;color:var(--text-1)}
-.card-type{font-size:.72rem;color:var(--text-m);margin-top:1px}
-.card-delete-btn{background:none;border:1px solid rgba(178,58,58,.3);color:#b23a3a;padding:5px 10px;border-radius:var(--r);font-size:.76rem;cursor:pointer;transition:all .2s;font-family:var(--font)}
-.card-delete-btn:hover{background:rgba(178,58,58,.08)}
 
 /* ══ CANCEL CONFIRM MODAL ══ */
 .cancel-confirm-modal .modal-body{padding:14px 18px}
@@ -1065,15 +931,8 @@ button:active{opacity:.82;}
 #pw-strength-fill{height:100%;width:0;border-radius:14px;transition:width .3s,background .3s}
 .done-container{display:flex;flex-direction:column;align-items:center;text-align:center;padding:36px 24px}
 .done-desc{font-size:.88rem;color:var(--text-m);line-height:1.6;margin-bottom:22px}
-
-/* ══ RENTAL ══ */
-.rental-header{position:relative;z-index:2;width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;padding:46px 22px 0}
-.rental-body{position:relative;z-index:2;width:100%;max-width:480px;padding:14px 20px 56px}
 .section-title{font-family:var(--font-brand);font-size:.92rem;font-weight:500;letter-spacing:.1em;color:var(--text-2);margin-bottom:9px;margin-top:2px}
-.map-section{margin-bottom:18px}
 #caro-map{width:100%;height:340px;border-radius:var(--r2);border:1px solid var(--border-l);overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.1)}
-.map-legend{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:.76rem;color:var(--text-2)}
-.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-right:2px}
 .legend-dot.available{background:#1d7a3a}
 .legend-dot.busy{background:#b23a3a;margin-left:12px}
 .car-list{display:flex;flex-direction:column;gap:10px}
@@ -1096,7 +955,7 @@ button:active{opacity:.82;}
 }
 .car-price{font-size:.83rem;color:var(--text-2)}
 .car-price strong{color:var(--text-1);font-weight:700}
-.car-rent-btn{padding:9px 14px;background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r);font-family:var(--font);font-size:.83rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .2s}
+.car-rent-btn{padding:9px 14px;background:var(--accent);color:#ffffff;border:none;border-radius:var(--r);font-family:var(--font);font-size:.83rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .2s}
 .car-rent-btn:hover{background:var(--accent-hov)}
 .car-rent-btn:disabled{background:var(--silver-dark);cursor:not-allowed}
 
@@ -1138,7 +997,7 @@ button:active{opacity:.82;}
 .duration-box{padding:10px 12px;background:rgba(35,38,43,.06);border:1px solid var(--border);border-radius:var(--r);font-size:.84rem;color:var(--text-2);display:none;margin-top:4px;line-height:1.7}
 .coupon-row{display:flex;gap:8px;align-items:center;margin-top:8px}
 .coupon-hint{font-size:.74rem;color:var(--success);margin-top:4px}
-.res-inline-btn{padding:10px 14px;background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r);font-family:var(--font);font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .2s}
+.res-inline-btn{padding:10px 14px;background:var(--accent);color:#ffffff;border:none;border-radius:var(--r);font-family:var(--font);font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .2s}
 .res-inline-btn:hover{background:var(--accent-hov)}
 .point-row-wrap{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
 .point-avail{font-size:.82rem;color:var(--text-2)}
@@ -1160,7 +1019,7 @@ button:active{opacity:.82;}
 .price-row{display:flex;justify-content:space-between;font-size:.84rem;padding:4px 0;border-bottom:1px solid var(--border)}
 .price-row:last-child{border-bottom:none;margin-top:4px}
 .price-row.total{font-size:1rem;font-weight:700;color:var(--text-1)}
-.res-submit-btn{width:100%;padding:16px;background:var(--accent);color:#e2e6ea;border:none;border-radius:var(--r);font-family:var(--font);font-size:1rem;font-weight:700;cursor:pointer;transition:all .22s;box-shadow:0 4px 14px rgba(0,0,0,.2);text-align:center}
+.res-submit-btn{width:100%;padding:16px;background:var(--accent);color:#ffffff;border:none;border-radius:var(--r);font-family:var(--font);font-size:1rem;font-weight:700;cursor:pointer;transition:all .22s;box-shadow:0 4px 14px rgba(0,0,0,.2);text-align:center}
 .res-submit-btn:hover{background:var(--accent-hov);transform:translateY(-1px)}
 
 /* ══ PAYMENT ══ */
@@ -1170,26 +1029,15 @@ button:active{opacity:.82;}
 .pay-car-name{font-size:.97rem;font-weight:700;color:var(--text-1);margin-bottom:5px}
 .pay-car-meta{display:flex;flex-direction:column;gap:3px;font-size:.74rem;color:var(--text-m)}
 .pay-total-row{text-align:right;font-size:1.05rem;font-weight:700;color:var(--accent);margin-bottom:16px;padding:10px 14px;background:rgba(35,38,43,.05);border-radius:var(--r)}
-.pay-methods{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
 .pay-item{display:flex;align-items:center;gap:12px;padding:13px 14px;border:1.5px solid var(--border);border-radius:var(--r2);cursor:pointer;transition:border-color .2s;font-size:.88rem;color:var(--text-1)}
 .pay-item:has(input:checked){border-color:var(--accent)}
 .pay-icon-text{font-size:1.2rem}
-.pay-logo-wrap{display:flex;align-items:center;justify-content:center;height:26px;padding:0 6px;border-radius:14px}
-.kakao-pay-logo{background:#FEE500}
-.kakao-pay-txt{font-size:.82rem;font-weight:700;color:#3c1e00;font-family:var(--font)}
-.naver-pay-logo{background:#03C75A}
-.naver-pay-txt{font-size:.82rem;font-weight:700;color:#fff;font-family:var(--font)}
 
 /* ══ DONE ══ */
 .done-check-row{display:flex;justify-content:center;margin-bottom:8px}
 .done-icon{width:52px;height:52px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#e2e6ea}
 .done-title{font-family:var(--font-brand);font-size:1.15rem;font-weight:500;letter-spacing:.06em;color:var(--text-1);text-align:center;margin-bottom:14px}
 .done-card{display:flex;flex-direction:column;gap:0;width:100%;}
-.done-info{width:100%;display:flex;flex-direction:column;gap:0;text-align:left;}
-.done-info-row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:.82rem;padding:7px 0;border-bottom:1px solid var(--border)}
-.di-label{flex-shrink:0;color:var(--text-m);font-weight:600;}
-.done-info-row span:last-child,.done-info-row strong{text-align:right;word-break:break-all;overflow-wrap:anywhere;flex-shrink:0;}
-.done-car-img{width:100%;height:130px;border-radius:var(--r2);object-fit:fill;display:block;margin-bottom:12px;}
 
 /* ══ BLACK LABEL 전환 오버레이 ══ */
 .bl-transition-overlay{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .7s ease}
@@ -1346,7 +1194,7 @@ button:active{opacity:.82;}
 
 /* 컨트롤러 추가 */
 .ctrl-car-name{font-family:var(--font-brand);font-size:.94rem;font-weight:500;letter-spacing:.04em;color:var(--text-1);}
-.ctrl-timer{font-family:var(--font-brand);font-size:1.4rem;font-weight:500;color:#c8a96e;letter-spacing:.06em;text-align:right;}
+.ctrl-timer{font-family:var(--font-brand);font-size:1.4rem;font-weight:500;color:var(--p1-accent-d);letter-spacing:.06em;text-align:right;}
 .ctrl-notice{text-align:center;padding:5px 16px 6px;font-size:.7rem;color:var(--text-m);font-family:var(--font);line-height:1.5;}
 .home-ctrl-overlay{align-items:flex-end;}
 .home-ctrl-box{border-radius:var(--r2) var(--r2) 0 0;background:#f0f3f7;padding:0;overflow:hidden;max-width:360px!important;width:100%;margin:0 auto;}
@@ -1354,7 +1202,7 @@ button:active{opacity:.82;}
 /* 반납확인·대체주차·시간연장 — 컨트롤러와 동일한 폭 */
 #return-park-modal .modal-box,
 #alt-park-modal .modal-box{max-width:360px!important;}
-.extend-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:360px;background:#f0f3f7;border-radius:var(--r2) var(--r2) 0 0;z-index:1000;transition:transform .32s cubic-bezier(.4,0,.2,1);padding-bottom:env(safe-area-inset-bottom,16px)}
+.extend-sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:360px;background:var(--silver-base);border-radius:24px 24px 0 0;z-index:1000;transition:transform .32s cubic-bezier(.4,0,.2,1);padding-bottom:env(safe-area-inset-bottom,16px)}
 .ctrl-sq-door{border-color:rgba(29,122,58,.2);background:rgba(29,122,58,.03);}
 
 /* 연장 시트 추가 */
@@ -1431,18 +1279,8 @@ button:active{opacity:.82;}
 .e2{background:linear-gradient(135deg,#141414 0%,#2c2418 100%);}
 .e3{background:linear-gradient(135deg,#1a4a2a 0%,#235e34 100%);}
 .e4{background:linear-gradient(135deg,#4a2a1a 0%,#6b3d24 100%);}
-
-/* 마이페이지 추가 */
-.mp-section-title{font-size:.72rem;font-weight:700;color:var(--text-m);letter-spacing:.08em;padding:12px 16px 6px;}
-.mp-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);font-size:.88rem;}
-.mp-label{color:var(--text-m);}
-.mp-value{color:var(--text-1);font-weight:600;}
-.mp-userid{font-size:.8rem;color:var(--text-m);margin-top:2px;}
 .mp-card{background:var(--glass2);border:1px solid var(--border-l);border-radius:var(--r2);overflow:hidden;margin-bottom:10px;}
-.mp-add-btn{width:100%;padding:11px;background:none;border:1px solid var(--border);border-radius:var(--r);font-family:var(--font);font-size:.86rem;color:var(--text-2);cursor:pointer;margin-top:4px;}
-.mp-edit-btn{font-size:.78rem;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--font);padding:2px 8px;}
 .mp-empty-card{text-align:center;padding:20px;font-size:.84rem;color:var(--text-m);}
-.avatar-circle{width:52px;height:52px;border-radius:50%;background:var(--accent-2);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#e2e6ea;flex-shrink:0;}
 
 /* 예약확인 추가 */
 .myres-body{position:relative;z-index:2;width:100%;max-width:480px;padding:18px 18px 60px;}
@@ -1453,7 +1291,7 @@ button:active{opacity:.82;}
 /* 탭 바 */
 .tab-bar{display:flex;gap:0;border-radius:var(--r2);overflow:hidden;border:1px solid var(--border);margin-bottom:16px;}
 .tab-btn{flex:1;padding:10px 6px;text-align:center;font-size:.84rem;font-weight:600;color:var(--text-m);cursor:pointer;background:none;border:none;font-family:var(--font);transition:all .2s;}
-.tab-btn.active{background:var(--accent);color:#e2e6ea;}
+.tab-btn.active{background:var(--accent);color:#ffffff;}
 .tab-panel{display:none;}
 .tab-panel.active{display:block;}
 
@@ -1461,11 +1299,6 @@ button:active{opacity:.82;}
 .term-check{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
 .all-check{font-weight:700;color:var(--text-1);}
 .result-box{background:rgba(29,122,58,.08);border:1px solid rgba(29,122,58,.25);border-radius:var(--r);padding:12px 14px;margin-top:10px;font-size:.84rem;font-weight:600;color:#1d7a3a;display:none;}
-
-/* 사진 촬영 방향 썸네일 */
-.photo-car-front{}
-.photo-car-rear{}
-.photo-car-side{}
 
 /* 슬라이드 레이아웃 */
 .slide-inner{display:flex;align-items:center;gap:12px;height:100%;}
@@ -1508,9 +1341,9 @@ video::-webkit-media-controls-panel{display:none !important;}
   box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
 .cs-accident{ background:var(--accent); color:#e2e6ea; }
-.cs-call{ background:linear-gradient(135deg,#c8a96e,#a07840); color:#18191c; }
+.cs-call{ background:linear-gradient(135deg,var(--p1-accent-d),#a07840); color:#18191c; }
 .cs-simple{ background:var(--glass2); color:var(--text-1); border:1px solid var(--border-l)!important; }
-.cs-chat{ background:var(--accent-2); color:#c8a96e; border:1px solid rgba(200,169,110,.35)!important; }
+.cs-chat{ background:var(--accent-2); color:var(--p1-accent-d); border:1px solid rgba(200,169,110,.35)!important; }
 /* ══ RENTAL FULLMAP ══ */
 .rental-fullmap-screen {
   position: relative;
@@ -1551,13 +1384,6 @@ video::-webkit-media-controls-panel{display:none !important;}
   position: absolute;
   top: 52px; left: 0; right: 0; bottom: 0;
   z-index: 0;
-}
-.map-legend-overlay {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: .75rem;
-  color: #888;
 }
 /* ══ CAR BOTTOM STRIP ══ */
 .car-bottom-strip {
@@ -1637,12 +1463,6 @@ video::-webkit-media-controls-panel{display:none !important;}
 .car-sheet-count {
   font-size: .78rem;
   color: #888;
-}
-.car-sheet-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 14px;
-  -webkit-overflow-scrolling: touch;
 }
 #rental-screen.active .car-bottom-sheet {
   display: flex;
@@ -2414,7 +2234,7 @@ video::-webkit-media-controls-panel{display:none !important;}
 .csd-select {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23c8a96e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%2367707c' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   padding-right: 36px !important;
@@ -2931,7 +2751,6 @@ video::-webkit-media-controls-panel{display:none !important;}
    4. 채팅 화면 글씨/배경 가독성 개선
 ═══════════════════════════════════════════════════════════════ */
 
-
 /* ════════════════════════════════════════════════
    [수정 1] 하단 4개 버튼 색상 통일
    사고 접수, 전화 상담, 간편 문의, 채팅 상담
@@ -2965,7 +2784,6 @@ video::-webkit-media-controls-panel{display:none !important;}
   opacity: .9;
 }
 
-
 /* ════════════════════════════════════════════════
    [수정 2] 카테고리별 별도 표시
    다른 카테고리는 숨김 (csd-acc-hidden 클래스)
@@ -2973,7 +2791,6 @@ video::-webkit-media-controls-panel{display:none !important;}
 #cs-detail-screen .csd-acc-item.csd-acc-hidden {
   display: none !important;
 }
-
 
 /* ════════════════════════════════════════════════
    [수정 3] 상세 화면 글씨/배경 가독성 개선
@@ -3127,7 +2944,6 @@ video::-webkit-media-controls-panel{display:none !important;}
 #cs-detail-screen .csd-page-title {
   color: #18191c !important;
 }
-
 
 /* ════════════════════════════════════════════════
    [수정 4] 채팅 화면 가독성 개선
@@ -3791,13 +3607,6 @@ video::-webkit-media-controls-panel{display:none !important;}
 .apd-warn strong {
   color: #b07d2a;
 }
-.apd-error {
-  background: rgba(178,58,58,.06);
-  border: 1px solid rgba(178,58,58,.2);
-}
-.apd-error strong {
-  color: #b23a3a;
-}
 
 /* ─── 법령 근거 ─── */
 .apd-legal {
@@ -3978,7 +3787,7 @@ video::-webkit-media-controls-panel{display:none !important;}
   justify-content: center;
   font-size: .68rem;
   font-weight: 700;
-  color: #c8a96e;
+  color: var(--p1-accent-d);
   letter-spacing: .04em;
   flex-shrink: 0;
 }
@@ -4009,7 +3818,7 @@ video::-webkit-media-controls-panel{display:none !important;}
 /* ─── 크레딧 박스 ─── */
 .apd-credit-box {
   background: linear-gradient(135deg, #2e3138, #18191c);
-  color: #c8a96e;
+  color: var(--p1-accent-d);
   border-radius: var(--r);
   padding: 22px 20px;
   text-align: center;
@@ -4029,7 +3838,7 @@ video::-webkit-media-controls-panel{display:none !important;}
   font-size: 1.8rem;
   font-weight: 600;
   letter-spacing: .04em;
-  color: #c8a96e;
+  color: var(--p1-accent-d);
 }
 .apd-credit-amount small {
   font-size: .9rem;
@@ -4359,7 +4168,7 @@ video::-webkit-media-controls-panel{display:none !important;}
 #account-detail-screen .apd-sns-btn.connected {
   background: #18191c !important;
   background-color: #18191c !important;
-  color: #c8a96e !important;
+  color: var(--p1-accent-d) !important;
   border: 1px solid #2e3138 !important;
 }
 
