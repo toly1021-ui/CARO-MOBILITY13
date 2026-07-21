@@ -193,8 +193,8 @@
     .nh-plan .nh-tag{ display:inline-block; padding:5px 12px; border-radius:999px; font-size:10px; font-weight:700; background:var(--p1-accent,#67707c); color:#fff; }
     .nh-plan .nh-slide h3{ margin-top:7px; font-size:18px; font-weight:800; color:var(--text-1); }
     .nh-plan .nh-price{ margin-top:5px; font-size:14px; font-weight:800; color:var(--text-1); }
-    .nh-pl-dots{ display:flex; align-items:center; justify-content:center; gap:6px; margin-top:10px; }
-    .nh-pl-dots i{ background:#c5cbd3; }
+    .nh-plan .nh-pl-dots{ position:absolute; right:18px; bottom:12px; z-index:2; }
+    .nh-pl-dots i{ background:var(--p1-slate,#5a6470); }
     .nh-pl-dots i.on{ background:var(--p1-accent,#67707c); }
 
     #nh-nav{ position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--p1-line,#e8eaee); padding-bottom:var(--sab,0px); z-index:900; }
@@ -439,7 +439,7 @@
     }).join('')+'</div>';
 
     var evBanner='<div class="nh-sec">'+secHd('이벤트','event')+'<div class="nh-ev"><div class="nh-dots"></div></div></div>';
-    var plan='<div class="nh-sec">'+secHd('멤버십 플랜','plan')+'<div class="nh-plan"></div><div class="nh-pl-dots"></div></div>';
+    var plan='<div class="nh-sec">'+secHd('멤버십 플랜','plan')+'<div class="nh-plan"><div class="nh-dots nh-pl-dots"></div></div></div>';
 
     root.innerHTML=
       '<div class="nh-hd"><div class="nh-logo"><b>CARO</b><span>MOBILITY</span></div>'
@@ -481,7 +481,7 @@
     /* 멤버십 캐러셀 (스와이프 + 탭→멤버십 화면) — 우측 설명/가입버튼 없음 */
     var plView=root.querySelector('.nh-plan');
     var plSlides=PLANS.map(function(p){ return '<h3>'+esc(p.name)+'</h3><div class="nh-price">'+esc(p.price)+'</div>'; });
-    var plc=carousel(plView, plSlides, { dots:root.querySelector('.nh-pl-dots'), start:1 });
+    var plc=carousel(plView, plSlides, { dots:plView.querySelector('.nh-pl-dots'), start:1 });
     curPl=plc;
     bindSwipe(plView, plc.next, plc.prev, function(){ go('membership-screen'); });
     var allEl=root.querySelector('[data-plans]'); if(allEl) allEl.onclick=function(e){ e.stopPropagation(); go('membership-screen'); };
