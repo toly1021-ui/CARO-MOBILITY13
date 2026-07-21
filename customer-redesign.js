@@ -27,7 +27,7 @@
     +'background:var(--glass2);border:1px solid var(--border-l);border-radius:24px;padding:26px 24px 24px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);'
     +'box-shadow:0 1px 2px rgba(24,25,28,.04);}'
     +'.caro-hero-glow{position:absolute;right:-40px;top:-52px;width:172px;height:172px;border-radius:50%;'
-    +'background:radial-gradient(circle,rgba(198,164,104,.16),transparent 70%);pointer-events:none;}'
+    +'background:radial-gradient(circle,rgba(103,112,124,.14),transparent 70%);pointer-events:none;}'
     +'.caro-hero-car-img{position:absolute;right:-6px;bottom:0;width:60%;max-width:250px;height:auto;opacity:.42;pointer-events:none;z-index:0;}'
     +'#home-screen .caro-hero-ey{font-size:.85rem;color:var(--text-m);margin-bottom:14px;position:relative;z-index:1;font-weight:500;}'
     +'.caro-hero-h{font-size:1.9rem;font-weight:800;line-height:1.18;letter-spacing:-.02em;color:var(--text-1);position:relative;z-index:1;}'
@@ -4802,7 +4802,7 @@
   css.textContent=[
     '#membership-screen .mbs-hd{display:none;}',   /* 옛 헤더 숨김(히어로로 대체) */
     '.mb-hero{margin:6px 16px 0;border-radius:24px;padding:24px 20px 22px;color:var(--text-1);position:relative;overflow:hidden;background:var(--glass2);border:1px solid var(--border-l);box-shadow:0 1px 2px rgba(24,25,28,.04);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}',
-    '.mb-hero::after{content:"";position:absolute;right:-40px;top:-52px;width:172px;height:172px;border-radius:50%;background:radial-gradient(circle,rgba(198,164,104,.16),transparent 70%);pointer-events:none;}',
+    '.mb-hero::after{content:"";position:absolute;right:-40px;top:-52px;width:172px;height:172px;border-radius:50%;background:radial-gradient(circle,rgba(103,112,124,.14),transparent 70%);pointer-events:none;}',
     '.mb-kick{font-size:.82rem;letter-spacing:.02em;color:var(--text-m);font-weight:600;position:relative;margin-bottom:8px;}',
     '.mb-hero h2{font-size:1.7rem;font-weight:800;margin:0 0 4px;line-height:1.18;letter-spacing:-.02em;position:relative;color:var(--text-1);}',
     '.mb-hero p{font-size:.85rem;color:var(--text-m);position:relative;}',
