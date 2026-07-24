@@ -6519,8 +6519,35 @@
   }
   window.caroReloadPricing=reloadRemote;
 
-  function boot(){ hookAll(); applyAll(new Date()); reloadRemote(); try{ if(window.renderCars) renderCars(); }catch(e){} }
-  var tries=0, iv=setInterval(function(){ tries++; hookAll(); if(window.CARS_DATA){ boot(); clearInterval(iv); } if(tries>30) clearInterval(iv); }, 200);
+    /* 실시간 구독 — 관제에서 요금 저장 시 새로고침 없이 즉시 반영 */
+    var _priceSubbed=false;
+    function subscribeRemote(){
+      if(_priceSubbed) return;
+      try{
+        var db=window.FB_DB, fn=window.FB_FN;
+        if(db && fn && typeof fn.onSnapshot==='function' && fn.doc){
+          _priceSubbed=true;
+          fn.onSnapshot(fn.doc(db,'settings','pricing'), function(snap){
+            try{
+              var ex = snap && (typeof snap.exists==='function'?snap.exists():snap.exists);
+              if(!ex) return;
+              var d=(typeof snap.data==='function'?snap.data():snap.data)||{};
+              window.__caroPricing={season:(d.season==='peak'?'peak':'off'), models:d.models||{}};
+              try{ localStorage.setItem(LS, JSON.stringify(window.__caroPricing)); }catch(e){}
+              applyAll(resStartDate());
+              try{ if(window.renderCars) renderCars(); }catch(e){}
+              try{ if(window.updateMapMarkers) updateMapMarkers(); }catch(e){}
+              try{ if(window.updatePriceSummary) updatePriceSummary(); }catch(e){}
+            }catch(e){}
+          }, function(){});
+        }
+      }catch(e){}
+    }
+    window.caroSubscribePricing=subscribeRemote;
+
+    function boot(){ hookAll(); applyAll(new Date()); reloadRemote(); subscribeRemote(); try{ if(window.renderCars) renderCars(); }catch(e){} }
+    var tries=0, iv=setInterval(function(){ tries++; hookAll(); subscribeRemote(); if(window.CARS_DATA){ boot(); clearInterval(iv); } if(tries>30) clearInterval(iv); }, 200);
+    var subTries=0, subIv=setInterval(function(){ subscribeRemote(); if(_priceSubbed || subTries++>40) clearInterval(subIv); }, 500);
 
   if(typeof window.goTo==='function' && !window.goTo.__caroPriceGoto){
     var _g=window.goTo;
