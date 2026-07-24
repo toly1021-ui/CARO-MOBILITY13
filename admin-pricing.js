@@ -1,5 +1,5 @@
-/* CARO MOBILITY 관제 — 요금 관리(성수기/주말) + 이모지 제거 v4
-   admin.html </body> 위: <script src="admin-pricing.js?v=4"></script> */
+/* CARO MOBILITY 관제 — 요금 관리(성수기/주말) + 이모지 제거 v5
+   admin.html </body> 위: <script src="admin-pricing.js?v=5"></script> */
 (function(){
   'use strict';
   var LS='caro_pricing_cfg';
@@ -103,15 +103,22 @@
 
   function loggedIn(){ try{ return !!(window.FB_AUTH && window.FB_AUTH.currentUser); }catch(e){ return false; } }
   function findHeaderHost(){ var els=document.querySelectorAll('h1,h2,h3,h4,h5,div,span,p,strong,b,label'); for(var i=0;i<els.length;i++){ var e=els[i]; if(e.childElementCount===0){ var tx=(e.textContent||'').trim(); if(tx==='차량별 요금 관리') return e; } } return null; }
-  function wideAncestor(el){ var n=el; for(var i=0;i<7 && n && n.parentElement;i++){ n=n.parentElement; if(n.offsetWidth && n.offsetWidth>=480) return n; } return el.parentElement||el; }
+  function wideAncestor(el){ var n=el, best=el; for(var i=0;i<8 && n && n.parentElement;i++){ n=n.parentElement; if(n.offsetWidth && n.offsetWidth>=480){ best=n; break; } } return best; }
+  function positionHeaderBtn(){
+    var b=document.getElementById('cpx-hdbtn'), t=findHeaderHost(); if(!b||!t) return;
+    var r=t.getBoundingClientRect(), host=wideAncestor(t), cr=host.getBoundingClientRect();
+    var top=r.top+window.pageYOffset+r.height/2-b.offsetHeight/2;
+    var left=cr.right+window.pageXOffset-b.offsetWidth-18;
+    b.style.top=Math.max(0,Math.round(top))+'px'; b.style.left=Math.max(0,Math.round(left))+'px';
+  }
   function ensureHeaderBtn(){
-    if(document.getElementById('cpx-hdbtn')) return true;
+    if(document.getElementById('cpx-hdbtn')){ positionHeaderBtn(); return true; }
     var t=findHeaderHost(); if(!t) return false;
-    var host=wideAncestor(t);
-    try{ if(getComputedStyle(host).position==='static') host.style.position='relative'; }catch(e){}
     var b=document.createElement('button'); b.id='cpx-hdbtn'; b.type='button'; b.textContent='성수기 / 주말 요금 설정';
-    b.style.cssText='position:absolute;right:18px;top:14px;z-index:6;white-space:nowrap;background:linear-gradient(135deg,#c8a96e,#a5854e);color:#17181b;border:none;border-radius:20px;padding:9px 17px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3);';
-    b.onclick=open; host.appendChild(b); return true;
+    b.style.cssText='position:absolute;z-index:50;white-space:nowrap;background:linear-gradient(135deg,#c8a96e,#a5854e);color:#17181b;border:none;border-radius:20px;padding:9px 17px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.3);';
+    b.onclick=open; document.body.appendChild(b); positionHeaderBtn();
+    if(!ensureHeaderBtn.__rz){ ensureHeaderBtn.__rz=true; window.addEventListener('resize', positionHeaderBtn); window.addEventListener('scroll', positionHeaderBtn, true); }
+    return true;
   }
   function ensureFab(){ if(document.getElementById('cpx-fab')) return; var b=document.createElement('button'); b.id='cpx-fab'; b.type='button'; b.textContent='요금 관리'; b.onclick=open; document.body.appendChild(b); }
   var everHd=false, tick=0;
