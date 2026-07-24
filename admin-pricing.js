@@ -1,5 +1,5 @@
-/* CARO MOBILITY 관제 — 요금 관리(성수기/주말) + 이모지 제거 v5
-   admin.html </body> 위: <script src="admin-pricing.js?v=5"></script> */
+/* CARO MOBILITY 관제 — 요금 관리(성수기/주말) + 이모지 제거 v6
+   admin.html </body> 위: <script src="admin-pricing.js?v=6"></script> */
 (function(){
   'use strict';
   var LS='caro_pricing_cfg';
@@ -31,9 +31,7 @@
 
   var st=document.createElement('style'); st.id='caro-pricing-css';
   st.textContent=
-    '#cpx-fab{position:fixed;right:16px;bottom:16px;z-index:9998;background:linear-gradient(135deg,#c8a96e,#a5854e);color:#1a1a1a;border:none;border-radius:26px;padding:12px 18px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4);}'
-   +'#cpx-fab:active{transform:scale(.96);}'
-   +'#cpx-ov{position:fixed;inset:0;z-index:9999;background:rgba(8,10,13,.55);display:none;}'
+    '#cpx-ov{position:fixed;inset:0;z-index:9999;background:rgba(8,10,13,.55);display:none;}'
    +'#cpx-ov.open{display:block;}'
    +'#cpx-panel{position:absolute;right:0;top:0;bottom:0;width:min(560px,100%);background:#16181d;box-shadow:-8px 0 30px rgba(0,0,0,.5);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.22,1,.36,1);}'
    +'#cpx-ov.open #cpx-panel{transform:translateX(0);}'
@@ -102,7 +100,7 @@
   window.caroOpenPricingAdmin=open;
 
   function loggedIn(){ try{ return !!(window.FB_AUTH && window.FB_AUTH.currentUser); }catch(e){ return false; } }
-  function findHeaderHost(){ var els=document.querySelectorAll('h1,h2,h3,h4,h5,div,span,p,strong,b,label'); for(var i=0;i<els.length;i++){ var e=els[i]; if(e.childElementCount===0){ var tx=(e.textContent||'').trim(); if(tx==='차량별 요금 관리') return e; } } return null; }
+  function findHeaderHost(){ var els=document.querySelectorAll('h1,h2,h3,h4,h5,div,span,p,strong,b,label'); for(var i=0;i<els.length;i++){ var e=els[i]; if(e.childElementCount===0){ var tx=(e.textContent||'').trim(); if(tx==='차량별 요금 관리'){ if(e.offsetParent!==null && e.getClientRects().length) return e; } } } return null; }
   function wideAncestor(el){ var n=el, best=el; for(var i=0;i<8 && n && n.parentElement;i++){ n=n.parentElement; if(n.offsetWidth && n.offsetWidth>=480){ best=n; break; } } return best; }
   function positionHeaderBtn(){
     var b=document.getElementById('cpx-hdbtn'), t=findHeaderHost(); if(!b||!t) return;
@@ -120,13 +118,11 @@
     if(!ensureHeaderBtn.__rz){ ensureHeaderBtn.__rz=true; window.addEventListener('resize', positionHeaderBtn); window.addEventListener('scroll', positionHeaderBtn, true); }
     return true;
   }
-  function ensureFab(){ if(document.getElementById('cpx-fab')) return; var b=document.createElement('button'); b.id='cpx-fab'; b.type='button'; b.textContent='요금 관리'; b.onclick=open; document.body.appendChild(b); }
-  var everHd=false, tick=0;
   function place(){
-    var fab=document.getElementById('cpx-fab'), hd=document.getElementById('cpx-hdbtn');
-    if(!loggedIn()){ if(fab)fab.style.display='none'; if(hd)hd.remove(); if(ov)ov.classList.remove('open'); return; }
-    if(ensureHeaderBtn()){ everHd=true; if(fab)fab.style.display='none'; return; }
-    tick++; if(!everHd && tick>=8){ ensureFab(); var f=document.getElementById('cpx-fab'); if(f) f.style.display=''; }
+    var hd=document.getElementById('cpx-hdbtn');
+    if(!loggedIn()){ if(hd) hd.remove(); if(ov) ov.classList.remove('open'); return; }
+    if(findHeaderHost()){ ensureHeaderBtn(); }
+    else if(hd){ hd.remove(); }
   }
   function watchAuth(){ try{ var A=window.FB_AUTH, fn=window.FB_FN; if(A&&fn&&typeof fn.onAuthStateChanged==='function'&&!watchAuth.__h){ watchAuth.__h=true; fn.onAuthStateChanged(A, place); } }catch(e){} }
 
