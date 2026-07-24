@@ -1,5 +1,5 @@
-/* CARO MOBILITY 관제 — 요금 관리(성수기/주말) + 이모지 제거 v6
-   admin.html </body> 위: <script src="admin-pricing.js?v=6"></script> */
+/* CARO MOBILITY 관제 — 요금 관리(성수기/주말) + 표 연동 + 이모지 제거 v7
+   admin.html </body> 위: <script src="admin-pricing.js?v=7"></script> */
 (function(){
   'use strict';
   var LS='caro_pricing_cfg';
@@ -76,7 +76,7 @@
   }
   function syncSeasonBtns(){ var p=ov.querySelector('[data-season="peak"]'), o=ov.querySelector('[data-season="off"]'); if(p) p.classList.toggle('on',cfg.season==='peak'); if(o) o.classList.toggle('on',cfg.season!=='peak'); }
   function collect(){ var models={}; ov.querySelectorAll('.cpx-fld input').forEach(function(inp){ var nm=inp.getAttribute('data-nm'), k=inp.getAttribute('data-k'), v=parseInt(inp.value,10); if(!isNaN(v)&&v>0){ if(!models[nm]) models[nm]={}; models[nm][k]=v; } }); cfg.models=models; }
-  function doSave(){ collect(); saveLS(); var pr=saveRemote(); if(pr&&pr.then){ pr.then(function(){ toast('요금 설정을 저장했습니다.'); }).catch(function(){ toast('로컬 저장 완료 (서버 저장 실패 — 네트워크/권한 확인)'); }); } else { toast('요금 설정을 저장했습니다.'); } try{ if(window.caroReloadPricing) window.caroReloadPricing(); if(window.caroApplyPricing) window.caroApplyPricing(new Date()); }catch(e){} }
+  function doSave(){ collect(); saveLS(); var pr=saveRemote(); if(pr&&pr.then){ pr.then(function(){ toast('요금 설정을 저장했습니다.'); }).catch(function(){ toast('로컬 저장 완료 (서버 저장 실패 — 네트워크/권한 확인)'); }); } else { toast('요금 설정을 저장했습니다.'); } try{ if(window.caroReloadPricing) window.caroReloadPricing(); if(window.caroApplyPricing) window.caroApplyPricing(new Date()); }catch(e){} try{ syncApplied(); }catch(e){} }
 
   function build(){
     if(ov) return;
@@ -93,7 +93,7 @@
     ov.querySelector('.cpx-x').onclick=close;
     ov.querySelector('.cpx-save').onclick=doSave;
     ov.querySelector('.cpx-search input').addEventListener('input', function(){ renderList(this.value.trim()); });
-    ov.querySelectorAll('[data-season]').forEach(function(b){ b.onclick=function(){ cfg.season=b.getAttribute('data-season')==='peak'?'peak':'off'; syncSeasonBtns(); saveLS(); var pr=saveRemote(); if(pr&&pr.then){ pr.then(function(){ toast('현재 시즌: '+(cfg.season==='peak'?'성수기':'비성수기')); }).catch(function(){}); } else { toast('현재 시즌: '+(cfg.season==='peak'?'성수기':'비성수기')); } try{ if(window.caroReloadPricing) window.caroReloadPricing(); }catch(e){} }; });
+    ov.querySelectorAll('[data-season]').forEach(function(b){ b.onclick=function(){ cfg.season=b.getAttribute('data-season')==='peak'?'peak':'off'; syncSeasonBtns(); saveLS(); var pr=saveRemote(); if(pr&&pr.then){ pr.then(function(){ toast('현재 시즌: '+(cfg.season==='peak'?'성수기':'비성수기')); }).catch(function(){}); } else { toast('현재 시즌: '+(cfg.season==='peak'?'성수기':'비성수기')); } try{ if(window.caroReloadPricing) window.caroReloadPricing(); }catch(e){} try{ syncApplied(); }catch(e){} }; });
   }
   function open(){ build(); ov.classList.add('open'); renderList(''); loadFleet(function(){ loadRemote(function(){ loadLS(); syncSeasonBtns(); renderList(''); }); }); }
   function close(){ if(ov) ov.classList.remove('open'); }
@@ -102,13 +102,7 @@
   function loggedIn(){ try{ return !!(window.FB_AUTH && window.FB_AUTH.currentUser); }catch(e){ return false; } }
   function findHeaderHost(){ var els=document.querySelectorAll('h1,h2,h3,h4,h5,div,span,p,strong,b,label'); for(var i=0;i<els.length;i++){ var e=els[i]; if(e.childElementCount===0){ var tx=(e.textContent||'').trim(); if(tx==='차량별 요금 관리'){ if(e.offsetParent!==null && e.getClientRects().length) return e; } } } return null; }
   function wideAncestor(el){ var n=el, best=el; for(var i=0;i<8 && n && n.parentElement;i++){ n=n.parentElement; if(n.offsetWidth && n.offsetWidth>=480){ best=n; break; } } return best; }
-  function positionHeaderBtn(){
-    var b=document.getElementById('cpx-hdbtn'), t=findHeaderHost(); if(!b||!t) return;
-    var r=t.getBoundingClientRect(), host=wideAncestor(t), cr=host.getBoundingClientRect();
-    var top=r.top+window.pageYOffset+r.height/2-b.offsetHeight/2;
-    var left=cr.right+window.pageXOffset-b.offsetWidth-18;
-    b.style.top=Math.max(0,Math.round(top))+'px'; b.style.left=Math.max(0,Math.round(left))+'px';
-  }
+  function positionHeaderBtn(){ var b=document.getElementById('cpx-hdbtn'), t=findHeaderHost(); if(!b||!t) return; var r=t.getBoundingClientRect(), host=wideAncestor(t), cr=host.getBoundingClientRect(); var top=r.top+window.pageYOffset+r.height/2-b.offsetHeight/2; var left=cr.right+window.pageXOffset-b.offsetWidth-18; b.style.top=Math.max(0,Math.round(top))+'px'; b.style.left=Math.max(0,Math.round(left))+'px'; }
   function ensureHeaderBtn(){
     if(document.getElementById('cpx-hdbtn')){ positionHeaderBtn(); return true; }
     var t=findHeaderHost(); if(!t) return false;
@@ -118,10 +112,53 @@
     if(!ensureHeaderBtn.__rz){ ensureHeaderBtn.__rz=true; window.addEventListener('resize', positionHeaderBtn); window.addEventListener('scroll', positionHeaderBtn, true); }
     return true;
   }
+
+  /* ── 차량별 요금 관리 표에 '현재 적용 요금' 연동 표시 ── */
+  var HFIX={'01-01':1,'03-01':1,'05-05':1,'06-06':1,'08-15':1,'10-03':1,'10-09':1,'12-25':1};
+  var HVAR={'2026-02-16':1,'2026-02-17':1,'2026-02-18':1,'2026-05-24':1,'2026-05-25':1,'2026-09-24':1,'2026-09-25':1,'2026-09-26':1,'2027-02-06':1,'2027-02-07':1,'2027-02-08':1,'2027-05-13':1,'2027-09-14':1,'2027-09-15':1,'2027-09-16':1};
+  function pad2(n){ return n<10?'0'+n:''+n; }
+  function isHolidayNow(d){ try{ var md=pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); if(HFIX[md])return true; return !!HVAR[d.getFullYear()+'-'+md]; }catch(e){ return false; } }
+  function isWeekendNow(d){ d=d||new Date(); try{ var day=d.getDay(); if(day===0||day===6)return true; if(day===5&&d.getHours()>=18)return true; return isHolidayNow(d); }catch(e){ return false; } }
+  function tierKey(){ var we=isWeekendNow(); return (cfg.season==='peak')?(we?'pwe':'pwd'):(we?'owe':'owd'); }
+  function tierLabel(){ return (cfg.season==='peak'?'성수기':'비성수기')+'·'+(isWeekendNow()?'주말':'평일'); }
+
+  var priceObs=null;
+  function enhanceTable(){
+    var body=document.getElementById('priceBody'); if(!body) return;
+    if(!findHeaderHost()) return;
+    if(priceObs) priceObs.disconnect();
+    try{
+      var key=tierKey(), lbl=tierLabel();
+      body.querySelectorAll('tr[data-id]').forEach(function(tr){
+        var nel=tr.querySelector('.vn b'); if(!nel) return;
+        var name=nel.textContent.trim();
+        var ph=tr.querySelector('input.pin')||tr.querySelector('input[id^="ph_"]'); if(!ph) return;
+        var base=parseInt(ph.value,10)||0;
+        var m=(cfg.models&&cfg.models[name])||{}; var ovv=Number(m[key]); var eff=(ovv>0)?ovv:base;
+        var td=ph.parentNode; if(!td) return;
+        var badge=td.querySelector('.cpx-eff');
+        if(!badge){ badge=document.createElement('div'); badge.className='cpx-eff'; badge.style.cssText='margin-top:5px;font-size:11px;font-weight:800;white-space:nowrap;line-height:1.3;'; td.appendChild(badge); }
+        if(ovv>0){ badge.style.color='#c8a96e'; badge.textContent='적용 '+won(eff)+'원 ('+lbl+')'; }
+        else { badge.style.color='#8b909a'; badge.textContent='적용 '+won(eff)+'원 (기본)'; }
+      });
+    }catch(e){}
+    if(!priceObs){ try{ priceObs=new MutationObserver(function(){ enhanceTable(); }); }catch(e){} }
+    if(priceObs){ try{ priceObs.observe(body,{childList:true,subtree:true}); }catch(e){} }
+  }
+  function ensureSeasonChip(){
+    var t=findHeaderHost(); if(!t) return;
+    var chip=document.getElementById('cpx-seasonchip');
+    var label='현재 적용: '+(cfg.season==='peak'?'성수기':'비성수기')+' · 오늘 '+(isWeekendNow()?'주말/공휴일':'평일');
+    if(!chip){ chip=document.createElement('span'); chip.id='cpx-seasonchip'; chip.style.cssText='margin-left:10px;font-size:12px;font-weight:700;color:#c8a96e;background:rgba(200,169,110,.12);border:1px solid rgba(200,169,110,.35);border-radius:12px;padding:3px 10px;vertical-align:middle;white-space:nowrap;'; try{ t.insertAdjacentElement('afterend', chip); }catch(e){ return; } }
+    chip.textContent=label;
+  }
+  function syncApplied(){ enhanceTable(); ensureSeasonChip(); }
+  window.caroSyncAppliedTable=syncApplied;
+
   function place(){
     var hd=document.getElementById('cpx-hdbtn');
     if(!loggedIn()){ if(hd) hd.remove(); if(ov) ov.classList.remove('open'); return; }
-    if(findHeaderHost()){ ensureHeaderBtn(); }
+    if(findHeaderHost()){ ensureHeaderBtn(); syncApplied(); }
     else if(hd){ hd.remove(); }
   }
   function watchAuth(){ try{ var A=window.FB_AUTH, fn=window.FB_FN; if(A&&fn&&typeof fn.onAuthStateChanged==='function'&&!watchAuth.__h){ watchAuth.__h=true; fn.onAuthStateChanged(A, place); } }catch(e){} }
@@ -134,6 +171,8 @@
   loadLS();
   startEmoji(); setTimeout(startEmoji,1500); setTimeout(startEmoji,4000);
   setInterval(function(){ watchAuth(); place(); }, 1000);
+  setTimeout(function(){ loadRemote(function(){ syncApplied(); }); }, 2000);
+  setTimeout(function(){ loadRemote(function(){ syncApplied(); }); }, 5000);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ startEmoji(); place(); }); else { place(); }
   console.log('[관제] 요금 관리(성수기/주말) 모듈 로드 · 이모지 제거 적용');
 })();
