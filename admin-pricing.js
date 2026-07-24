@@ -1,5 +1,5 @@
-/* CARO MOBILITY 관제 — 요금 관리(성수기/주말) + 표 연동 + 이모지 제거 v7
-   admin.html </body> 위: <script src="admin-pricing.js?v=7"></script> */
+/* CARO MOBILITY 관제 — 요금 관리(성수기/주말/심야) + 표 연동 + 이모지 제거 v8
+   admin.html </body> 위: <script src="admin-pricing.js?v=8"></script> */
 (function(){
   'use strict';
   var LS='caro_pricing_cfg';
@@ -65,7 +65,7 @@
     function fld(k,lbl){ var v=(m[k]!=null?m[k]:''); return '<div class="cpx-fld"><label>'+lbl+'</label><div class="u"><input type="number" inputmode="numeric" data-nm="'+esc(name)+'" data-k="'+k+'" value="'+esc(v)+'" placeholder="'+(b!=null?won(b):'요금')+'"/><span class="w">원/h</span></div></div>'; }
     return '<div class="cpx-card" data-card="'+esc(name)+'"><div class="cpx-nm">'+esc(name)+'</div>'
       +(b!=null?'<div class="cpx-base">기본요금 '+won(b)+'원/h · 미입력 시 기본요금 적용</div>':'<div class="cpx-base">미입력 시 기본요금 적용</div>')
-      +'<div class="cpx-grid">'+fld('pwd','성수기 · 평일')+fld('pwe','성수기 · 주말')+fld('owd','비성수기 · 평일')+fld('owe','비성수기 · 주말')+'</div></div>';
+      +'<div class="cpx-grid">'+fld('pwd','성수기 · 평일')+fld('pwe','성수기 · 주말')+fld('owd','비성수기 · 평일')+fld('owe','비성수기 · 주말')+fld('own','비성수기 · 평일 · 심야')+'</div></div>';
   }
   function renderList(filter){
     var box=ov.querySelector('.cpx-list'); if(!box) return;
@@ -82,9 +82,9 @@
     if(ov) return;
     ov=document.createElement('div'); ov.id='cpx-ov';
     ov.innerHTML='<div id="cpx-panel">'
-      +'<div class="cpx-hd"><h2>요금 관리 · 성수기/주말</h2><button class="cpx-x" type="button" aria-label="닫기">✕</button></div>'
+      +'<div class="cpx-hd"><h2>요금 관리 · 성수기/주말/심야</h2><button class="cpx-x" type="button" aria-label="닫기">✕</button></div>'
       +'<div class="cpx-season"><span class="cpx-season-lbl">현재 적용 시즌</span><button class="cpx-sb" type="button" data-season="peak">성수기</button><button class="cpx-sb" type="button" data-season="off">비성수기</button></div>'
-      +'<div class="cpx-note">· 주말요금 자동 적용: <b>금요일 18시~ + 토·일 + 공휴일</b><br>· 동일 차종은 한 번만 입력하면 같은 차종 전체에 적용됩니다.<br>· 비워두면 해당 차종은 기존 기본요금이 적용됩니다.</div>'
+      +'<div class="cpx-note">· 주말요금 자동 적용: <b>금요일 18시~ + 토·일 + 공휴일</b><br>· 심야요금(비성수기 평일): <b>20:00~08:00</b> 자동 적용 (비우면 비성수기 평일 요금 적용)<br>· 동일 차종은 한 번만 입력하면 같은 차종 전체에 적용됩니다.<br>· 비워두면 해당 차종은 기존 기본요금이 적용됩니다.</div>'
       +'<div class="cpx-search"><input type="text" placeholder="차종 검색 (예: 아반떼, 코나)"/></div>'
       +'<div class="cpx-list"></div>'
       +'<div class="cpx-foot"><button class="cpx-save" type="button">저장</button></div></div>';
@@ -119,8 +119,9 @@
   function pad2(n){ return n<10?'0'+n:''+n; }
   function isHolidayNow(d){ try{ var md=pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); if(HFIX[md])return true; return !!HVAR[d.getFullYear()+'-'+md]; }catch(e){ return false; } }
   function isWeekendNow(d){ d=d||new Date(); try{ var day=d.getDay(); if(day===0||day===6)return true; if(day===5&&d.getHours()>=18)return true; return isHolidayNow(d); }catch(e){ return false; } }
-  function tierKey(){ var we=isWeekendNow(); return (cfg.season==='peak')?(we?'pwe':'pwd'):(we?'owe':'owd'); }
-  function tierLabel(){ return (cfg.season==='peak'?'성수기':'비성수기')+'·'+(isWeekendNow()?'주말':'평일'); }
+  function isNightNow(d){ d=d||new Date(); try{ var h=d.getHours(); return (h>=20||h<8); }catch(e){ return false; } }
+  var KEYLBL={pwd:'성수기·평일',pwe:'성수기·주말',owd:'비성수기·평일',owe:'비성수기·주말',own:'비성수기·평일·심야'};
+  function pickKey(m){ var d=new Date(), we=isWeekendNow(d); if(cfg.season==='peak') return we?'pwe':'pwd'; if(!we && isNightNow(d) && Number((m||{}).own)>0) return 'own'; return we?'owe':'owd'; }
 
   var priceObs=null;
   function enhanceTable(){
@@ -128,18 +129,20 @@
     if(!findHeaderHost()) return;
     if(priceObs) priceObs.disconnect();
     try{
-      var key=tierKey(), lbl=tierLabel();
       body.querySelectorAll('tr[data-id]').forEach(function(tr){
         var nel=tr.querySelector('.vn b'); if(!nel) return;
         var name=nel.textContent.trim();
         var ph=tr.querySelector('input.pin')||tr.querySelector('input[id^="ph_"]'); if(!ph) return;
-        var base=parseInt(ph.value,10)||0;
-        var m=(cfg.models&&cfg.models[name])||{}; var ovv=Number(m[key]); var eff=(ovv>0)?ovv:base;
+        if(ph.dataset.cbase==null || ph.dataset.cbase==='') ph.dataset.cbase=ph.value;
+        var base=parseInt(ph.dataset.cbase,10)||0;
+        var m=(cfg.models&&cfg.models[name])||{}; var key=pickKey(m); var ovv=Number(m[key]); var eff=(ovv>0)?ovv:base;
+        ph.value=eff; ph.readOnly=true; ph.title='적용 요금 (성수기/주말 설정에서 변경)';
+        ph.style.color=(ovv>0)?'#c8a96e':''; ph.style.fontWeight=(ovv>0)?'800':'';
         var td=ph.parentNode; if(!td) return;
         var badge=td.querySelector('.cpx-eff');
-        if(!badge){ badge=document.createElement('div'); badge.className='cpx-eff'; badge.style.cssText='margin-top:5px;font-size:11px;font-weight:800;white-space:nowrap;line-height:1.3;'; td.appendChild(badge); }
-        if(ovv>0){ badge.style.color='#c8a96e'; badge.textContent='적용 '+won(eff)+'원 ('+lbl+')'; }
-        else { badge.style.color='#8b909a'; badge.textContent='적용 '+won(eff)+'원 (기본)'; }
+        if(!badge){ badge=document.createElement('div'); badge.className='cpx-eff'; badge.style.cssText='margin-top:5px;font-size:11px;font-weight:700;white-space:nowrap;line-height:1.3;'; td.appendChild(badge); }
+        if(ovv>0){ badge.style.color='#c8a96e'; badge.textContent='적용중 · '+KEYLBL[key]; }
+        else { badge.style.color='#8b909a'; badge.textContent='기본요금 적용 · '+KEYLBL[key]; }
       });
     }catch(e){}
     if(!priceObs){ try{ priceObs=new MutationObserver(function(){ enhanceTable(); }); }catch(e){} }
@@ -148,7 +151,8 @@
   function ensureSeasonChip(){
     var t=findHeaderHost(); if(!t) return;
     var chip=document.getElementById('cpx-seasonchip');
-    var label='현재 적용: '+(cfg.season==='peak'?'성수기':'비성수기')+' · 오늘 '+(isWeekendNow()?'주말/공휴일':'평일');
+    var today=isWeekendNow()?'주말/공휴일':(isNightNow()?'평일·심야':'평일');
+    var label='현재 적용: '+(cfg.season==='peak'?'성수기':'비성수기')+' · 오늘 '+today;
     if(!chip){ chip=document.createElement('span'); chip.id='cpx-seasonchip'; chip.style.cssText='margin-left:10px;font-size:12px;font-weight:700;color:#c8a96e;background:rgba(200,169,110,.12);border:1px solid rgba(200,169,110,.35);border-radius:12px;padding:3px 10px;vertical-align:middle;white-space:nowrap;'; try{ t.insertAdjacentElement('afterend', chip); }catch(e){ return; } }
     chip.textContent=label;
   }
@@ -174,5 +178,5 @@
   setTimeout(function(){ loadRemote(function(){ syncApplied(); }); }, 2000);
   setTimeout(function(){ loadRemote(function(){ syncApplied(); }); }, 5000);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ startEmoji(); place(); }); else { place(); }
-  console.log('[관제] 요금 관리(성수기/주말) 모듈 로드 · 이모지 제거 적용');
+  console.log('[관제] 요금 관리(성수기/주말/심야) 모듈 로드 · 이모지 제거 적용');
 })();
