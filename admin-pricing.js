@@ -1,21 +1,9 @@
-/* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY 관제 — 요금 관리 (성수기/비성수기 × 평일/주말) v1
-   ───────────────────────────────────────────────────────────
-   · 성수기/비성수기 토글(현재 적용 시즌) — 관리자가 직접 변경
-   · 차종별 4요금 입력: 성수기 평일 / 성수기 주말 / 비성수기 평일 / 비성수기 주말
-     (동일 차종은 한 번만 입력하면 같은 차종 전체에 적용됨 — 차종명 기준)
-   · 주말요금 자동 적용 기준: 금요일 18시~ + 토·일 + 공휴일
-   · 저장: Firestore settings/pricing + localStorage(caro_pricing_cfg)
-   · 고객 앱(customer-redesign.js)의 요금 엔진이 이 설정을 읽어 자동 적용
-
-   적용법: admin.html 의 </body> 바로 위에 아래 한 줄 추가
-     <script src="admin-pricing.js?v=1"></script>
-═══════════════════════════════════════════════════════════ */
+/* CARO MOBILITY 관제 — 요금 관리 (성수기/비성수기 × 평일/주말) v2
+   admin.html </body> 위: <script src="admin-pricing.js?v=2"></script> */
 (function(){
   'use strict';
   var LS='caro_pricing_cfg';
-
-  var FALLBACK=["더뉴레이","모닝 어반","더뉴기아레이","더뉴기아레이 루프탑","더뉴모닝","셀토스","더뉴코나","XM3","베리 뉴 티볼리","더뉴셀토스","디 올뉴코나","BMW X1","BMW 520i M Sport","벤츠 E200","미니 컨버터블","BMW 뉴 X3","포르쉐 911 카레라 쿠페","스타리아 11인승","스타리아 캠퍼 4","캐스퍼","더뉴그랜저","K8","디 올뉴그랜저","더 뉴 G80","더 뉴 K8 하이브리드","디 올 뉴 그랜저 하이브리드","팰리세이드","GV80","올뉴아반떼","더뉴K3","더 뉴 아반떼","더뉴아반떼N","디 올뉴투싼","디 올뉴스포티지","쏘나타 센슈어스","K5","쏘나타 디 엣지","더 뉴 K5","디 올 뉴 싼타페","QM6","토레스","GV70","더 뉴 쏘렌토","카니발 11인승","더 뉴 카니발","니로 EV","니로 플러스","아이오닉 6 롱레인지","폴스타 2 롱레인지","EV6 롱레인지","디 올 뉴 코나 EV 롱레인지","EV9 롱레인지","레이 EV","EV3 롱레인지","EV4 롱레인지","아이오닉 9"];
+  var FALLBACK=["모닝","아반떼","쏘나타","코나","셀토스"];
 
   function esc(s){ s=(s==null?'':''+s); return s.replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function toast(m){ try{ if(typeof window.toast==='function'){ window.toast(m); return; } if(typeof window.showToast==='function'){ window.showToast(m); return; } }catch(e){} try{ alert(m); }catch(e2){} }
@@ -25,17 +13,13 @@
   function loadLS(){ try{ var r=localStorage.getItem(LS); if(r){ var d=JSON.parse(r); cfg={season:(d.season==='peak'?'peak':'off'), models:d.models||{}}; } }catch(e){} }
   function saveLS(){ try{ localStorage.setItem(LS, JSON.stringify(cfg)); }catch(e){} }
   function saveRemote(){
-    try{
-      var db=window.FB_DB, fn=window.FB_FN;
-      if(db && fn && fn.setDoc && fn.doc){
-        return fn.setDoc(fn.doc(db,'settings','pricing'), {season:cfg.season, models:cfg.models}, {merge:true});
-      }
+    try{ var db=window.FB_DB, fn=window.FB_FN;
+      if(db && fn && fn.setDoc && fn.doc){ return fn.setDoc(fn.doc(db,'settings','pricing'), {season:cfg.season, models:cfg.models}, {merge:true}); }
     }catch(e){}
     return null;
   }
   function loadRemote(cb){
-    try{
-      var db=window.FB_DB, fn=window.FB_FN;
+    try{ var db=window.FB_DB, fn=window.FB_FN;
       if(db && fn && fn.getDoc && fn.doc){
         fn.getDoc(fn.doc(db,'settings','pricing')).then(function(snap){
           var ex=snap && (typeof snap.exists==='function'?snap.exists():snap.exists);
@@ -48,19 +32,22 @@
     cb&&cb();
   }
 
-  function fleetModels(){
-    var set={};
-    [window.CARS_DATA, window.BL_CARS].forEach(function(l){ (l||[]).forEach(function(c){ var n=(c&&(c.model||c.name||c.carName)||'').trim(); if(n) set[n]=1; }); });
-    FALLBACK.forEach(function(n){ set[n]=1; });
-    return Object.keys(set).sort(function(a,b){ return a.localeCompare(b,'ko'); });
+  var FLEET=null, BASE_RATE={};
+  function addCar(o){ if(!o) return; var n=(o.name||o.model||o.carName||'').trim(); if(!n) return; if(BASE_RATE[n]==null){ var r=(o.__origRate!=null?o.__origRate:o.pricePerHour); if(r!=null) BASE_RATE[n]=r; } return n; }
+  function loadFleet(cb){
+    var names={};
+    [window.CARS_DATA, window.BL_CARS].forEach(function(l){ (l||[]).forEach(function(c){ var n=addCar(c); if(n) names[n]=1; }); });
+    function finish(){ var arr=Object.keys(names); if(!arr.length) arr=FALLBACK.slice(); FLEET=arr.sort(function(a,b){ return a.localeCompare(b,'ko'); }); cb&&cb(FLEET); }
+    try{ var db=window.FB_DB, fn=window.FB_FN;
+      if(db && fn && fn.getDocs && fn.collection){
+        var grab=function(col){ return fn.getDocs(fn.collection(db,col)).then(function(s){ s.forEach(function(d){ var o=d.data()||{}; var n=addCar(o); if(n) names[n]=1; }); }).catch(function(){}); };
+        Promise.all([grab('cars'), grab('bl_cars')]).then(finish); return;
+      }
+    }catch(e){}
+    finish();
   }
-  function baseOf(name){
-    var b=null;
-    [window.CARS_DATA, window.BL_CARS].forEach(function(l){ (l||[]).forEach(function(c){ if(b==null && (c.model||c.name||c.carName)===name){ b=(c.__origRate!=null?c.__origRate:c.pricePerHour); } }); });
-    return b;
-  }
+  function baseOf(name){ return (BASE_RATE[name]!=null)?BASE_RATE[name]:null; }
 
-  /* ── 스타일 ── */
   var st=document.createElement('style'); st.id='caro-pricing-css';
   st.textContent=
     '#cpx-fab{position:fixed;right:16px;bottom:16px;z-index:9998;background:linear-gradient(135deg,#c8a96e,#a5854e);color:#1a1a1a;border:none;border-radius:26px;padding:12px 18px;font-size:14px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4);}'
@@ -95,8 +82,7 @@
 
   var ov=null;
   function fields(name){
-    var m=cfg.models[name]||{};
-    var b=baseOf(name);
+    var m=cfg.models[name]||{}; var b=baseOf(name);
     function fld(k,lbl){ var v=(m[k]!=null?m[k]:''); return '<div class="cpx-fld"><label>'+lbl+'</label><div class="u"><input type="number" inputmode="numeric" data-nm="'+esc(name)+'" data-k="'+k+'" value="'+esc(v)+'" placeholder="'+(b!=null?won(b):'요금')+'"/><span class="w">원/h</span></div></div>'; }
     return '<div class="cpx-card" data-card="'+esc(name)+'"><div class="cpx-nm">'+esc(name)+'</div>'
       +(b!=null?'<div class="cpx-base">기본요금 '+won(b)+'원/h · 미입력 시 기본요금 적용</div>':'<div class="cpx-base">미입력 시 기본요금 적용</div>')
@@ -104,20 +90,19 @@
   }
   function renderList(filter){
     var box=ov.querySelector('.cpx-list'); if(!box) return;
-    var models=fleetModels();
+    if(FLEET==null){ box.innerHTML='<div style="color:#8b909a;text-align:center;padding:30px 0;font-size:.85rem;">차량 목록 불러오는 중…</div>'; return; }
+    var models=FLEET.slice();
     if(filter){ var f=filter.toLowerCase(); models=models.filter(function(n){ return n.toLowerCase().indexOf(f)>=0; }); }
-    box.innerHTML=models.length?models.map(fields).join(''):'<div style="color:#8b909a;text-align:center;padding:30px 0;font-size:.85rem;">차종이 없습니다.</div>';
+    box.innerHTML=models.length?models.map(fields).join(''):'<div style="color:#8b909a;text-align:center;padding:30px 0;font-size:.85rem;">등록된 차량이 없습니다.</div>';
   }
   function syncSeasonBtns(){
     var p=ov.querySelector('[data-season="peak"]'), o=ov.querySelector('[data-season="off"]');
-    if(p) p.classList.toggle('on', cfg.season==='peak');
-    if(o) o.classList.toggle('on', cfg.season!=='peak');
+    if(p) p.classList.toggle('on', cfg.season==='peak'); if(o) o.classList.toggle('on', cfg.season!=='peak');
   }
   function collect(){
     var models={};
     ov.querySelectorAll('.cpx-fld input').forEach(function(inp){
-      var nm=inp.getAttribute('data-nm'), k=inp.getAttribute('data-k');
-      var v=parseInt(inp.value,10);
+      var nm=inp.getAttribute('data-nm'), k=inp.getAttribute('data-k'); var v=parseInt(inp.value,10);
       if(!isNaN(v) && v>0){ if(!models[nm]) models[nm]={}; models[nm][k]=v; }
     });
     cfg.models=models;
@@ -138,7 +123,7 @@
       +'<div class="cpx-hd"><h2>요금 관리 · 성수기/주말</h2><button class="cpx-x" type="button" aria-label="닫기">✕</button></div>'
       +'<div class="cpx-season"><span class="cpx-season-lbl">현재 적용 시즌</span><button class="cpx-sb" type="button" data-season="peak">성수기</button><button class="cpx-sb" type="button" data-season="off">비성수기</button></div>'
       +'<div class="cpx-note">· 주말요금 자동 적용: <b>금요일 18시~ + 토·일 + 공휴일</b><br>· 동일 차종은 한 번만 입력하면 같은 차종 전체에 적용됩니다.<br>· 비워두면 해당 차종은 기존 기본요금이 적용됩니다.</div>'
-      +'<div class="cpx-search"><input type="text" placeholder="차종 검색 (예: 아반떼, GV80)"/></div>'
+      +'<div class="cpx-search"><input type="text" placeholder="차종 검색 (예: 아반떼, 코나)"/></div>'
       +'<div class="cpx-list"></div>'
       +'<div class="cpx-foot"><button class="cpx-save" type="button">저장</button></div>'
       +'</div>';
@@ -151,20 +136,25 @@
       b.onclick=function(){ cfg.season=b.getAttribute('data-season')==='peak'?'peak':'off'; syncSeasonBtns(); saveLS(); var pr=saveRemote(); if(pr&&pr.then){ pr.then(function(){ toast('현재 시즌: '+(cfg.season==='peak'?'성수기':'비성수기')); }).catch(function(){}); } else { toast('현재 시즌: '+(cfg.season==='peak'?'성수기':'비성수기')); } try{ if(window.caroReloadPricing) window.caroReloadPricing(); }catch(e){} };
     });
   }
-  function open(){ build(); loadRemote(function(){ loadLS(); syncSeasonBtns(); renderList(''); ov.classList.add('open'); }); }
+  function open(){ build(); ov.classList.add('open'); renderList(''); loadFleet(function(){ loadRemote(function(){ loadLS(); syncSeasonBtns(); renderList(''); }); }); }
   function close(){ if(ov) ov.classList.remove('open'); }
   window.caroOpenPricingAdmin=open;
 
-  /* 실행 버튼(FAB) */
   function ensureFab(){
     if(document.getElementById('cpx-fab')) return;
     var b=document.createElement('button'); b.id='cpx-fab'; b.type='button'; b.textContent='💰 요금 관리';
-    b.onclick=open;
-    document.body.appendChild(b);
+    b.onclick=open; document.body.appendChild(b);
   }
+  function loggedIn(){ try{ return !!(window.FB_AUTH && window.FB_AUTH.currentUser); }catch(e){ return false; } }
+  function updateFab(){
+    var b=document.getElementById('cpx-fab');
+    if(loggedIn()){ if(!b) ensureFab(); else b.style.display=''; }
+    else { if(b) b.style.display='none'; if(ov) ov.classList.remove('open'); }
+  }
+  function watchAuth(){ try{ var A=window.FB_AUTH, fn=window.FB_FN; if(A && fn && typeof fn.onAuthStateChanged==='function' && !watchAuth.__h){ watchAuth.__h=true; fn.onAuthStateChanged(A, updateFab); } }catch(e){} }
 
   loadLS();
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', ensureFab); else ensureFab();
-  setTimeout(ensureFab, 1200);
-  console.log('[관제] ✅ 요금 관리(성수기/주말) 모듈 로드');
+  setInterval(function(){ watchAuth(); updateFab(); }, 1000);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', updateFab); else updateFab();
+  console.log('[관제] ✅ 요금 관리(성수기/주말) 모듈 로드 (로그인 후 표시)');
 })();
