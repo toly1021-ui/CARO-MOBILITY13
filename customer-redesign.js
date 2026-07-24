@@ -6457,18 +6457,23 @@
   function modelKey(car){ return String((car&&(car.model||car.name||car.carName))||'').trim(); }
   function baseRate(car){ return (car && car.__origRate!=null)?car.__origRate:(car?(car.pricePerHour||0):0); }
 
-  function caroRate(car, when){
-    try{
-      var base=baseRate(car);
-      var cfg=window.__caroPricing; if(!cfg||!cfg.models) return base;
-      var m=cfg.models[modelKey(car)]; if(!m) return base;
-      var season=(cfg.season==='peak')?'peak':'off';
-      var we=isWeekendRate(when||new Date());
-      var key=(season==='peak')?(we?'pwe':'pwd'):(we?'owe':'owd');
-      var v=Number(m[key]);
-      return (v>0)?v:base;
-    }catch(e){ return baseRate(car); }
-  }
+  function isNightRate(d){ try{ var h=d.getHours(); return (h>=20 || h<8); }catch(e){ return false; } }
+    window.caroIsNightRate=isNightRate;
+    function caroRate(car, when){
+      try{
+        var base=baseRate(car);
+        var cfg=window.__caroPricing; if(!cfg||!cfg.models) return base;
+        var m=cfg.models[modelKey(car)]; if(!m) return base;
+        var season=(cfg.season==='peak')?'peak':'off';
+        var d=when||new Date();
+        var we=isWeekendRate(d);
+        var key;
+        if(season==='peak'){ key = we?'pwe':'pwd'; }
+        else { key = we?'owe':(isNightRate(d) && Number(m.own)>0 ? 'own' : 'owd'); }
+        var v=Number(m[key]);
+        return (v>0)?v:base;
+      }catch(e){ return baseRate(car); }
+    }
   window.caroRate=caroRate;
 
   function applyAll(when){
