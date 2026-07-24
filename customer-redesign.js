@@ -4078,6 +4078,37 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
+   [신규] 시간바(카로바)를 하단으로 이동 — 카카오 축척/로고는 아래 여백으로 유지
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var st=document.createElement('style'); st.id='caro-timebar-dock-css';
+  st.textContent=
+    '.caro-timebar-dock{position:absolute;left:0;right:0;bottom:calc(30px + var(--sab,0px));z-index:24;padding:0 12px;box-sizing:border-box;pointer-events:none;}'
+   +'.caro-timebar-dock .caro-timebar{pointer-events:auto;}'
+   +'.caro-rental-controls{top:52px;}'; /* 상단 패널엔 버튼 행만 남음 */
+  (document.head||document.documentElement).appendChild(st);
+
+  function relocateBar(){
+    var screen=document.getElementById('rental-screen'); if(!screen) return;
+    var tb=screen.querySelector('.caro-timebar'); if(!tb) return;
+    if(tb.parentNode && tb.parentNode.classList && tb.parentNode.classList.contains('caro-timebar-dock')) return; /* 이미 이동됨 */
+    var dock=screen.querySelector('.caro-timebar-dock');
+    if(!dock){ dock=document.createElement('div'); dock.className='caro-timebar-dock'; screen.appendChild(dock); }
+    dock.appendChild(tb);
+    try{ if(window.caroRefreshTimeBar) window.caroRefreshTimeBar(); }catch(e){}
+  }
+  window.caroRelocateTimeBar=relocateBar;
+
+  if(typeof window.goTo==='function' && !window.goTo.__caroBarDockWrap){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='rental-screen'){ setTimeout(relocateBar,260); setTimeout(relocateBar,760); } return r; };
+    window.goTo.__caroBarDockWrap=true;
+  }
+  setTimeout(relocateBar, 1300);
+  console.log('[지도] ✅ 시간바 하단 이동 (축척 여백 유지)');
+})();
+
+/* ═══════════════════════════════════════════════════════════
    [신규] 시간대별 가용성 + 대여중 회색 처리 (전역)
    · 선택한 시간(res-start~res-end)에 겹치는 예약이 있으면 대여중
    · window.globalActiveReservations(전체 활성 예약) 기준
@@ -6397,4 +6428,99 @@
     }, 200);
     return r;
   };
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 성수기/비성수기 × 주말/평일 요금 엔진
+   · 관리자(admin-pricing.js)가 차종별 4요금(성수기·비성수기 × 평일·주말)을 설정
+   · 주말 = 금요일 18시~ + 토·일 + 공휴일 → 자동으로 주말요금 적용
+   · 성수기/비성수기는 관리자 토글(현재 적용 시즌)
+   · 설정이 없으면 기존 차량 요금(pricePerHour) 그대로 유지 (비파괴)
+   · 설정은 Firestore settings/pricing + localStorage 동기
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var LS='caro_pricing_cfg';
+  function loadLS(){ try{ var r=localStorage.getItem(LS); return r?JSON.parse(r):null; }catch(e){ return null; } }
+  window.__caroPricing = window.__caroPricing || loadLS() || {season:'off',models:{}};
+
+  /* 공휴일: 고정일(매년) + 음력/변동(2026·2027) */
+  var FIXED={'01-01':1,'03-01':1,'05-05':1,'06-06':1,'08-15':1,'10-03':1,'10-09':1,'12-25':1};
+  var VAR={'2026-02-16':1,'2026-02-17':1,'2026-02-18':1,'2026-05-24':1,'2026-05-25':1,'2026-09-24':1,'2026-09-25':1,'2026-09-26':1,
+           '2027-02-06':1,'2027-02-07':1,'2027-02-08':1,'2027-05-13':1,'2027-09-14':1,'2027-09-15':1,'2027-09-16':1};
+  function pad(n){ return n<10?'0'+n:''+n; }
+  function isHoliday(d){ try{ var md=pad(d.getMonth()+1)+'-'+pad(d.getDate()); if(FIXED[md])return true; return !!VAR[d.getFullYear()+'-'+md]; }catch(e){ return false; } }
+  window.caroIsHoliday=isHoliday;
+  /* 주말요금 기준: 금 18시~ / 토 / 일 / 공휴일 */
+  function isWeekendRate(d){ try{ var day=d.getDay(); if(day===0||day===6) return true; if(day===5 && d.getHours()>=18) return true; return isHoliday(d); }catch(e){ return false; } }
+  window.caroIsWeekendRate=isWeekendRate;
+
+  function modelKey(car){ return String((car&&(car.model||car.name||car.carName))||'').trim(); }
+  function baseRate(car){ return (car && car.__origRate!=null)?car.__origRate:(car?(car.pricePerHour||0):0); }
+
+  function caroRate(car, when){
+    try{
+      var base=baseRate(car);
+      var cfg=window.__caroPricing; if(!cfg||!cfg.models) return base;
+      var m=cfg.models[modelKey(car)]; if(!m) return base;
+      var season=(cfg.season==='peak')?'peak':'off';
+      var we=isWeekendRate(when||new Date());
+      var key=(season==='peak')?(we?'pwe':'pwd'):(we?'owe':'owd');
+      var v=Number(m[key]);
+      return (v>0)?v:base;
+    }catch(e){ return baseRate(car); }
+  }
+  window.caroRate=caroRate;
+
+  function applyAll(when){
+    try{
+      [window.CARS_DATA, window.BL_CARS].forEach(function(list){
+        (list||[]).forEach(function(car){
+          if(!car) return;
+          if(car.__origRate==null) car.__origRate=car.pricePerHour;
+          car.pricePerHour=caroRate(car, when);
+        });
+      });
+    }catch(e){}
+  }
+  window.caroApplyPricing=applyAll;
+
+  function resStartDate(){ try{ var s=document.getElementById('res-start'); if(s&&s.value){ var d=new Date(s.value); if(!isNaN(d.getTime())) return d; } }catch(e){} return new Date(); }
+
+  function wrap(fnName, whenFn){
+    var orig=window[fnName];
+    if(typeof orig==='function' && !orig.__caroPriceWrap){
+      window[fnName]=function(){ try{ applyAll(whenFn()); }catch(e){} return orig.apply(this,arguments); };
+      window[fnName].__caroPriceWrap=true;
+    }
+  }
+  function hookAll(){ wrap('updatePriceSummary', resStartDate); wrap('goToPayment', resStartDate); wrap('renderReservationCard', resStartDate); }
+
+  function reloadRemote(){
+    try{
+      var db=window.FB_DB, fn=window.FB_FN;
+      if(db && fn && fn.getDoc && fn.doc){
+        fn.getDoc(fn.doc(db,'settings','pricing')).then(function(snap){
+          var ex = snap && (typeof snap.exists==='function'?snap.exists():snap.exists);
+          if(ex){
+            var d=(typeof snap.data==='function'?snap.data():snap.data)||{};
+            window.__caroPricing={season:(d.season==='peak'?'peak':'off'), models:d.models||{}};
+            try{ localStorage.setItem(LS, JSON.stringify(window.__caroPricing)); }catch(e){}
+            applyAll(new Date());
+            try{ if(window.renderCars) renderCars(); if(window.updateMapMarkers) updateMapMarkers(); }catch(e){}
+          }
+        }).catch(function(){});
+      }
+    }catch(e){}
+  }
+  window.caroReloadPricing=reloadRemote;
+
+  function boot(){ hookAll(); applyAll(new Date()); reloadRemote(); try{ if(window.renderCars) renderCars(); }catch(e){} }
+  var tries=0, iv=setInterval(function(){ tries++; hookAll(); if(window.CARS_DATA){ boot(); clearInterval(iv); } if(tries>30) clearInterval(iv); }, 200);
+
+  if(typeof window.goTo==='function' && !window.goTo.__caroPriceGoto){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments); try{ if(id==='reservation-screen'||id==='rental-screen'){ applyAll(resStartDate()); } }catch(e){} return r; };
+    window.goTo.__caroPriceGoto=true;
+  }
+  console.log('[요금] ✅ 성수기/주말 요금 엔진 (설정 없으면 기존 요금 유지)');
 })();
