@@ -4078,37 +4078,6 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   [신규] 시간바(카로바)를 하단으로 이동 — 카카오 축척/로고는 아래 여백으로 유지
-   ─────────────────────────────────────────────────────────── */
-(function(){ 'use strict';
-  var st=document.createElement('style'); st.id='caro-timebar-dock-css';
-  st.textContent=
-    '.caro-timebar-dock{position:absolute;left:0;right:0;bottom:calc(30px + var(--sab,0px));z-index:24;padding:0 12px;box-sizing:border-box;pointer-events:none;}'
-   +'.caro-timebar-dock .caro-timebar{pointer-events:auto;}'
-   +'.caro-rental-controls{top:52px;}'; /* 상단 패널엔 버튼 행만 남음 */
-  (document.head||document.documentElement).appendChild(st);
-
-  function relocateBar(){
-    var screen=document.getElementById('rental-screen'); if(!screen) return;
-    var tb=screen.querySelector('.caro-timebar'); if(!tb) return;
-    if(tb.parentNode && tb.parentNode.classList && tb.parentNode.classList.contains('caro-timebar-dock')) return; /* 이미 이동됨 */
-    var dock=screen.querySelector('.caro-timebar-dock');
-    if(!dock){ dock=document.createElement('div'); dock.className='caro-timebar-dock'; screen.appendChild(dock); }
-    dock.appendChild(tb);
-    try{ if(window.caroRefreshTimeBar) window.caroRefreshTimeBar(); }catch(e){}
-  }
-  window.caroRelocateTimeBar=relocateBar;
-
-  if(typeof window.goTo==='function' && !window.goTo.__caroBarDockWrap){
-    var _g=window.goTo;
-    window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='rental-screen'){ setTimeout(relocateBar,260); setTimeout(relocateBar,760); } return r; };
-    window.goTo.__caroBarDockWrap=true;
-  }
-  setTimeout(relocateBar, 1300);
-  console.log('[지도] ✅ 시간바 하단 이동 (축척 여백 유지)');
-})();
-
-/* ═══════════════════════════════════════════════════════════
    [신규] 시간대별 가용성 + 대여중 회색 처리 (전역)
    · 선택한 시간(res-start~res-end)에 겹치는 예약이 있으면 대여중
    · window.globalActiveReservations(전체 활성 예약) 기준
