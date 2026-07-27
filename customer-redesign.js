@@ -92,16 +92,26 @@
     return fmtD(s)+' 이용 예정'; }
 
   var EVENTS=[
-    {t:'첫 이용 30% 할인', s:'신규 가입 고객이라면 누구나'},
-    {t:'주중 낮 반값 이벤트', s:'월~목 09시~18시 대여요금 50%'},
-    {t:'친구 초대 5,000원', s:'초대한 분도 받는 분도 함께'},
-    {t:'심야 이동 특가', s:'22시 이후 출발하면 더 저렴하게'}
+    {t:'첫 이용 30% 할인', s:'신규 가입 고객이라면 누구나', ic:'coupon'},
+    {t:'주중 낮 반값 이벤트', s:'월~목 09시~18시 대여요금 50%', ic:'sun'},
+    {t:'친구 초대 5,000원', s:'초대한 분도 받는 분도 함께', ic:'gift'},
+    {t:'심야 이동 특가', s:'22시 이후 출발하면 더 저렴하게', ic:'moon'}
   ];
   var PLANS=[
-    {tag:'개인', name:'CARO 라이트', price:'월 4,900원'},
-    {tag:'추천', name:'CARO 플러스', price:'월 14,900원'},
-    {tag:'법인', name:'CARO 비즈',   price:'월 99,000원'}
+    {tag:'개인', name:'CARO 라이트', price:'월 4,900원', ic:'user'},
+    {tag:'추천', name:'CARO 플러스', price:'월 14,900원', ic:'crown'},
+    {tag:'법인', name:'CARO 비즈',   price:'월 99,000원', ic:'biz'}
   ];
+  var BN_ICONS={
+    coupon:'<path d="M3 8.4A1.4 1.4 0 0 1 4.4 7h15.2A1.4 1.4 0 0 1 21 8.4v2a1.8 1.8 0 0 0 0 3.4v1.8A1.4 1.4 0 0 1 19.6 17H4.4A1.4 1.4 0 0 1 3 15.6v-1.8a1.8 1.8 0 0 0 0-3.4Z"/><circle cx="9.6" cy="10.4" r="1"/><circle cx="14.4" cy="13.6" r="1"/><path d="M15 10 9 14"/>',
+    sun:'<circle cx="12" cy="12" r="4"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.5 5.5l1.6 1.6M16.9 16.9l1.6 1.6M18.5 5.5 16.9 7.1M7.1 16.9 5.5 18.5"/>',
+    gift:'<rect x="4" y="9.4" width="16" height="10.6" rx="1.6"/><path d="M4 13h16M12 9.4V20"/><path d="M12 9.4S9.7 5 7.7 6.1 9.7 9.4 12 9.4Zm0 0s2.3-4.4 4.3-3.3S14.3 9.4 12 9.4Z"/>',
+    moon:'<path d="M20 13.6A8 8 0 1 1 10.4 4a6.4 6.4 0 0 0 9.6 9.6Z"/><path d="M17.2 3.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6L15 5.8l1.6-.6Z"/>',
+    user:'<circle cx="12" cy="8.4" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+    crown:'<path d="M4 8l3.4 3L12 5l4.6 6L20 8l-1.4 9.6H5.4L4 8Z"/><path d="M5.4 20.6h13.2"/>',
+    biz:'<rect x="5" y="3.4" width="14" height="17.2" rx="1.2"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M10 20.6v-3.2h4v3.2"/>'
+  };
+  function bnIcon(id){ return '<svg viewBox="0 0 24 24">'+(BN_ICONS[id]||'')+'</svg>'; }
   var evTimerOn=false, curEv=null, plTimerOn=false, curPl=null;
 
   /* ── CSS ── */
@@ -176,7 +186,13 @@
 
     /* 슬라이드 캐러셀 공통 */
     .nh-track{ display:flex; transition:transform .55s cubic-bezier(.33,0,.2,1); }
-    .nh-slide{ flex:0 0 100%; box-sizing:border-box; padding:14px 18px; height:104px; display:flex; flex-direction:column; justify-content:center; }
+    .nh-slide{ position:relative; flex:0 0 100%; box-sizing:border-box; padding:14px 18px; height:104px; display:flex; flex-direction:column; justify-content:center; }
+    .nh-ev-ic,.nh-pl-ic{ position:absolute; right:16px; top:50%; transform:translateY(-50%); width:54px; height:54px; border-radius:16px; display:flex; align-items:center; justify-content:center; }
+    .nh-ev-ic{ background:rgba(255,255,255,.55); box-shadow:0 5px 13px -6px rgba(40,48,58,.4); }
+    .nh-pl-ic{ background:var(--p1-soft,#f2f3f5); box-shadow:0 3px 9px -5px rgba(40,48,58,.32); }
+    .nh-ev-ic svg,.nh-pl-ic svg{ width:28px; height:28px; fill:none; stroke:var(--p1-accent-d,#57616d); stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .nh-pl-ic svg{ stroke:var(--p1-slate,#5a6470); }
+    .nh-plan .nh-slide h3,.nh-plan .nh-price{ padding-right:82px; }
     .nh-dots{ display:flex; align-items:center; gap:6px; }
     .nh-dots i{ width:6px; height:6px; border-radius:50%; opacity:.35; transition:.2s; }
     .nh-dots i.on{ width:18px; border-radius:3px; opacity:.95; }
@@ -473,7 +489,7 @@
 
     /* 이벤트 캐러셀 (자동 + 스와이프 + 탭→이벤트 화면) */
     var evView=root.querySelector('.nh-ev');
-    var evSlides=EVENTS.map(function(e){ return '<span class="nh-badge">EVENT</span><h3>'+esc(e.t)+'</h3><span class="nh-sub">'+esc(e.s)+'</span>'; });
+    var evSlides=EVENTS.map(function(e){ return '<span class="nh-badge">EVENT</span><h3>'+esc(e.t)+'</h3><span class="nh-sub">'+esc(e.s)+'</span><div class="nh-ev-ic">'+bnIcon(e.ic)+'</div>'; });
     var evc=carousel(evView, evSlides, { dots:evView.querySelector('.nh-dots') });
     curEv=evc;
     bindSwipe(evView, evc.next, evc.prev, function(){ go('event-screen'); });
@@ -481,7 +497,7 @@
 
     /* 멤버십 캐러셀 (스와이프 + 탭→멤버십 화면) — 우측 설명/가입버튼 없음 */
     var plView=root.querySelector('.nh-plan');
-    var plSlides=PLANS.map(function(p){ return '<h3>'+esc(p.name)+'</h3><div class="nh-price">'+esc(p.price)+'</div>'; });
+    var plSlides=PLANS.map(function(p){ return '<h3>'+esc(p.name)+'</h3><div class="nh-price">'+esc(p.price)+'</div><div class="nh-pl-ic">'+bnIcon(p.ic)+'</div>'; });
     var plc=carousel(plView, plSlides, { dots:plView.querySelector('.nh-pl-dots'), start:1 });
     curPl=plc;
     bindSwipe(plView, plc.next, plc.prev, function(){ go('membership-screen'); });
