@@ -13,6 +13,8 @@ import {
   getAuth,
   setPersistence,
   browserSessionPersistence,
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
@@ -73,6 +75,16 @@ if (__isAdminPage) {
     })
     .catch(function (e) {
       console.warn('관리자 세션 지속성 설정 실패:', e);
+    });
+} else {
+  /* ★ 고객 앱: 로그인 영구 유지 (LOCAL) — 앱을 껐다 켜도 로그아웃/탈퇴 전까지 유지 */
+  setPersistence(auth, indexedDBLocalPersistence)
+    .catch(function () { return setPersistence(auth, browserLocalPersistence); })
+    .then(function () {
+      console.log('🔓 고객 앱 지속성: LOCAL — 로그인 영구 유지');
+    })
+    .catch(function (e) {
+      console.warn('고객 앱 지속성 설정 실패:', e);
     });
 }
 
