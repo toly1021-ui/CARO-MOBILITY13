@@ -600,7 +600,7 @@
             <div class="empty-text" data-i18n="no_reservation">예약 내역이 없습니다</div>
         </div>
     </div>
-    <button onclick="goTo('home-screen')" style="position:fixed;left:16px;right:16px;bottom:calc(74px + var(--sab,0px));max-width:428px;margin:0 auto;height:52px;background:var(--accent,#18191c);color:#fff;border:0;border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;z-index:901;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);cursor:pointer;">← 뒤로</button>
+    <button onclick="goTo('home-screen')" style="position:fixed;left:16px;right:16px;bottom:calc(74px + var(--sab,0px));height:52px;background:var(--accent,#18191c);color:#fff;border:0;border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;z-index:901;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);cursor:pointer;">← 뒤로</button>
 </div>
 
 <!-- ══ USAGE DETAIL MODAL ══ -->
@@ -1958,11 +1958,11 @@
 </div>
 
 <!-- ══ Firebase SDK ══ -->
-<script type="module" src="firebase-config.js?v=2"></script>
-<script src="script.js?v=5"></script>
+<script type="module" src="firebase-config.js?v=3"></script>
+<script src="script.js?v=6"></script>
 <script src="script-photo-upload.js?v=3"></script>
 <script src="customer-notices.js?v=8"></script>
-<script src="customer-redesign.js?v=153"></script>
+<script src="customer-redesign.js?v=154"></script>
 <!-- ══ 드럼롤 날짜/시간 피커 ══ -->
 <div class="drum-overlay" id="drum-overlay" onclick="closeDrumPicker()">
     <div class="drum-sheet" id="drum-sheet">
@@ -2114,11 +2114,11 @@
             </div>
             <div class="csx-lbl">자주 찾는 도움말</div>
             <div class="csx-faq">
-                <div class="it" onclick="goToCsDetail(0)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M5 4h13v16H6a1 1 0 0 1-1-1V4Z"/><path d="M5 18a1 1 0 0 1 1-1h12"/></svg></div><div class="fl">카로 이용안내</div><div class="fc">›</div></div>
-                <div class="it" onclick="goToCsDetail(1)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6Z"/></svg></div><div class="fl">사고 대처 및 보험 적용</div><div class="fc">›</div></div>
-                <div class="it" onclick="goToCsDetail(2)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M4 20h4l10-10-4-4L4 16Z"/><path d="M13.5 6.5l4 4"/></svg></div><div class="fl">예약 변경 및 취소</div><div class="fc">›</div></div>
-                <div class="it" onclick="goToCsDetail(3)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M4 8l3 8 3-8 2 8 3-8"/><path d="M3 11h18"/></svg></div><div class="fl">취소 수수료 안내</div><div class="fc">›</div></div>
-                <div class="it" onclick="goToCsDetail(4)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 16"/><path d="M4 20v-4h4"/></svg></div><div class="fl">반납 및 연장</div><div class="fc">›</div></div>
+                <div class="it" onclick="window.__csBack='cs-screen';goToCsDetail(0)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M5 4h13v16H6a1 1 0 0 1-1-1V4Z"/><path d="M5 18a1 1 0 0 1 1-1h12"/></svg></div><div class="fl">카로 이용안내</div><div class="fc">›</div></div>
+                <div class="it" onclick="window.__csBack='cs-screen';goToCsDetail(1)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6Z"/></svg></div><div class="fl">사고 대처 및 보험 적용</div><div class="fc">›</div></div>
+                <div class="it" onclick="window.__csBack='cs-screen';goToCsDetail(2)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M4 20h4l10-10-4-4L4 16Z"/><path d="M13.5 6.5l4 4"/></svg></div><div class="fl">예약 변경 및 취소</div><div class="fc">›</div></div>
+                <div class="it" onclick="window.__csBack='cs-screen';goToCsDetail(3)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M4 8l3 8 3-8 2 8 3-8"/><path d="M3 11h18"/></svg></div><div class="fl">취소 수수료 안내</div><div class="fc">›</div></div>
+                <div class="it" onclick="window.__csBack='cs-screen';goToCsDetail(4)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 16"/><path d="M4 20v-4h4"/></svg></div><div class="fl">반납 및 연장</div><div class="fc">›</div></div>
             </div>
         </div>
     </div>
@@ -2130,7 +2130,7 @@
     <div class="metal-bg"></div>
     <div class="csd-wrap">
         <div class="csd-header">
-            <button class="csd-back" onclick="goTo('home-screen')">←</button>
+            <button class="csd-back" onclick="goTo(window.__csBack||'cs-screen')">←</button>
             <span class="csd-title">고객센터</span>
             <span style="width:36px;"></span>
         </div>
