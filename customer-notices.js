@@ -25,11 +25,8 @@
   }
 
   function render(notices){
-    notices=notices||[];
-    window.CARO_NOTICES=notices;                          /* 종 알림에서 공지 사용 */
-    cache={}; notices.forEach(function(n){ cache[n.id]=n; });
-    try{ if(typeof window.caroSyncNotif==='function') window.caroSyncNotif(); }catch(e){}
     var nl=document.querySelector('.home-notice-list'); if(!nl) return;
+    cache={};
     if(!notices.length){ nl.innerHTML=''; setSection(false); return; }   /* 공지 0개 → 숨김 */
     nl.innerHTML=notices.map(function(n){
       cache[n.id]=n;
