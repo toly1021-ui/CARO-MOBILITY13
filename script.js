@@ -1146,11 +1146,8 @@ function clearAttempts(id){ var lo=getLockout(); delete lo[id]; saveLockout(lo);
 var SESSION_MS  = 30 * 60 * 1000;
 var sessionTimer = null;
 function startSessionTimer(){
-  if(sessionTimer) clearTimeout(sessionTimer);
-  sessionTimer = setTimeout(function(){
-    showToast('⏰ 장시간 미활동으로 자동 로그아웃됩니다.');
-    setTimeout(handleLogout, 2000);
-  }, SESSION_MS);
+  /* 자동 로그아웃 비활성화 — 로그인 영구 유지 (로그아웃/탈퇴 전까지 유지) */
+  if(sessionTimer){ clearTimeout(sessionTimer); sessionTimer=null; }
 }
 function clearSession(){
   if(sessionTimer){ clearTimeout(sessionTimer); sessionTimer=null; }
@@ -1359,14 +1356,11 @@ function handleLogin(){
    }
 
    function _doLoginSuccess(uid, name){
-   /* 자동 로그인 저장 */
+   /* 로그인 영구 유지 — 체크박스와 무관하게 항상 저장 (로그아웃/탈퇴 전까지 유지) */
    try{
-     var achk=document.getElementById('auto-login');
-     if(achk&&achk.checked){
-       localStorage.setItem('caro_auto_login','1');
-       localStorage.setItem('caro_auto_name',name||id||'');
-       localStorage.setItem('caro_auto_id',id||'');
-     }
+     localStorage.setItem('caro_auto_login','1');
+     localStorage.setItem('caro_auto_name',name||id||'');
+     localStorage.setItem('caro_auto_id',id||'');
    }catch(e){}
     clearAttempts(id);
     /* 버튼 원복 */
