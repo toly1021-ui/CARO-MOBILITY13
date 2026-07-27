@@ -381,7 +381,7 @@
     {l:'내 예약', i:'nh-car', fn:function(){ go('my-reservation-screen'); }},
     {l:'월 렌트', i:'nh-cal', fn:function(){ if(has('openMonthly')) call('openMonthly'); else toast('월 렌트 준비 중입니다.'); }},
     {l:'이벤트', i:'nh-gift', fn:function(){ go('event-screen'); }},
-    {l:'이용 안내', i:'nh-book', fn:function(){ if(has('goToCsDetail')) call('goToCsDetail',0); else go('cs-screen'); }},
+    {l:'이용 안내', i:'nh-book', fn:function(){ window.__csBack='home-screen'; if(has('goToCsDetail')) call('goToCsDetail',0); else go('cs-screen'); }},
     {l:'결제·면허', i:'nh-wallet', fn:function(){ openWallet(); }},
     {l:'고객센터', i:'nh-head', fn:function(){ go('cs-screen'); }}
   ];
@@ -1085,7 +1085,7 @@
    +'#caro-mrd-ov{z-index:960;}'
    +'.caro-mr-head{display:flex;align-items:center;gap:6px;padding:calc(10px + var(--sat,0px)) 10px 10px;background:#f0f3f7;border-bottom:1px solid var(--border-l);position:sticky;top:0;z-index:2;}'
    +'.caro-mr-back{width:40px;height:40px;border:none;background:none;font-size:1.7rem;line-height:1;color:#18191c;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;}'
-   +'.caro-mr-backbtm{position:fixed;left:16px;right:16px;bottom:calc(16px + var(--sab,0px));max-width:428px;margin:0 auto;height:52px;border:0;background:var(--accent,#18191c);border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;color:#fff;cursor:pointer;z-index:6;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);}'
+   +'.caro-mr-backbtm{position:fixed;left:16px;right:16px;bottom:calc(16px + var(--sab,0px));height:52px;border:0;background:var(--accent,#18191c);border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;color:#fff;cursor:pointer;z-index:6;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);}'
    +'.caro-mr-title{font-size:1.15rem;font-weight:800;color:#18191c;letter-spacing:-.01em;}'
    +'.caro-mr-body{flex:1;overflow-y:auto;padding:14px 16px calc(88px + var(--sab,0px));}'
    +'.caro-mr-note{font-size:.8rem;color:var(--text-m);line-height:1.5;margin:2px 2px 14px;}'
