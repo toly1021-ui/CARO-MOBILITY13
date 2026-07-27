@@ -588,7 +588,8 @@
 <!-- ══ MY RESERVATION ══ -->
 <div id="my-reservation-screen" class="screen">
     <div class="metal-bg"></div>
-    <div class="home-header">
+    <div class="home-header" style="display:flex;align-items:center;">
+        <button onclick="goTo('home-screen')" aria-label="뒤로" style="background:none;border:none;color:var(--text-1);font-size:1.5rem;line-height:1;cursor:pointer;padding:2px 12px 2px 4px;">←</button>
         <button class="brand-logo sm brand-home-btn" onclick="goTo('home-screen')">CARO MOBILITY</button>
     </div>
     <div class="myres-title-row">
@@ -1961,7 +1962,7 @@
 <script src="script.js?v=5"></script>
 <script src="script-photo-upload.js?v=3"></script>
 <script src="customer-notices.js?v=8"></script>
-<script src="customer-redesign.js?v=150"></script>
+<script src="customer-redesign.js?v=151"></script>
 <!-- ══ 드럼롤 날짜/시간 피커 ══ -->
 <div class="drum-overlay" id="drum-overlay" onclick="closeDrumPicker()">
     <div class="drum-sheet" id="drum-sheet">
@@ -2101,7 +2102,7 @@
     <div class="metal-bg"></div>
     <div class="csd-wrap">
         <div class="csd-header">
-            <button class="csd-back" onclick="goTo('cs-screen')">←</button>
+            <button class="csd-back" onclick="goTo('home-screen')">←</button>
             <span class="csd-title">고객센터</span>
             <span style="width:36px;"></span>
         </div>
