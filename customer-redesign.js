@@ -119,7 +119,8 @@
     .nh-hd-ic{ display:flex; align-items:center; gap:4px; }
     .nh-icbtn{ position:relative; width:42px; height:42px; display:flex; align-items:center; justify-content:center; background:none; border:0; padding:0; cursor:pointer; }
     .nh-icbtn svg{ width:23px; height:23px; fill:none; stroke:var(--text-2); stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; }
-    .nh-icbtn .nh-dot{ position:absolute; top:8px; right:9px; width:7px; height:7px; border-radius:50%; background:var(--p1-accent,#67707c); }
+    .nh-icbtn .nh-dot{ display:none; position:absolute; top:7px; right:8px; width:8px; height:8px; border-radius:50%; background:#c8a96e; box-shadow:0 0 0 2px var(--silver-base,#eff1f4); }
+    .nh-icbtn .nh-dot.on{ display:block; }
 
     .nh-hero{ position:relative; height:296px; display:flex; align-items:center; justify-content:center; margin:6px 0 2px; }
     .nh-halo,.nh-ring,.nh-orb{ position:absolute; top:50%; left:50%; border-radius:50%; }
@@ -461,6 +462,7 @@
     }; });
     root.querySelector('[data-bell]').onclick=function(){ if(has('caroOpenNotif')) call('caroOpenNotif'); else if(has('openHomeMenu')) call('openHomeMenu'); };
     root.querySelector('[data-menu]').onclick=function(){ if(has('openHomeMenu')) call('openHomeMenu'); };
+    if(has('caroSyncNotif')) call('caroSyncNotif'); /* 종 알림 점(골드) 동기화 */
     root.querySelectorAll('[data-mi]').forEach(function(el){ el.onclick=function(){ MENU[+el.getAttribute('data-mi')].fn(); }; });
     var actEl=root.querySelector('.nh-active');
     if(actEl){ actEl.querySelectorAll('[data-act]').forEach(function(b){ b.onclick=function(){
@@ -488,7 +490,7 @@
     if(!evTimerOn){ evTimerOn=true; setInterval(function(){
       var h=document.getElementById('home-screen'); if(!h||!h.classList.contains('active')) return;
       if(curEv) curEv.next();
-    }, 3800); }
+    }, 4600); }
     if(!plTimerOn){ plTimerOn=true; setInterval(function(){
       var h=document.getElementById('home-screen'); if(!h||!h.classList.contains('active')) return;
       if(curPl) curPl.next();
@@ -1665,9 +1667,11 @@
   }
 
   function updateBadge(){
-    var dot=document.getElementById('caro-bell-dot'); if(!dot) return;
     var unread=getList().filter(function(n){return !n.read;}).length;
-    dot.classList.toggle('on', unread>0);
+    var dot=document.getElementById('caro-bell-dot');
+    if(dot) dot.classList.toggle('on', unread>0);
+    var nd=document.querySelector('.nh-root .nh-dot');   /* 새 홈 종 버튼 골드 점 — 알림 있을 때만 */
+    if(nd) nd.classList.toggle('on', unread>0);
   }
 
   function render(){
@@ -1758,6 +1762,9 @@
 
   function boot(){
     injectBell();
+    /* 새 홈에는 .home-header가 없어 injectBell이 조기 종료 → 종 버튼 API를 무조건 노출 */
+    window.caroOpenNotif=openPanel;
+    window.caroSyncNotif=function(){ try{ genNotifs(); }catch(e){} };
     var tries=0; var iv=setInterval(function(){ injectBell(); genNotifs(); if(++tries>10) clearInterval(iv); },800);
     setInterval(function(){ genNotifs(); },30000);
     /* 예약 갱신 시 재생성 */
