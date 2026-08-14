@@ -161,14 +161,19 @@
   .chartrow .chartwrap.half{flex:1 1 0;min-width:0;}
   /* 주행·이벤트 기록 (간결·차량별) */
   .lv-log{margin-top:12px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);overflow:hidden;}
-  .lv-log-hd{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border-bottom:1px solid var(--border);font-size:12.5px;font-weight:700;color:var(--txt);}
-  .lv-log-scroll{max-height:170px;overflow:auto;}
-  .lv-log-tbl{width:100%;border-collapse:collapse;font-size:12px;}
-  .lv-log-tbl thead th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);font-size:11px;}
-  .lv-log-tbl tbody td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--txt);white-space:nowrap;}
+  .lv-log-hd{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--border);font-size:12.5px;font-weight:700;color:var(--txt);}
+  .lv-log-sub{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 11px;border-bottom:1px solid var(--border);background:var(--panel);}
+  .lv-log-sub select{height:30px;max-width:150px;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);border-radius:8px;padding:0 8px;font-size:12px;cursor:pointer;}
+  .lv-log-sub .btns{display:flex;gap:6px;flex-wrap:wrap;}
+  .lv-log-scroll{max-height:180px;overflow-y:auto;overflow-x:hidden;}
+  .lv-log-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed;}
+  .lv-log-tbl col.c-t{width:34%;} .lv-log-tbl col.c-e{width:30%;} .lv-log-tbl col.c-f{width:16%;} .lv-log-tbl col.c-s{width:20%;}
+  .lv-log-tbl thead th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-size:11px;}
+  .lv-log-tbl tbody td{padding:6px 8px;border-bottom:1px solid var(--border);color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .lv-log-tbl tbody tr:last-child td{border-bottom:none;}
   .lv-log-tbl td.t{font-family:'Saira',sans-serif;color:var(--muted);font-size:11px;}
   .lv-log-tbl tr.warn td{color:#d5563e;font-weight:600;}
+  .lv-log-tbl tr.daysep td{background:var(--panel);color:var(--muted);font-weight:700;font-size:11px;letter-spacing:.02em;}
   .lv-log-empty{text-align:center;color:var(--muted);padding:18px !important;}
   .lv-alert{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px;}
   .lv-alert:empty{display:none;}
@@ -326,13 +331,18 @@
           <div class="lv-log">
             <div class="lv-log-hd">
               <span>주행·이벤트 기록 <b id="logCar" style="color:var(--muted);font-weight:500"></b></span>
-              <span style="display:flex;gap:6px;align-items:center">
-                <span class="pill" id="logCount">0건</span>
-                <button class="btn sm" onclick="exportLogCsv()">CSV</button>
+              <span class="pill" id="logCount">0건</span>
+            </div>
+            <div class="lv-log-sub">
+              <select id="logDate" onchange="renderLogs()"><option value="ALL">전체 날짜</option></select>
+              <span class="btns">
+                <button class="btn sm" onclick="exportLogCsv()">이 날짜 CSV</button>
+                <button class="btn sm" onclick="exportAllDaysCsv()">일자별 전체</button>
               </span>
             </div>
             <div class="lv-log-scroll">
               <table class="lv-log-tbl" id="logTable">
+                <colgroup><col class="c-t"><col class="c-e"><col class="c-f"><col class="c-s"></colgroup>
                 <thead><tr><th>시각</th><th>종류</th><th>층</th><th>속도</th></tr></thead>
                 <tbody id="logBody"><tr><td colspan="4" class="lv-log-empty">기록 수신 대기…</td></tr></tbody>
               </table>
@@ -1100,18 +1110,42 @@
   function logTs(t){ try{ var d=t&&t.toDate?t.toDate():(t?new Date(t):null); if(!d)return '';
     return (d.getMonth()+1)+'/'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2); }catch(e){return '';} }
   function evLabel(e){ return e==='impact'?'⚠ 충격':(e==='overspeed'?'🚨 과속':(e==='floor'?'🔼 층변화':'· 주기')); }
+  // 일자 키/라벨 (로컬 날짜 기준)
+  function dayKey(ms){ if(!ms) return '0000-00-00'; var d=new Date(ms);
+    return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+  function dayLabel(k){ var p=k.split('-'); return p.length===3?(p[0]+'년 '+(+p[1])+'월 '+(+p[2])+'일'):k; }
+  function logDates(){ var set={}; LOG_ROWS.forEach(function(r){ set[dayKey(r._ms)]=1; });
+    return Object.keys(set).sort(function(a,z){return z<a?-1:(z>a?1:0);}); }   // 최신순
+  function selectedLogDate(){ var s=document.getElementById('logDate'); return s?s.value:'ALL'; }
+  function fillDateSelect(){
+    var s=document.getElementById('logDate'); if(!s) return;
+    var cur=s.value, dates=logDates();
+    var html='<option value="ALL">전체 날짜 ('+LOG_ROWS.length+'건)</option>';
+    dates.forEach(function(k){ var n=LOG_ROWS.filter(function(r){return dayKey(r._ms)===k;}).length;
+      html+='<option value="'+k+'">'+dayLabel(k)+' ('+n+'건)</option>'; });
+    s.innerHTML=html;
+    if(cur && (cur==='ALL'||dates.indexOf(cur)>=0)) s.value=cur;   // 선택 유지
+  }
   function renderLogs(msg){
     var b=document.getElementById('logBody'); if(!b) return;
-    var rows=LOG_ROWS.slice().sort(function(a,z){return z._ms-a._ms;}).slice(0,200);
-    var cnt=document.getElementById('logCount'); if(cnt) cnt.textContent=rows.length+'건';
+    fillDateSelect();
+    var all=LOG_ROWS.slice().sort(function(a,z){return z._ms-a._ms;});
+    var cnt=document.getElementById('logCount'); if(cnt) cnt.textContent=all.length+'건';
+    var sel=selectedLogDate();
+    var rows=(sel==='ALL')?all:all.filter(function(r){return dayKey(r._ms)===sel;});
+    rows=rows.slice(0,300);
     if(!rows.length){ b.innerHTML='<tr><td colspan="4" class="lv-log-empty">'+(msg||'기록 수신 대기…')+'</td></tr>'; return; }
-    b.innerHTML=rows.map(function(r){
+    var out='', curDay=null;
+    rows.forEach(function(r){
+      var k=dayKey(r._ms);
+      if(sel==='ALL' && k!==curDay){ curDay=k; out+='<tr class="daysep"><td colspan="4">'+dayLabel(k)+'</td></tr>'; }
       var sp=(typeof r.speed==='number')?(Math.round(r.speed)+' km/h'):'—';
       var fl=(r.floor!=null)?floorCode(r.floor):'—';
       var warn=(r.event==='impact'||r.event==='overspeed');
-      return '<tr'+(warn?' class="warn"':'')+'><td class="t">'+logTs(r.ts)+'</td>'+
+      out+='<tr'+(warn?' class="warn"':'')+'><td class="t">'+logTs(r.ts)+'</td>'+
         '<td>'+evLabel(r.event)+'</td><td>'+fl+'</td><td>'+sp+'</td></tr>';
-    }).join('');
+    });
+    b.innerHTML=out;
   }
   function stopLogs(){ _logUnsubs.forEach(function(u){ try{ u&&u(); }catch(e){} }); _logUnsubs=[]; }
   // 선택한 차량의 기기 기록만 구독 (차량 바뀌면 이전 것 해제 → 절대 안 겹침)
@@ -1143,9 +1177,8 @@
       }catch(e){ console.warn('syncLogs '+sub, e); }
     });
   }
-  window.exportLogCsv=function(){
-    var rows=LOG_ROWS.slice().sort(function(a,z){return z._ms-a._ms;});
-    if(!rows.length){ if(window.toast)toast('내보낼 기록이 없습니다'); return; }
+  // 한 날짜 rows → CSV 문자열
+  function rowsToCsv(rows){
     var head=['시각','종류','층','고도(m)','방향(deg)','속도(km/h)','충격(g)','위도','경도'];
     var lines=[head.join(',')];
     rows.forEach(function(r){
@@ -1155,12 +1188,34 @@
         (r.speed!=null?Math.round(r.speed):''), (r.shock!=null?r.shock:''),
         (r.lat!=null?r.lat:''), (r.lng!=null?r.lng:'')].join(','));
     });
-    var csv='﻿'+lines.join('\n');
+    return '﻿'+lines.join('\n');
+  }
+  function downloadCsv(csv, fname){
     var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
     var url=URL.createObjectURL(blob), a=document.createElement('a');
-    a.href=url; a.download=(_logDev||'CARO')+'_주행기록.csv'; document.body.appendChild(a); a.click();
-    document.body.removeChild(a); URL.revokeObjectURL(url);
-    if(window.toast) toast('CSV '+rows.length+'건 내보냄');
+    a.href=url; a.download=fname; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(url);},1500);
+  }
+  // 선택한 날짜만 CSV (전체 날짜면 전체)
+  window.exportLogCsv=function(){
+    var all=LOG_ROWS.slice().sort(function(a,z){return z._ms-a._ms;});
+    if(!all.length){ if(window.toast)toast('내보낼 기록이 없습니다'); return; }
+    var sel=selectedLogDate();
+    var rows=(sel==='ALL')?all:all.filter(function(r){return dayKey(r._ms)===sel;});
+    if(!rows.length){ if(window.toast)toast('그 날짜엔 기록이 없습니다'); return; }
+    var tag=(sel==='ALL')?'전체':sel;
+    downloadCsv(rowsToCsv(rows), (_logDev||'CARO')+'_'+tag+'.csv');
+    if(window.toast) toast('CSV '+rows.length+'건 저장 ('+tag+')');
+  };
+  // 일자별로 각각 파일 생성(날짜마다 1개씩)
+  window.exportAllDaysCsv=function(){
+    var dates=logDates();
+    if(!dates.length){ if(window.toast)toast('내보낼 기록이 없습니다'); return; }
+    dates.forEach(function(k,i){
+      var rows=LOG_ROWS.filter(function(r){return dayKey(r._ms)===k;}).sort(function(a,z){return z._ms-a._ms;});
+      setTimeout(function(){ downloadCsv(rowsToCsv(rows), (_logDev||'CARO')+'_'+k+'.csv'); }, i*350);  // 순차 저장
+    });
+    if(window.toast) toast('일자별 '+dates.length+'개 파일 저장');
   };
   // 각도 최단경로 차이(-180~180)
   function angDiff(target, cur){ var d=(target-cur)%360; if(d>180)d-=360; if(d<-180)d+=360; return d; }
