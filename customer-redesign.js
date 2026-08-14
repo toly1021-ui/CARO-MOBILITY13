@@ -2819,7 +2819,7 @@
       {q:'영수증 / 세금계산서',a:'이용내역에서 결제 내역을 확인할 수 있어요. 세금계산서·현금영수증이 필요하면 사업자 정보와 함께 요청해 주세요.'}
     ]},
     acc:{ a:'사고가 나셨군요. 침착하게 대처해 주세요.<br><br>1) <b>안전 확보</b>(비상등·삼각대)<br>2) <b>부상자 있으면 119</b><br>3) <b>사진 촬영</b>(차량·번호판·현장)<br>4) <b>사고 접수</b><br><br>자기부담금은 가입한 면책 상품 기준으로 적용돼요. 아래에서 바로 접수하거나 항목을 선택해 주세요.',
-      action:{label:'🚨 사고 접수하기',go:'accident-screen'}, subs:[
+      action:{label:'사고 접수하기',go:'accident-screen'}, subs:[
       {q:'면책 상품 종류',a:'일반면책(자기부담 30만원)과 기본면책(자기부담 70만원)이 있어요. 상품에 따라 사고 시 자기부담금이 달라져요.'},
       {q:'자기부담금',a:'사고 시 가입한 면책 상품 기준으로 자기부담금이 적용돼요. 자세한 보상 범위는 사고 접수 후 안내해 드려요.'},
       {q:'고장·긴급출동',a:'주행 중 고장이면 안전한 곳에 정차 후 차량명·위치를 알려 주세요. 긴급출동을 안내해 드릴게요.'}
@@ -2991,9 +2991,9 @@
       {label:'사진으로 접수할게요', node:{say:'좋아요. 사진은 “간편 문의”에서 이미지와 함께 남겨 주시면 가장 빠르게 처리돼요.', go:'inquiry-screen', goLabel:'📝 간편 문의로 접수'}}
     ]},
     acc:{ say:'사고가 나셨군요. 무엇보다 안전이 우선이에요. 혹시 다친 곳은 없으신가요?', quick:[
-      {label:'크게 다치진 않았어요', node:{say:'다행이에요. 침착하게 ① 비상등·삼각대로 안전 확보 ② 차량·번호판·현장 사진 촬영 ③ 사고 접수 순으로 진행해 주세요. 자기부담금은 가입한 면책 상품 기준으로 적용돼요.', go:'accident-screen', goLabel:'🚨 사고 접수하기'}},
+      {label:'크게 다치진 않았어요', node:{say:'다행이에요. 침착하게 ① 비상등·삼각대로 안전 확보 ② 차량·번호판·현장 사진 촬영 ③ 사고 접수 순으로 진행해 주세요. 자기부담금은 가입한 면책 상품 기준으로 적용돼요.', go:'accident-screen', goLabel:'사고 접수하기'}},
       {label:'부상자가 있어요', node:{say:'먼저 <b>119</b>에 신고해 안전부터 확보해 주세요. 그다음 사고 접수를 도와드릴게요. 상담사도 함께 연결해 드릴게요.', end:'escalate'}},
-      {label:'상대 차량과 접촉했어요', node:{say:'상대 차량 번호·연락처·보험사를 확인하고 현장 사진을 남겨 주세요. 이후 사고 접수에서 진행하시면 돼요.', go:'accident-screen', goLabel:'🚨 사고 접수하기'}}
+      {label:'상대 차량과 접촉했어요', node:{say:'상대 차량 번호·연락처·보험사를 확인하고 현장 사진을 남겨 주세요. 이후 사고 접수에서 진행하시면 돼요.', go:'accident-screen', goLabel:'사고 접수하기'}}
     ]},
     control:{ say:'차량 제어가 안 되면 당황스러우시죠. 바로 도와드릴게요. 어떤 상황에 가까우세요?', quick:[
       {label:'시동이 안 걸려요', node:{say:'브레이크를 <b>끝까지 밟은 채</b> 시동 버튼을 눌러 주세요(전자식 키는 차 안에 있어야 해요). 기어가 P인지도 확인해 주세요.', quick:[
@@ -3755,7 +3755,7 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   [신규] 거점 와드 마커 (쏘카식 픽업포인트)
+   [신규] 거점 와드 마커 (CARO 픽업포인트)
    · 거점마다 와드 핀 1개만 표시 (흰색 위치핀 + 골드 C + 대수 배지)
    · 와드 누르면 그 거점의 차량 전체가 반화면 시트로 표시 → 바로 예약
    · 개별 차량 마커/흩어짐 없음
@@ -4277,6 +4277,8 @@
       if(as && as!=='splash-screen' && as!=='main-screen' && as!=='login-screen') return; // 다른 화면이면 방해 안 함
       var aname=localStorage.getItem('caro_auto_name')||aid;
       window.userInfo.id=aid; window.userInfo.name=aname;
+      window._caroLoggedIn=true;                                   /* 하단바·홈 UI 활성화 */
+      try{ if(window.loadUserData) loadUserData(aid); }catch(e){}  /* 예약·카드 데이터 복원 */
       var wn=document.getElementById('home-welcome-name'); if(wn) wn.textContent=aname+' 님, 안녕하세요 👋';
       var hn=document.getElementById('hmenu-name'); if(hn) hn.textContent=aname;
       var hi=document.getElementById('hmenu-id'); if(hi) hi.textContent=aid;
@@ -4371,13 +4373,13 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CARO MOBILITY — 차량 제어 '스마트키' 바텀시트 v2 (쏘카 디자인)
+   CARO MOBILITY — 차량 제어 '스마트키' 바텀시트 v2 (CARO 스타일)
    ───────────────────────────────────────────────────────────
    · 접힘: '스마트키 OFF/ON' + 4버튼 가로행(반납하기·비상등·문잠금·문열기)
-   · 펼침: 쏘카식 비대칭 그리드
+   · 펼침: CARO 비대칭 그리드
        [비상등|주차위치] (좌상단 2분할) / 반납하기(좌하단 큰 카드)
        문잠금(우 상단 세로) / 문열기(우 하단 세로)
-   · 쏘카에 없는 CARO 버튼(주행전 사진·시간 연장·사고 신고)은
+   · CARO 전용 버튼(주행전 사진·시간 연장·사고 신고)은
      시트 밖, 차량 제어 페이지 본문(연료 아래 '차량 이용')에 배치
    · 모든 버튼은 element 자체를 이동 → onclick·id·활성화 게이팅 100% 보존
 ═══════════════════════════════════════════════════════════ */
@@ -4557,7 +4559,7 @@
      · 차량 제어(IoT)는 안전이 걸린 기능 → 백그라운드에서도 절대 멈추지 않음 */
   setInterval(function(){ var m=byId('home-ctrl-modal'); if(m&&m.classList.contains('open')){ showSheet(); syncState(); } else { hideSheet(); } }, 700);
 
-  console.log('[컨트롤러] ✅ 스마트키 바텀시트 v2 (쏘카 디자인)');
+  console.log('[컨트롤러] ✅ 스마트키 바텀시트 v2 (CARO 스타일)');
 })();
 
 /* ═══════════════════════════════════════════════════════════
@@ -6157,6 +6159,12 @@
     for(var i=0;i<t.length-1;i++) g.push(t.substr(i,2));
     return g;
   }
+  /* ── v5: 자모 분해(오타 보정용) — "반나비"도 "반납비"와 비슷하게 인식 ── */
+  var _CHO='ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ',_JUNG='ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ',_JONG='\u0000ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ';
+  function jamo(s){ var t=norm(s),o=''; for(var i=0;i<t.length;i++){ var c=t.charCodeAt(i);
+    if(c>=0xAC00&&c<=0xD7A3){ var x=c-0xAC00; o+=_CHO[Math.floor(x/588)]+_JUNG[Math.floor((x%588)/28)]; var j=x%28; if(j) o+=_JONG[j]; }
+    else o+=t[i]; } return o; }
+  function jgrams(s){ var t=jamo(s),g=[]; if(t.length<2) return t?[t]:[]; for(var i=0;i<t.length-1;i++) g.push(t.substr(i,2)); return g; }
   /* ── 동의어 확장: 입력에서 표준 개념 뽑기 ── */
   function concepts(q){
     var t=norm(q), out={};
@@ -6191,6 +6199,7 @@
     /* 검색 인덱스: 질문과 답변을 분리해서 계산 (질문 매칭을 훨씬 크게 봄) */
     KB.forEach(function(e){
       e._qg = {}; grams(e.q).forEach(function(g){ e._qg[g]=1; });
+      e._jg = {}; jgrams(e.q).forEach(function(g){ e._jg[g]=1; }); e._jgN = Object.keys(e._jg).length;
       e._ag = {}; grams(e.a).forEach(function(g){ e._ag[g]=1; });
       e._qgN = Object.keys(e._qg).length;
       e._qc = concepts(e.q);
@@ -6203,7 +6212,7 @@
   /* ── 점수 계산 (시뮬레이션으로 검증된 가중치) ──
      핵심: 답변 본문이 길다는 이유로 엉뚱한 항목이 이기지 않도록
            질문 매칭을 자카드로 계산(길이 보정)하고 가중치를 크게 둠 */
-  function scoreEntry(e, qg, qc, qn){
+  function scoreEntry(e, qg, qc, qn, jq){
     var s=0, i;
 
     /* 1) 질문 유사도 — 자카드 (교집합/합집합) → 긴 항목 부당 승리 방지 */
@@ -6240,6 +6249,14 @@
       if(am===0) s -= 18;   /* 개념이 전혀 안 맞으면 감점 */
     }
 
+    /* 3.5) v5: 자모 유사도 — 오타·붙여쓰기 보정 */
+    if(jq && jq.length && e._jgN){
+      var ji=0, js={};
+      for(i=0;i<jq.length;i++){ if(js[jq[i]]) continue; js[jq[i]]=1; if(e._jg[jq[i]]) ji++; }
+      var ju=Object.keys(js).length + e._jgN - ji;
+      if(ju>0) s += (ji/ju) * 22;
+    }
+
     /* 4) 질문에 통째로 포함 */
     if(qn.length>=2 && norm(e.q).indexOf(qn)>=0) s += 25;
 
@@ -6249,7 +6266,8 @@
   function search(q){
     if(!buildKB()) return [];
     var qg=grams(q), qc=concepts(q), qn=norm(q);
-    var out=KB.map(function(e){ return {e:e, s:scoreEntry(e,qg,qc,qn)}; });
+    var jq=jgrams(q);
+    var out=KB.map(function(e){ return {e:e, s:scoreEntry(e,qg,qc,qn,jq)}; });
     out.sort(function(a,b){ return b.s-a.s; });
     return out;
   }
@@ -6274,6 +6292,68 @@
       body.appendChild(w); body.scrollTop=body.scrollHeight;
     }
     function log(resolved,u,b){ try{ if(window.__caroBotLog) window.__caroBotLog(resolved,u,b); }catch(e){} }
+
+    /* ── v5: 문맥 기억 ── */
+    var CTX={t:''};
+
+    /* ── v5: 실시간 데이터 답변 (내 예약·지금 요금·공지/이벤트) ── */
+    function _p2(n){ return n<10?'0'+n:''+n; }
+    function dataAnswer(t){
+      var n=norm(t);
+      /* 내 예약 / 남은 시간 */
+      if(/내예약|예약확인|예약있|예약내역|예약뭐|남은시간|언제까지|몇시까지|반납몇시/.test(n) || (/예약/.test(n) && /(확인|조회|있|몇|언제)/.test(n))){
+        var list=(window.myReservations||[]).filter(function(r){ return r && !r.returned && r.start && r.end; });
+        if(!list.length) return '지금 <b>예약된 차량이 없어요</b>. 홈의 「지금 바로 타기」에서 바로 예약할 수 있어요.';
+        list.sort(function(a,b){ return new Date(a.start)-new Date(b.start); });
+        var now=new Date(), h='';
+        list.slice(0,3).forEach(function(r){
+          var st=new Date(r.start), en=new Date(r.end);
+          var nm=(r.car&&r.car.name)||r.carName||'차량';
+          if(now>=st&&now<=en){ var m=Math.max(0,Math.floor((en-now)/60000));
+            h+='<b>'+nm+'</b> — 이용 중 · 반납까지 <b>'+(Math.floor(m/60)>0?Math.floor(m/60)+'시간 ':'')+(m%60)+'분</b> ('+_p2(en.getHours())+':'+_p2(en.getMinutes())+' 반납)<br>'; }
+          else if(now<st){ h+='<b>'+nm+'</b> — '+(st.getMonth()+1)+'/'+st.getDate()+' '+_p2(st.getHours())+':'+_p2(st.getMinutes())+' 시작 예정<br>'; }
+        });
+        return h||null;
+      }
+      /* 지금/오늘 요금 */
+      if(/(지금|오늘|현재)/.test(n) && /(요금|가격|얼마)/.test(n)){
+        try{
+          var d=new Date(), cfg=window.__caroPricing||{};
+          var season=(cfg.season==='peak')?'성수기':'비성수기';
+          var we=window.caroIsWeekendRate?caroIsWeekendRate(d):false;
+          var night=!we && window.caroIsNightRate && caroIsNightRate(d);
+          var tier=we?'주말/공휴일':(night?'평일 심야(20~08시)':'평일');
+          var h='지금은 <b>'+season+' · '+tier+'</b> 요금이 적용되고 있어요.';
+          var car=(window.CARS_DATA||[]).filter(Boolean)[0];
+          if(car && window.caroRate){ h+='<br>예시: <b>'+(car.name||'차량')+'</b> 시간당 <b>'+Number(caroRate(car,d)).toLocaleString()+'원</b>'; }
+          return h+'<br>차량별 정확한 요금은 예약 화면에서 확인해 주세요.';
+        }catch(e){ return null; }
+      }
+      /* 공지 / 이벤트 */
+      if(/(공지|이벤트)/.test(n) && /(뭐|있|알려|최근|진행|어떤|보여)/.test(n)){
+        var out='';
+        var ev=(window.EVENT_DETAILS||[]).slice(0,3).filter(function(e){return e&&e.title;});
+        if(ev.length) out+='<b>진행 중 이벤트</b><br>'+ev.map(function(e){ return '· '+e.title; }).join('<br>');
+        var nt=(window.CARO_NOTICES||[]).slice(0,3).filter(function(x){return x&&x.title;});
+        if(nt.length) out+=(out?'<br><br>':'')+'<b>공지사항</b><br>'+nt.map(function(x){ return '· '+x.title; }).join('<br>');
+        return out||null;
+      }
+      return null;
+    }
+
+    /* ── v5: LLM(AI) 연동 슬롯 — API 키가 설정된 경우에만 사용 ── */
+    function askLLM(t,key){
+      addBot('잠시만요, 확인하고 있어요…');
+      var sys='너는 한국 카셰어링 서비스 CARO MOBILITY(카로 모빌리티)의 고객 상담원이다. 정중한 한국어 존댓말로, 3문장 이내로 간결하게 답한다. 확실하지 않으면 추측하지 말고 1:1 문의 접수를 권한다. 예약/결제 변경 등 실제 처리는 앱 화면(내 예약, 결제·면허, 고객센터)을 안내한다.';
+      fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+encodeURIComponent(key),{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ contents:[{ parts:[{ text: sys+'\n\n고객 질문: '+t }] }] })
+      }).then(function(r){ return r.json(); }).then(function(j){
+        var a=j&&j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].text;
+        if(a){ addBot(String(a).replace(/\n/g,'<br>')); log(null,t,'LLM 답변'); CTX.t=t; endButtons(); }
+        else { toAgent(t); }
+      }).catch(function(){ toAgent(t); });
+    }
 
     function endButtons(){
       quick([
@@ -6315,13 +6395,22 @@
     }
 
     function answer(e, userText){
+      CTX.t=userText||e.q;
       addBot(e.a);
       log(null, userText, String(e.a).replace(/<[^>]+>/g,''));
       endButtons();
     }
 
     function handle(t){
+      /* v5: 실시간 데이터 답변 우선 */
+      var da=dataAnswer(t);
+      if(da){ addBot(da); log(true,t,'데이터 답변'); CTX.t=t; endButtons(); return; }
       var res=search(t);
+      /* v5: 짧은 후속 질문이면 직전 주제와 합쳐 재검색 (문맥 이어받기) */
+      if(CTX.t && (!res.length || res[0].s<38) && norm(t).length<=10){
+        var res2=search(CTX.t+' '+t);
+        if(res2.length && (!res.length || res2[0].s > res[0].s+5)) res=res2;
+      }
       if(!res.length){ toAgent(t); return; }
 
       var best=res[0];
@@ -6344,6 +6433,10 @@
         quick(btns);
         return;
       }
+
+      /* v5: AI(LLM) 키가 있으면 AI가 직접 답변 */
+      var __k=''; try{ __k=(localStorage.getItem('caro_ai_key')||window.CARO_AI_KEY||'').trim(); }catch(e){}
+      if(__k){ askLLM(t,__k); return; }
 
       /* 정말 모름 → 솔직히 말하고 바로 사람에게 (입력 내용 그대로 전달) */
       addBot('죄송해요, 제가 정확히 이해하지 못했어요. 😥<br>'
@@ -6394,10 +6487,11 @@
       if(e.key==='Enter'||e.keyCode===13) intercept(e);
     }, true);
 
-    console.log('[상담봇 v4] ✅ FAQ 전체 검색 활성화 (' + KB.length + '개 답변)');
+    console.log('[상담봇 v5] ✅ 검색+오타보정+문맥+실시간데이터'+((function(){try{return localStorage.getItem('caro_ai_key')?'+AI':''}catch(e){return ''}})())+' (' + KB.length + '개 답변)');
     return true;
   }
 
+  window.caroSetAiKey=function(k){ try{ if(k) localStorage.setItem('caro_ai_key', String(k).trim()); else localStorage.removeItem('caro_ai_key'); }catch(e){} return '설정 완료'; };
   if(!hook()){
     var n=0, iv=setInterval(function(){ n++; if(hook()||n>60) clearInterval(iv); }, 500);
   }
@@ -6551,4 +6645,528 @@
     window.goTo.__caroPriceGoto=true;
   }
   console.log('[요금] ✅ 성수기/주말 요금 엔진 (설정 없으면 기존 요금 유지)');
+})();
+
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 전 화면 P1 라이트 통일 패치 v1
+   · 홈(대기화면)은 그대로 — 나머지 화면을 홈과 같은 톤으로
+   · 이용내역/내예약 카드, 로그인/가입/찾기 폼, 모달, 입력칸 통일
+   · 시작(main) 화면에 홈과 같은 와드 마크 추가
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  var st=document.createElement('style'); st.id='caro-p1-unify';
+  st.textContent=
+    /* ── 이용내역·내 예약 카드 ── */
+    '#usage-history-screen .my-res-card,#my-reservation-screen .my-res-card{background:#fff;border:1px solid var(--p1-line,#e8eaee);border-radius:18px;padding:16px;box-shadow:0 2px 10px -7px rgba(40,48,58,.16);backdrop-filter:none;-webkit-backdrop-filter:none;}'
+   +'.my-res-status{border-radius:8px;font-weight:800;letter-spacing:.01em;}'
+   +'.my-res-no{color:var(--text-m,#8a8f99);font-size:.72rem;font-weight:700;}'
+   +'.my-res-car-name{font-weight:800;}'
+   +'#usage-history-screen .detail-btn,#my-reservation-screen .detail-btn{background:var(--accent,#18191c);color:#fff;border:0;border-radius:12px;padding:12px;font-weight:800;}'
+   +'#usage-history-screen .detail-btn:active,#my-reservation-screen .detail-btn:active{opacity:.85;}'
+   +'.empty-reservation .empty-icon{filter:grayscale(1);opacity:.45;}'
+   +'.empty-reservation .empty-text{color:var(--text-m,#8a8f99);font-weight:600;}'
+    /* ── 로그인·회원가입·찾기 폼 카드 ── */
+   +'#login-screen .form-container,#signup-screen .form-container,#find-screen .form-container{background:#fff;border:1px solid var(--p1-line,#e8eaee);border-radius:20px;box-shadow:0 10px 28px -18px rgba(40,48,58,.3);backdrop-filter:none;-webkit-backdrop-filter:none;}'
+   +'#login-screen .form-input,#signup-screen .form-input,#find-screen .form-input{border-radius:13px;background:#fff;}'
+   +'#login-screen .form-input:focus,#signup-screen .form-input:focus,#find-screen .form-input:focus{border-color:var(--accent,#18191c);}'
+    /* ── 모달 공통 ── */
+   +'.modal-box{background:var(--silver-base,#eff1f4);}'
+   +'.modal-box .modal-header{border-bottom:1px solid var(--p1-line,#e8eaee);}'
+    /* ── 화면 제목 타이포 ── */
+   +'.myres-main-title{font-weight:800;letter-spacing:-.01em;}'
+    /* ── 시작(main) 화면 와드 마크 ── */
+   +'#main-screen .caro-main-mk{width:96px;height:96px;border-radius:26px;margin:0 auto 22px;'
+   +'background:linear-gradient(145deg,#f5f7fa,#dee3ea);border:1px solid #d3d8de;display:flex;align-items:center;justify-content:center;'
+   +'box-shadow:0 10px 26px -14px rgba(48,56,68,.34);}'
+   +'#main-screen .caro-main-mk svg{width:42px;height:42px;color:var(--p1-slate,#5a6470);}';
+  (document.head||document.documentElement).appendChild(st);
+
+  /* 시작 화면에 와드 마크 삽입 (홈·스플래시와 동일 마크) */
+  function mainMark(){
+    var w=document.querySelector('#main-screen .main-brand-wrap');
+    if(!w || w.querySelector('.caro-main-mk')) return;
+    var d=document.createElement('div'); d.className='caro-main-mk';
+    d.innerHTML='<svg viewBox="132 92 248 350" xmlns="http://www.w3.org/2000/svg"><path d="M256 396C256 396 360 292 360 208A104 104 0 0 0 152 208C152 292 256 396 256 396Z" fill="currentColor"/><path d="M293 171A52 52 0 1 0 293 245" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round"/></svg>';
+    w.insertBefore(d, w.firstChild);
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', mainMark);
+  else mainMark();
+  setTimeout(mainMark, 1200);
+  console.log('[디자인] ✅ 전 화면 P1 통일 패치 v1');
+})();
+
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] CARO 이용내역·내정보 v1
+   · 홈(원형·최근차량·메뉴6개)은 그대로
+   · 이용내역: 필터(전체/이용완료/취소) + 월별 그룹 + 카드 타임라인
+   · 내정보: 프로필 아래 요약(총 이용·멤버십) 추가
+   · 기존 기능(상세보기 openUsageDetail, 데이터) 그대로 사용
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function nm(r){ try{ return (window.getCarName&&r.car)?getCarName(r.car):((r.car&&r.car.name)||'차량'); }catch(e){ return (r.car&&r.car.name)||'차량'; } }
+  function p2(n){ return n<10?'0'+n:''+n; }
+  function fmtP(d){ d=new Date(d); return (d.getMonth()+1)+'.'+d.getDate()+' ('+'일월화수목금토'[d.getDay()]+') '+p2(d.getHours())+':'+p2(d.getMinutes()); }
+  function fmtHM(d){ d=new Date(d); return p2(d.getHours())+':'+p2(d.getMinutes()); }
+
+  var css=document.createElement('style'); css.id='caro-socar-v1';
+  css.textContent=
+    '.suh-seg{position:relative;z-index:2;display:flex;background:#e4e8ed;border-radius:12px;padding:4px;margin:4px auto 14px;width:calc(100% - 32px);max-width:428px;align-self:center;box-sizing:border-box;}'
+   +'.suh-seg b{flex:1;text-align:center;padding:9px 0;border-radius:9px;font-size:.86rem;font-weight:700;color:var(--text-m,#8a8f99);cursor:pointer;transition:.15s;}'
+   +'.suh-seg b.on{background:#fff;color:var(--text-1,#1b2027);box-shadow:0 2px 6px -3px rgba(40,48,58,.25);}'
+   +'.suh-mon{font-size:.8rem;font-weight:800;color:var(--text-m,#8a8f99);margin:18px 20px 10px;}'
+   +'.suh-card{background:#fff;border:1px solid var(--p1-line,#e8eaee);border-radius:18px;padding:16px;margin:0 16px 12px;box-shadow:0 2px 8px -6px rgba(40,48,58,.16);}'
+   +'.suh-row{display:flex;align-items:center;gap:13px;}'
+   +'.suh-img{width:74px;height:46px;border-radius:10px;background:linear-gradient(135deg,#dfe4ea,#c7cfd8);object-fit:contain;flex:0 0 auto;}'
+   +'.suh-info{flex:1;min-width:0;}'
+   +'.suh-st{display:inline-block;font-size:.68rem;font-weight:800;padding:3px 8px;border-radius:7px;margin-bottom:6px;}'
+   +'.suh-st.done{background:var(--p1-soft,#f2f3f5);color:var(--p1-accent-d,#57616d);}'
+   +'.suh-st.ing{background:var(--accent,#18191c);color:#fff;}'
+   +'.suh-st.rsv{background:#fff;color:var(--accent,#18191c);border:1.3px solid var(--accent,#18191c);}'
+   +'.suh-st.bad{background:#f7ecec;color:#b8574a;}'
+   +'.suh-name{font-size:.98rem;font-weight:800;color:var(--text-1,#1b2027);}'
+   +'.suh-meta{font-size:.76rem;color:var(--text-m,#8a8f99);margin-top:3px;line-height:1.45;}'
+   +'.suh-price{text-align:right;flex:0 0 auto;}'
+   +'.suh-price b{font-size:.95rem;font-weight:800;color:var(--text-1,#1b2027);}'
+   +'.suh-price small{display:block;font-size:.7rem;color:var(--text-m,#8a8f99);margin-top:3px;}'
+   +'.suh-foot{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--p1-soft,#f2f3f5);}'
+   +'.suh-btn{flex:1;border:1px solid var(--p1-line,#e8eaee);background:#fff;border-radius:10px;padding:10px;font-size:.8rem;font-weight:700;color:var(--text-1,#1b2027);text-align:center;cursor:pointer;font-family:inherit;}'
+   +'.suh-btn.dark{background:var(--accent,#18191c);color:#fff;border-color:var(--accent,#18191c);}'
+   +'.suh-btn:active{opacity:.85;}'
+   /* 내정보 요약 */
+   +'.mpn-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 16px 4px;position:relative;z-index:2;}'
+   +'.mpn-stt{background:#fff;border:1px solid var(--p1-line,#e8eaee);border-radius:15px;padding:13px 6px;text-align:center;box-shadow:0 2px 8px -6px rgba(40,48,58,.12);}'
+   +'.mpn-stt b{font-size:1.02rem;font-weight:800;display:block;color:var(--text-1,#1b2027);}'
+   +'.mpn-stt span{font-size:.7rem;color:var(--text-m,#8a8f99);}';
+  (document.head||document.documentElement).appendChild(css);
+
+  /* ── 이용내역 CARO 렌더러 ── */
+  var FILTER='all';
+  function buildAll(){
+    var all=[], now=new Date();
+    (window.myReservations||[]).forEach(function(r,i){
+      if(!r) return;
+      var st='reserved';
+      if(r.returned) st='returned';
+      else if(now>=new Date(r.start)&&now<=new Date(r.end)) st='active';
+      else if(now>new Date(r.end)) st='overdue';
+      all.push({r:r,idx:i,status:st});
+    });
+    (window.cancelledHistory||[]).forEach(function(r){ if(r) all.push({r:r,idx:-1,status:'cancelled'}); });
+    all.sort(function(a,b){
+      var da=a.status==='cancelled'?a.r.cancelledAt:a.r.start;
+      var db=b.status==='cancelled'?b.r.cancelledAt:b.r.start;
+      return new Date(db)-new Date(da);
+    });
+    return all;
+  }
+  function chip(st){
+    if(st==='active') return '<span class="suh-st ing">이용 중</span>';
+    if(st==='overdue') return '<span class="suh-st bad">반납 필요</span>';
+    if(st==='returned') return '<span class="suh-st done">이용 완료</span>';
+    if(st==='cancelled') return '<span class="suh-st bad">취소됨</span>';
+    return '<span class="suh-st rsv">예약 완료</span>';
+  }
+  function card(item, gi){
+    var r=item.r, st=item.status;
+    var img=(r.car&&r.car.img)?'<img class="suh-img" src="'+esc(r.car.img)+'" onerror="this.style.visibility=\'hidden\'">':'<div class="suh-img"></div>';
+    var period = st==='cancelled'
+      ? fmtP(r.start)+' 예약 · 취소 '+(r.refundPct>0?('환불 '+Number(r.refundAmt||0).toLocaleString()+'원 ('+r.refundPct+'%)'):'환불 없음')
+      : fmtP(r.start)+' ~ '+fmtHM(r.end);
+    var price = st==='cancelled'
+      ? '<b>'+(r.refundPct>0?Number(r.refundAmt||0).toLocaleString():'0')+'원</b><small>'+(r.refundPct>0?'환불 예정':'환불 없음')+'</small>'
+      : '<b>'+(r.total!=null?Number(r.total).toLocaleString()+'원':'')+'</b><small>'+(r.hrs?r.hrs+'시간':'')+'</small>';
+    var btns='';
+    if(st==='active'||st==='overdue') btns='<div class="suh-btn" onclick="openUsageDetail('+gi+')">이용 상세</div><div class="suh-btn dark" onclick="goTo(\'my-reservation-screen\')">차량 제어</div>';
+    else if(st==='returned') btns='<div class="suh-btn" onclick="openUsageDetail('+gi+')">이용 상세</div><div class="suh-btn" onclick="goTo(\'rental-screen\')">다시 예약</div>';
+    else if(st==='reserved') btns='<div class="suh-btn" onclick="openUsageDetail('+gi+')">이용 상세</div><div class="suh-btn dark" onclick="goTo(\'my-reservation-screen\')">예약 확인</div>';
+    else btns='<div class="suh-btn" onclick="openUsageDetail('+gi+')">상세 보기</div>';
+    return '<div class="suh-card"><div class="suh-row">'+img
+      +'<div class="suh-info">'+chip(st)+'<div class="suh-name">'+esc(nm(r))+'</div><div class="suh-meta">'+period+'</div></div>'
+      +'<div class="suh-price">'+price+'</div></div>'
+      +'<div class="suh-foot">'+btns+'</div></div>';
+  }
+  function render(){
+    var list=document.getElementById('usage-history-list'); if(!list) return;
+    var scr=document.getElementById('usage-history-screen');
+    /* 필터 세그먼트 (제목 아래 1회 삽입) */
+    if(scr && !scr.querySelector('.suh-seg')){
+      var seg=document.createElement('div'); seg.className='suh-seg';
+      seg.innerHTML='<b data-f="all" class="on">전체</b><b data-f="returned">이용완료</b><b data-f="cancelled">취소</b>';
+      list.parentNode.insertBefore(seg, list);
+      seg.querySelectorAll('b').forEach(function(x){ x.onclick=function(){
+        FILTER=x.getAttribute('data-f');
+        seg.querySelectorAll('b').forEach(function(y){ y.classList.toggle('on', y===x); });
+        render();
+      };});
+    }
+    var all=buildAll();
+    window.usageHistoryData=all;   /* openUsageDetail 호환 — 전체 목록 인덱스 유지 */
+    var view=all.map(function(it,gi){ return {it:it, gi:gi}; }).filter(function(x){
+      if(FILTER==='returned') return x.it.status==='returned';
+      if(FILTER==='cancelled') return x.it.status==='cancelled';
+      return true;
+    });
+    if(!view.length){
+      list.innerHTML='<div class="empty-reservation"><div class="empty-icon">📋</div><div class="empty-text">'+(FILTER==='all'?'이용 내역이 없습니다':'해당 내역이 없습니다')+'</div></div>';
+      return;
+    }
+    var html='', lastMon='';
+    view.forEach(function(x){
+      var base=x.it.status==='cancelled'?x.it.r.cancelledAt:x.it.r.start;
+      var d=new Date(base), mon=d.getFullYear()+'년 '+(d.getMonth()+1)+'월';
+      if(mon!==lastMon){ html+='<div class="suh-mon">'+mon+'</div>'; lastMon=mon; }
+      html+=card(x.it, x.gi);
+    });
+    list.innerHTML=html;
+  }
+  /* 기존 렌더러 교체 (전역 바인딩 재할당 — script.js 내부 호출에도 적용됨) */
+  function hookHist(){
+    if(typeof window.renderUsageHistory==='function' && !window.renderUsageHistory.__socar){
+      window.renderUsageHistory=render;
+      window.renderUsageHistory.__socar=1;
+      /* 화면이 이미 열려 있으면 즉시 반영 */
+      var scr=document.getElementById('usage-history-screen');
+      if(scr && scr.classList.contains('active')) render();
+      return true;
+    }
+    return false;
+  }
+  if(!hookHist()){ var t=0, iv=setInterval(function(){ if(hookHist()||++t>40) clearInterval(iv); }, 300); }
+
+  /* ── 내정보: 프로필 아래 요약(총 이용·이번 달·멤버십) ── */
+  function planName(){ try{ var p=JSON.parse(localStorage.getItem('caro_plan_v1')||'null'); return (p&&(p.name||p.plan))||'미가입'; }catch(e){ return '미가입'; } }
+  function mpStats(){
+    var prof=document.querySelector('#mypage-screen .mpn-profile'); if(!prof) return;
+    var res=(window.myReservations||[]).filter(Boolean);
+    var done=res.filter(function(r){ return r.returned; }).length;
+    var now=new Date();
+    var monCnt=res.filter(function(r){ try{ var d=new Date(r.start); return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth(); }catch(e){ return false; } }).length;
+    var el=document.getElementById('mpn-stats');
+    var html='<div class="mpn-stt"><b>'+res.length+'회</b><span>총 이용</span></div>'
+      +'<div class="mpn-stt"><b>'+monCnt+'회</b><span>이번 달</span></div>'
+      +'<div class="mpn-stt"><b>'+esc(planName())+'</b><span>멤버십</span></div>';
+    if(!el){ el=document.createElement('div'); el.id='mpn-stats'; el.className='mpn-stats'; prof.insertAdjacentElement('afterend', el); }
+    el.innerHTML=html;
+  }
+  if(typeof window.goTo==='function' && !window.goTo.__socarMy){
+    var _g=window.goTo;
+    window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='mypage-screen') setTimeout(mpStats,60); if(id==='usage-history-screen') setTimeout(render,60); return r; };
+    window.goTo.__socarMy=1;
+  }
+  setTimeout(mpStats, 1500);
+  console.log('[디자인] ✅ CARO 이용내역·내정보 v1');
+})();
+
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] CARO 아이덴티티 v1 — 타사와 확실히 구분되는 고유 시그니처
+   · 비대칭 라운드 카드(22/22/22/8) — CARO 고유 형태
+   · 필터: 알약형 → 언더라인 탭 / 진행바: 분절형 → 연속 채움형
+   · 주요 버튼: 골드 헤어라인 / 제목: 차콜→골드 언더라인
+   · 빈 화면: 이모지 → 와드 마크 / 홈(대기화면)은 변경 없음
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  var st=document.createElement('style'); st.id='caro-identity-v1';
+  st.textContent=
+    '.suh-card,.my-res-card,.csx-qcard,.awz-opt,.mpn-stt,.hcard{border-radius:22px 22px 22px 8px !important;}'
+   +'.csx-faq,.grp{border-radius:22px 22px 22px 8px !important;}'
+   +'.csx-hero{border-radius:22px 22px 8px 22px !important;box-shadow:0 10px 24px -12px rgba(0,0,0,.5), inset 0 -2px 0 rgba(200,169,110,.5) !important;}'
+   +'.nh-inf-card{border-radius:20px 20px 20px 8px !important;}'
+   +'.awz-photo{border-radius:20px 20px 20px 8px;}'
+   +'.suh-seg{background:none !important;border-radius:0 !important;padding:0 4px !important;gap:22px;justify-content:flex-start;border-bottom:1.5px solid var(--p1-line,#e8eaee);}'
+   +'.suh-seg b{flex:0 0 auto !important;padding:10px 2px 12px !important;border-radius:0 !important;background:none !important;box-shadow:none !important;position:relative;}'
+   +'.suh-seg b.on{color:var(--text-1,#1b2027) !important;}'
+   +'.suh-seg b.on::after{content:"";position:absolute;left:0;right:0;bottom:-1.5px;height:2.5px;border-radius:2px;background:linear-gradient(90deg,var(--accent,#18191c),#c8a96e);}'
+   +'.awz-prog{gap:0 !important;background:var(--p1-line,#e8eaee);border-radius:3px;overflow:hidden;height:5px;}'
+   +'.awz-prog i{height:5px !important;border-radius:0 !important;background:transparent !important;}'
+   +'.awz-prog i.on{background:linear-gradient(90deg,var(--accent,#18191c) 70%,#3a3320) !important;}'
+   +'.suh-btn.dark,.awz-foot .awz-next,.awz-foot .awz-submit,.caro-mr-backbtm,#event-screen .nh-ev-back,'
+   +'#usage-history-screen .detail-btn,#my-reservation-screen .detail-btn,#nh-wallet-screen .nh-wallet-back-btm'
+   +'{box-shadow:inset 0 -2px 0 rgba(200,169,110,.55), 0 8px 20px -8px rgba(24,25,28,.5) !important;}'
+   +'.suh-st,.my-res-status{border-radius:6px !important;letter-spacing:.02em;}'
+   +'.myres-main-title{position:relative;padding-bottom:13px;}'
+   +'.myres-main-title::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:36px;height:2.5px;border-radius:2px;background:linear-gradient(90deg,var(--accent,#18191c),#c8a96e);}'
+   +'.empty-reservation .empty-icon,.csd-empty-icon{font-size:0 !important;width:64px;height:64px;margin:0 auto;'
+   +'background:#fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%27132 92 248 350%27%3E%3Cpath d=%27M256 396C256 396 360 292 360 208A104 104 0 0 0 152 208C152 292 256 396 256 396Z%27 fill=%27%23aab3bd%27/%3E%3Cpath d=%27M293 171A52 52 0 1 0 293 245%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%2730%27 stroke-linecap=%27round%27/%3E%3C/svg%3E") center/30px no-repeat;border:1px solid var(--p1-line,#e8eaee);border-radius:20px 20px 20px 8px;box-shadow:0 2px 10px -7px rgba(40,48,58,.2);opacity:1 !important;filter:none !important;}'
+   +'#caro-sk-sheet .sk-grip{background:#c8a96e !important;opacity:.55;}'
+   +'.ctrl-sq-btn{border-radius:16px 16px 16px 6px !important;}'
+   +'.cbot-hd{box-shadow:inset 0 -2px 0 rgba(200,169,110,.5);}'
+   +'.csx-qcard .ic,.awz-opt .awz-oic{border-radius:13px 13px 13px 5px !important;}';
+  (document.head||document.documentElement).appendChild(st);
+  console.log('[디자인] ✅ CARO 아이덴티티 v1 (고유 시그니처)');
+})();
+
+
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 홈 리치 콘텐츠 v2 — 중복 제거판
+   · 원형·최근 대여 차량 그대로 / 쿠폰 스트립 제거
+   · 그리드 4칸(내 예약·거점·월 렌트·이벤트)만 — 나머지는 퀵 줄에서
+   · THE BLACK은 대형 배너 하나로만 / 이벤트·멤버십 캐러셀 유지
+   · 새 칸: 공지·소식(실공지 연동), 팁(사진·체크리스트·사고 대처)
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  function go(id){ try{ if(window.goTo) goTo(id); }catch(e){} }
+  function mi(i){ try{ var el=document.querySelector('#home-screen .nh-mi[data-mi="'+i+'"]'); if(el) el.click(); }catch(e){} }
+  function use(id){ return '<svg viewBox="0 0 24 24"><use href="#'+id+'"/></svg>'; }
+  function esc(x){ return String(x==null?'':x).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  var st=document.createElement('style'); st.id='caro-home-rich';
+  st.textContent=
+    '#home-screen.screen.active{display:block !important;}'
+   +'.hr-grid{margin-top:16px;background:var(--p1-card,#fff);border-radius:22px 22px 22px 8px;padding:22px 8px 18px;display:grid;grid-template-columns:repeat(4,1fr);box-shadow:0 2px 10px -6px rgba(40,48,58,.14);}'
+   +'.hr-gi{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;}'
+   +'.hr-gi:active{transform:scale(.94);}'
+   +'.hr-gi .bx{width:50px;height:50px;border-radius:15px 15px 15px 6px;background:var(--p1-soft,#f2f3f5);display:flex;align-items:center;justify-content:center;}'
+   +'.hr-gi .bx svg{width:24px;height:24px;stroke:var(--p1-slate,#5a6470);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}'
+   +'.hr-gi span{font-size:.74rem;font-weight:700;color:var(--text-1,#1b2027);}'
+   +'.hr-gi .bdg{position:absolute;top:-7px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.56rem;font-weight:800;padding:2px 7px;border-radius:7px;background:var(--accent,#18191c);color:#fff;box-shadow:inset 0 -1.5px 0 rgba(200,169,110,.55);}'
+   +'.hr-gi .bdg.gd{background:#c8a96e;color:#231c0e;box-shadow:none;}'
+   +'.hr-sec{margin-top:22px;}'
+   +'.hr-sec h2{font-size:15px;font-weight:800;color:var(--text-1,#1b2027);margin:0 2px 10px;}'
+   +'.hr-quick{margin-top:22px;background:#fff;border:1px solid var(--p1-line,#e8eaee);border-radius:20px 20px 20px 8px;padding:16px 6px;display:grid;grid-template-columns:repeat(4,1fr);box-shadow:0 2px 8px -6px rgba(40,48,58,.14);}'
+   +'.hr-qi{display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;}'
+   +'.hr-qi svg{width:22px;height:22px;stroke:var(--p1-slate,#5a6470);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}'
+   +'.hr-qi span{font-size:.7rem;font-weight:700;color:var(--text-1,#1b2027);}'
+    /* 공지·소식 */
+   +'.hr-news{background:#fff;border:1px solid var(--p1-line,#e8eaee);border-radius:20px 20px 20px 8px;overflow:hidden;box-shadow:0 2px 8px -6px rgba(40,48,58,.14);}'
+   +'.hr-nw{display:flex;align-items:center;gap:11px;padding:14px 16px;border-bottom:1px solid var(--p1-soft,#f2f3f5);cursor:pointer;}'
+   +'.hr-nw:last-child{border-bottom:0;}'
+   +'.hr-nw .tag{flex:0 0 auto;font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:7px;background:var(--p1-soft,#f2f3f5);color:var(--p1-accent-d,#57616d);}'
+   +'.hr-nw .tag.ev{background:var(--accent,#18191c);color:#fff;box-shadow:inset 0 -1.5px 0 rgba(200,169,110,.55);}'
+   +'.hr-nw b{flex:1;min-width:0;font-size:.84rem;font-weight:700;color:var(--text-1,#1b2027);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+   +'.hr-nw .ar{color:#c8ced6;flex:0 0 auto;}'
+    /* 팁 */
+   +'.hr-tips{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 8px;scrollbar-width:none;}'
+   +'.hr-tips::-webkit-scrollbar{display:none;}'
+   +'.hr-tip{flex:0 0 auto;width:168px;border-radius:18px 18px 18px 7px;padding:14px;cursor:pointer;background:linear-gradient(150deg,#3a424c 0%,#23262e 100%);box-shadow:0 6px 16px -9px rgba(24,25,28,.5);}'
+   +'.hr-tip .tic{width:34px;height:34px;border-radius:11px 11px 11px 4px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;margin-bottom:10px;}'
+   +'.hr-tip .tic svg{width:18px;height:18px;stroke:#c8a96e;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}'
+   +'.hr-tip b{font-size:.8rem;font-weight:800;color:#fff;line-height:1.4;display:block;}'
+   +'.hr-tip small{font-size:.66rem;font-weight:600;color:#aab0b8;margin-top:4px;display:block;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  var IC={
+    cam:'<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.4"/>',
+    check:'<path d="M4 12.5 9.5 18 20 6.5"/>',
+    shield:'<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6Z"/><path d="M9.5 12l2 2 3.5-3.8"/>'
+  };
+  function ico(k){ return '<svg viewBox="0 0 24 24">'+IC[k]+'</svg>'; }
+
+  /* 공지·소식 — 실제 공지(CARO_NOTICES) 상위 2건, 없으면 섹션 숨김 */
+  var _newsSig='';
+  function newsRefresh(){
+    var root=document.querySelector('#home-screen .nh-root'); if(!root) return;
+    var sec=root.querySelector('.hr-news-sec');
+    var list=(window.CARO_NOTICES||[]).filter(function(n){ return n&&n.id&&n.title; }).slice(0,2);
+    if(!list.length){ if(sec) sec.style.display='none'; _newsSig='__empty__'; return; }
+    if(!sec) return;   /* 아직 골격 미생성 — enrich에서 생성 */
+    /* 내용이 동일하면 DOM 재작성 안 함 → 옵저버 무한루프 방지 */
+    var sig=list.map(function(n){ return n.id+'|'+n.title; }).join('§');
+    if(sig===_newsSig){ sec.style.display=''; return; }
+    _newsSig=sig;
+    sec.style.display='';
+    var box=sec.querySelector('.hr-news');
+    box.innerHTML=list.map(function(n){
+      var isEv=(n.type==='이벤트')||/이벤트|할인|혜택/i.test(n.title||'');
+      return '<div class="hr-nw" data-nid="'+esc(n.id)+'"><span class="tag'+(isEv?' ev':'')+'">'+(isEv?'이벤트':'공지')+'</span><b>'+esc(n.title)+'</b><span class="ar">›</span></div>';
+    }).join('');
+    box.querySelectorAll('[data-nid]').forEach(function(el){
+      el.addEventListener('click',function(){ try{ if(window.openFsNotice) openFsNotice(el.getAttribute('data-nid')); }catch(e){} });
+    });
+  }
+
+  var _busy=false, _mo=null;
+  function enrich(){
+    if(_busy) return; _busy=true;
+    try{ if(_mo) _mo.disconnect(); }catch(e){}
+    try{ _enrich(); }catch(e){}
+    _busy=false;
+    try{ if(_mo){ var h=document.getElementById('home-screen'); if(h) _mo.observe(h,{childList:true,subtree:true}); } }catch(e){}
+  }
+  function _enrich(){
+    var home=document.getElementById('home-screen'); if(!home) return;
+    var root=home.querySelector('.nh-root'); if(!root) return;
+    newsRefresh();
+    if(root.querySelector('.hr-grid')) return;
+    var menu=root.querySelector('.nh-menu'); if(!menu) return;
+
+    /* 그리드 4칸 — 퀵 줄·배너와 안 겹치는 항목만 */
+    var g=document.createElement('div'); g.className='hr-grid';
+    g.innerHTML=
+      '<div class="hr-gi" data-mi="0"><span class="bx">'+use('nh-car')+'</span><span>내 예약</span></div>'
+     +'<div class="hr-gi" data-go="rental-screen"><span class="bx">'+use('nh-pinnav')+'</span><span>거점</span></div>'
+     +'<div class="hr-gi" data-mi="1"><span class="bdg">월 구독</span><span class="bx">'+use('nh-cal')+'</span><span>월 렌트</span></div>'
+     +'<div class="hr-gi" data-mi="2"><span class="bdg gd">혜택</span><span class="bx">'+use('nh-gift')+'</span><span>이벤트</span></div>';
+    menu.insertAdjacentElement('beforebegin', g);
+    menu.style.display='none';
+
+    /* 퀵 줄 + 공지·소식 + 팁 — 맨 아래 */
+    var tail=document.createElement('div');
+    tail.innerHTML=
+      '<div class="hr-quick">'
+       +'<div class="hr-qi" data-mi="5">'+use('nh-head')+'<span>고객센터</span></div>'
+       +'<div class="hr-qi" data-go="usage-history-screen">'+use('nh-listnav')+'<span>이용내역</span></div>'
+       +'<div class="hr-qi" data-mi="4">'+use('nh-wallet')+'<span>결제·면허</span></div>'
+       +'<div class="hr-qi" data-mi="3">'+use('nh-book')+'<span>이용 가이드</span></div>'
+      +'</div>'
+      +'<div class="hr-sec hr-news-sec" style="display:none"><h2>공지·소식</h2><div class="hr-news"></div></div>'
+      +'<div class="hr-sec"><h2>알아두면 든든한 팁</h2><div class="hr-tips">'
+       +'<div class="hr-tip" data-mi="3"><span class="tic">'+ico('cam')+'</span><b>주행 전 10분,<br>외관 사진 필수</b><small>분쟁 예방의 첫걸음</small></div>'
+       +'<div class="hr-tip" data-mi="3"><span class="tic">'+ico('check')+'</span><b>반납 전<br>체크리스트</b><small>두고 내린 물건 확인</small></div>'
+       +'<div class="hr-tip" data-go="cs-screen"><span class="tic">'+ico('shield')+'</span><b>사고가 났다면<br>침착하게</b><small>단계별 사고 접수</small></div>'
+      +'</div></div>';
+    while(tail.firstChild){ root.appendChild(tail.firstChild); }
+
+    root.querySelectorAll('.hr-grid [data-go],.hr-quick [data-go],.hr-tips [data-go]').forEach(function(el){ el.addEventListener('click',function(){ go(el.getAttribute('data-go')); }); });
+    root.querySelectorAll('.hr-grid [data-mi],.hr-quick [data-mi],.hr-tips [data-mi]').forEach(function(el){ el.addEventListener('click',function(){ mi(el.getAttribute('data-mi')); }); });
+    _newsSig='';   /* 골격 새로 만들었으니 공지 박스 강제 재작성 */
+    newsRefresh();
+  }
+
+  var home=document.getElementById('home-screen');
+  if(home && window.MutationObserver){ _mo=new MutationObserver(function(){ enrich(); }); _mo.observe(home,{childList:true,subtree:true}); }
+  [400,1200,2600,4500,8000].forEach(function(t){ setTimeout(function(){ try{ enrich(); }catch(e){} }, t); });
+  console.log('[디자인] ✅ 홈 리치 콘텐츠 v2 (중복 제거)');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [신규] 프로 완성도 패치 v1 — 카셰어링 전문 서비스 보강
+   1) 네트워크 상태 감시: 오프라인 배너 + 재연결 안내
+      (비대면 서비스 특성상 차량 제어·예약이 네트워크 의존 → 필수)
+   2) 빈 화면 CTA: 예약 확인·이용 내역이 막다른 길이 되지 않게
+   3) 이용 준비 안내 카드: 면허·결제 카드 미등록 시 홈에서 안내
+   ※ 디자인은 기존 CARO 언어(실버·차콜·골드 헤어라인) 그대로
+═══════════════════════════════════════════════════════════ */
+(function(){ 'use strict';
+  function toast(m){ try{ if(window.showToast) showToast(m); }catch(e){} }
+  function go(id){ try{ if(window.goTo) goTo(id); }catch(e){} }
+
+  var st=document.createElement('style'); st.id='caro-pro-v1';
+  st.textContent=
+    /* 1) 오프라인 배너 */
+    '.caro-off-bar{position:fixed;top:0;left:0;right:0;z-index:99990;display:flex;align-items:center;justify-content:center;gap:8px;'
+     +'padding:calc(env(safe-area-inset-top,0px) + 9px) 16px 9px;background:var(--accent,#18191c);color:#fff;'
+     +'font-size:.78rem;font-weight:700;letter-spacing:-.01em;box-shadow:inset 0 -2px 0 rgba(200,169,110,.55),0 6px 18px -8px rgba(24,25,28,.5);'
+     +'transform:translateY(-110%);transition:transform .35s cubic-bezier(.2,.8,.25,1);}'
+   +'.caro-off-bar.on{transform:translateY(0);}'
+   +'.caro-off-bar svg{width:15px;height:15px;stroke:#c8a96e;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;}'
+    /* 2) 빈 화면 CTA */
+   +'.caro-empty-cta{display:inline-flex;align-items:center;gap:7px;margin-top:18px;height:46px;padding:0 24px;border:0;cursor:pointer;'
+     +'background:var(--accent,#18191c);color:#fff;border-radius:14px 14px 14px 6px;font-family:inherit;font-size:.86rem;font-weight:800;'
+     +'box-shadow:0 8px 20px -9px rgba(24,25,28,.5),inset 0 -2px 0 rgba(200,169,110,.45);}'
+   +'.caro-empty-cta:active{transform:scale(.96);}'
+    /* 3) 이용 준비 카드 */
+   +'.hr-ready{margin-top:16px;background:var(--p1-card,#fff);border:1px solid var(--p1-line,#e8eaee);border-radius:20px 20px 20px 8px;'
+     +'padding:16px 16px 8px;box-shadow:0 2px 10px -6px rgba(40,48,58,.14);}'
+   +'.hr-ready h3{margin:0 0 4px;font-size:.92rem;font-weight:800;color:var(--text-1,#1b2027);}'
+   +'.hr-ready p{margin:0 0 10px;font-size:.72rem;font-weight:600;color:#8a919c;}'
+   +'.hr-rd{display:flex;align-items:center;gap:10px;padding:11px 2px;border-top:1px solid var(--p1-soft,#f2f3f5);cursor:pointer;}'
+   +'.hr-rd .dot{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;}'
+   +'.hr-rd.todo .dot{background:rgba(200,169,110,.16);}'
+   +'.hr-rd.todo .dot::after{content:"";width:7px;height:7px;border-radius:50%;background:#c8a96e;}'
+   +'.hr-rd.done .dot{background:var(--p1-soft,#f2f3f5);}'
+   +'.hr-rd.done .dot svg{width:12px;height:12px;stroke:var(--p1-slate,#5a6470);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}'
+   +'.hr-rd b{flex:1;font-size:.82rem;font-weight:700;color:var(--text-1,#1b2027);}'
+   +'.hr-rd.done b{color:#9aa1ab;text-decoration:line-through;text-decoration-color:rgba(154,161,171,.5);}'
+   +'.hr-rd .st{flex:0 0 auto;font-size:.68rem;font-weight:800;}'
+   +'.hr-rd.todo .st{color:#c8a96e;}'
+   +'.hr-rd.done .st{color:#aab0b8;}'
+    /* 4) 예약 화면 취소 수수료 요약 */
+   +'.res-cancel-note{margin:12px 0 14px;background:var(--p1-card,#fff);border:1px solid var(--p1-line,#e8eaee);border-radius:16px 16px 16px 7px;overflow:hidden;box-shadow:0 2px 8px -6px rgba(40,48,58,.12);}'
+   +'.res-cancel-note .rcn-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--text-1,#1b2027);}'
+   +'.res-cancel-note .rcn-head b{font-weight:800;color:var(--text-1,#1b2027);box-shadow:inset 0 -6px 0 rgba(200,169,110,.22);}'
+   +'.res-cancel-note .rcn-arrow{flex:0 0 auto;color:#9aa1ab;font-size:.8rem;transition:transform .25s;}'
+   +'.res-cancel-note .rcn-body{padding:2px 15px 13px;border-top:1px solid var(--p1-soft,#f2f3f5);}'
+   +'.res-cancel-note .rcn-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:.76rem;color:var(--text-2,#4a505a);border-bottom:1px solid var(--p1-soft,#f2f3f5);}'
+   +'.res-cancel-note .rcn-row:last-of-type{border-bottom:0;}'
+   +'.res-cancel-note .rcn-row b.ok{color:#1d7a3a;font-weight:800;}'
+   +'.res-cancel-note .rcn-row b.mid{color:#9a6a00;font-weight:800;}'
+   +'.res-cancel-note .rcn-row b.no{color:#b23a3a;font-weight:800;}'
+   +'.res-cancel-note .rcn-small{margin-top:9px;font-size:.66rem;line-height:1.55;color:#8a919c;}';
+  (document.head||document.documentElement).appendChild(st);
+
+  /* ───── 1) 네트워크 상태 감시 ───── */
+  var bar=document.createElement('div'); bar.className='caro-off-bar';
+  bar.innerHTML='<svg viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 5.2-3M9.3 12a9 9 0 0 1 2-1.3M12 16.6h.01M16.9 5.6A15 15 0 0 1 22 8.5M14.8 10.7a9 9 0 0 1 3.5 2.6M3 3l18 18"/></svg>'
+    +'<span>오프라인 상태예요 — 차량 제어·예약이 지연될 수 있어요</span>';
+  function mountBar(){ if(document.body&&!bar.parentNode) document.body.appendChild(bar); }
+  if(document.body) mountBar(); else document.addEventListener('DOMContentLoaded',mountBar);
+  var wasOff=false;
+  function setNet(on){
+    mountBar();
+    if(!on){ bar.classList.add('on'); wasOff=true; }
+    else{
+      bar.classList.remove('on');
+      if(wasOff){ wasOff=false; toast('네트워크가 다시 연결되었어요'); }
+    }
+  }
+  window.addEventListener('online',function(){ setNet(true); });
+  window.addEventListener('offline',function(){ setNet(false); });
+  try{ if(navigator.onLine===false) setNet(false); }catch(e){}
+
+  /* ───── 2) 빈 화면 CTA ───── */
+  function addCta(listId, txt){
+    var list=document.getElementById(listId); if(!list) return;
+    var empty=list.querySelector('.empty-reservation'); if(!empty) return;
+    if(empty.querySelector('.caro-empty-cta')) return;
+    var et=empty.querySelector('.empty-text');
+    if(et && /해당 내역/.test(et.textContent||'')) return; /* 필터 결과 없음엔 CTA 생략 */
+    var btn=document.createElement('button'); btn.className='caro-empty-cta';
+    btn.innerHTML=txt+' <span style="opacity:.75">→</span>';
+    btn.addEventListener('click',function(){ go('rental-screen'); });
+    empty.appendChild(btn);
+  }
+  function watchEmpty(listId, txt){
+    var list=document.getElementById(listId); if(!list) return;
+    addCta(listId, txt);
+    new MutationObserver(function(){ addCta(listId, txt); }).observe(list,{childList:true});
+  }
+  function bootCta(){
+    watchEmpty('my-reservation-list','차량 예약하러 가기');
+    watchEmpty('usage-history-list','첫 이용 시작하기');
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bootCta); else bootCta();
+
+  /* ───── 3) 이용 준비 안내 카드 (홈) ───── */
+  var IC_CHECK='<svg viewBox="0 0 24 24"><path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></svg>';
+  var _rdSig='';
+  function readyState(){
+    var logged=!!window._caroLoggedIn;
+    var lic=!!(window.userInfo&&window.userInfo.license&&String(window.userInfo.license).trim());
+    var card=!!(window.savedCards&&window.savedCards.length);
+    return {logged:logged,lic:lic,card:card,sig:logged+'|'+lic+'|'+card};
+  }
+  function row(cls,label,done){
+    return '<div class="hr-rd '+(done?'done':'todo')+'" data-rd="'+cls+'">'
+      +'<span class="dot">'+(done?IC_CHECK:'')+'</span><b>'+label+'</b>'
+      +'<span class="st">'+(done?'완료':'등록 필요')+'</span></div>';
+  }
+  function renderReady(){
+    var s=readyState();
+    var root=document.querySelector('#home-screen .nh-root');
+    var grid=root?root.querySelector('.hr-grid'):null;
+    var card=root?root.querySelector('.hr-ready'):null;
+    /* 조건 미충족(비로그인·둘 다 완료·골격 없음) → 카드 제거 */
+    if(!root||!grid||!s.logged||(s.lic&&s.card)){
+      if(card) card.remove();
+      _rdSig=s.sig; return;
+    }
+    if(card && _rdSig===s.sig) return;   /* 변화 없으면 재작성 안 함 */
+    _rdSig=s.sig;
+    if(!card){ card=document.createElement('div'); card.className='hr-ready'; grid.insertAdjacentElement('afterend',card); }
+    card.innerHTML='<h3>이용 준비, 조금만 더</h3><p>등록을 마치면 바로 차량을 이용할 수 있어요</p>'
+      +row('lic','운전면허 등록',s.lic)
+      +row('card','결제 카드 등록',s.card);
+    card.querySelectorAll('.hr-rd.todo').forEach(function(el){
+      el.addEventListener('click',function(){ go('payment-info-screen'); });
+    });
+  }
+  setInterval(function(){ try{ renderReady(); }catch(e){} }, 2500);
+  [800,2000].forEach(function(t){ setTimeout(function(){ try{ renderReady(); }catch(e){} }, t); });
+
+  console.log('[프로] ✅ 완성도 패치 v1 (네트워크·빈화면 CTA·이용 준비 카드)');
 })();
