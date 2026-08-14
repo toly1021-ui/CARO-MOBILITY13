@@ -701,7 +701,7 @@
     ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
     ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
   }
-  // ── 높이 : 심플한 원통(둥근 통) — 차가 지하/지상으로 오르내리는 걸 표현 ──
+  // ── 높이 : 입체(3D) 원통 — 차가 지하/지상으로 오르내리는 링으로 표시 ──
   function drawChart(v){
     if(CW===0) resizeChart();
     var C=chartColors();
@@ -713,58 +713,93 @@
       ctx.fillText(v?'IoT 기기 데이터 수신 대기…':'차량을 선택하세요', CW/2, CH/2);
       return;
     }
-    var alt=v.alt;
-    var dispAlt=(typeof v._dispAlt==='number')?v._dispAlt:alt;
+    var alt=v.alt, dispAlt=(typeof v._dispAlt==='number')?v._dispAlt:alt;
     var Wm=8, lo=dispAlt-Wm, hi=dispAlt+Wm;
-    // 위 여백 넉넉히(제목과 안 겹침) / 아래 여백(상태 글자)
-    var topPad=34, botPad=26, H=CH-topPad-botPad;
+    var topPad=34, botPad=26, H=CH-topPad-botPad;    // 위 여백=제목과 안 겹침
     function Y(a){ return topPad + (hi-a)/(hi-lo)*H; }
-    // 왼쪽 거터=층 라벨 전용, 원통은 그 오른쪽
-    var leftGut=26, rightGut=12;
-    var xL=leftGut, xR=CW-rightGut, w=xR-xL, rad=10;
-    var yTop=topPad, yBot=CH-botPad;
-    var baseCol=dark?'rgba(120,160,220,0.16)':'rgba(80,120,185,0.11)';
-    var bodyCol=dark?'rgba(255,255,255,0.05)':'rgba(24,25,28,0.04)';
+    var leftGut=26, rightGut=14;
+    var cx=leftGut+(CW-leftGut-rightGut)/2;
+    var rx=Math.min((CW-leftGut-rightGut)/2-2, 44);
+    var ry=Math.max(7, rx*0.28);                     // 깊이(원근) — 입체감
+    var yTop=topPad, yBot=CH-botPad, L=cx-rx, R=cx+rx;
     var lineCol=C.base;
 
-    // 원통 몸통(둥근 사각형) — 채우고 테두리
-    rrect(xL,yTop,w,yBot-yTop,rad); ctx.fillStyle=bodyCol; ctx.fill();
-    // 지하(0m 아래) 옅은 파란 음영 — 몸통 안쪽만
+    // 옆면 곡률 그라데이션(입체 핵심)
+    var g=ctx.createLinearGradient(L,0,R,0);
+    if(dark){ g.addColorStop(0,'rgba(70,80,100,0.60)'); g.addColorStop(.28,'rgba(150,165,195,0.30)');
+      g.addColorStop(.5,'rgba(190,205,230,0.18)'); g.addColorStop(.72,'rgba(150,165,195,0.30)'); g.addColorStop(1,'rgba(70,80,100,0.60)'); }
+    else { g.addColorStop(0,'rgba(24,28,40,0.20)'); g.addColorStop(.28,'rgba(24,28,40,0.07)');
+      g.addColorStop(.5,'rgba(255,255,255,0.10)'); g.addColorStop(.72,'rgba(24,28,40,0.07)'); g.addColorStop(1,'rgba(24,28,40,0.20)'); }
+    // 몸통(옆면) 채우기
+    ctx.fillStyle=g; ctx.fillRect(L,yTop,rx*2,yBot-yTop);
+    // 지하(0m 아래) 파란 음영 — 옆면 안쪽만
     var yZero=Y(0);
-    if(yZero<yBot){ ctx.save(); rrect(xL,yTop,w,yBot-yTop,rad); ctx.clip();
-      var ys=Math.max(yZero,yTop); ctx.fillStyle=baseCol; ctx.fillRect(xL,ys,w,yBot-ys); ctx.restore(); }
-    // 층 눈금선(몸통 안) + 라벨(왼쪽 거터)
-    ctx.save(); rrect(xL,yTop,w,yBot-yTop,rad); ctx.clip();
-    ctx.font="600 9px Saira, sans-serif"; ctx.textBaseline='middle';
+    if(yZero<yBot){ var ys=Math.max(yZero,yTop);
+      ctx.fillStyle=dark?'rgba(90,140,220,0.20)':'rgba(70,120,195,0.14)'; ctx.fillRect(L,ys,rx*2,yBot-ys); }
+
     var fS=Math.floor(lo/FLOOR_H), fE=Math.ceil(hi/FLOOR_H);
+    // 층 눈금 = 타원 링(앞 실선/뒤 점선) → 원통 곡면 느낌
     for(var fl=fS; fl<=fE; fl++){
-      var ay=fl*FLOOR_H, y=Y(ay); if(y<yTop||y>yBot)continue;
+      var ay=fl*FLOOR_H, y=Y(ay); if(y<yTop-0.5||y>yBot+0.5)continue;
       var ground=(fl===0);
-      ctx.strokeStyle=ground?C.base:C.grid; ctx.lineWidth=ground?1.2:1;
-      ctx.setLineDash(ground?[4,4]:[]); ctx.beginPath(); ctx.moveTo(xL,y); ctx.lineTo(xR,y); ctx.stroke(); ctx.setLineDash([]);
+      ctx.lineWidth=ground?1.3:1; ctx.strokeStyle=ground?C.base:C.grid;
+      ctx.setLineDash([]); ctx.beginPath(); ctx.ellipse(cx,y,rx,ry,0,0,Math.PI,false); ctx.stroke();     // 앞(아래 반)
+      ctx.setLineDash([3,3]); ctx.beginPath(); ctx.ellipse(cx,y,rx,ry,0,Math.PI,Math.PI*2,false); ctx.stroke(); ctx.setLineDash([]); // 뒤
     }
-    ctx.restore();
-    // 층 라벨(원통 밖 왼쪽) — 겹칠 일 없음
+    // 층 라벨(원통 밖 왼쪽)
     ctx.font="600 9px Saira, sans-serif"; ctx.textBaseline='middle'; ctx.textAlign='right';
     for(var fl2=fS; fl2<=fE; fl2++){
       var ay2=fl2*FLOOR_H, y2=Y(ay2); if(y2<yTop||y2>yBot)continue;
-      ctx.fillStyle=(fl2===0)?C.baseLbl:C.lbl; ctx.fillText(floorOf(ay2).code, leftGut-5, y2);
+      ctx.fillStyle=(fl2===0)?C.baseLbl:C.lbl; ctx.fillText(floorOf(ay2).code, L-6, y2);
     }
-    // 몸통 테두리
-    rrect(xL,yTop,w,yBot-yTop,rad); ctx.strokeStyle=lineCol; ctx.lineWidth=1.4; ctx.stroke();
+    // 옆면 윤곽선
+    ctx.strokeStyle=lineCol; ctx.lineWidth=1.5; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(L,yTop); ctx.lineTo(L,yBot); ctx.moveTo(R,yTop); ctx.lineTo(R,yBot); ctx.stroke();
+    // 바닥 캡(앞 실선/뒤 점선)
+    ctx.beginPath(); ctx.ellipse(cx,yBot,rx,ry,0,0,Math.PI,false); ctx.stroke();
+    ctx.setLineDash([3,3]); ctx.beginPath(); ctx.ellipse(cx,yBot,rx,ry,0,Math.PI,Math.PI*2,false); ctx.stroke(); ctx.setLineDash([]);
+    // 윗면 캡(타원) — 살짝 밝게
+    ctx.beginPath(); ctx.ellipse(cx,yTop,rx,ry,0,0,Math.PI*2);
+    ctx.fillStyle=dark?'rgba(200,215,240,0.14)':'rgba(255,255,255,0.55)'; ctx.fill();
+    ctx.strokeStyle=lineCol; ctx.lineWidth=1.5; ctx.stroke();
 
-    // 현재 차 위치 : 심플한 가로 알약 + 🚗
-    var my=Y(dispAlt); if(my<yTop+4)my=yTop+4; if(my>yBot-4)my=yBot-4;
-    var ph=16, pw=w-10;
-    rrect(xL+5, my-ph/2, pw, ph, ph/2);
-    ctx.fillStyle=dark?'rgba(240,220,166,.30)':'rgba(200,169,110,.34)';
-    ctx.strokeStyle=C.dot; ctx.lineWidth=1.5; ctx.fill(); ctx.stroke();
-    ctx.font="13px 'Noto Sans KR',sans-serif"; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('🚗', (xL+xR)/2, my);
+    // ── 나선(스파이럴) 궤적 + 현재 위치 점 (이모지 없이 점으로) ──
+    // 방향(heading)에 따라 원통 둘레의 위치가 바뀌고, 고도에 따라 높낮이가 바뀜 → 돌면서 오르내리면 나선이 됨
+    function ptAt(a,hdeg){ var r2=hdeg*Math.PI/180; return {x:cx+rx*Math.cos(r2), y:Y(a)+ry*Math.sin(r2), f:(Math.sin(r2)>=0)}; }
+    ctx.save(); ctx.beginPath(); ctx.rect(L-2,yTop-ry-2,rx*2+4,(yBot-yTop)+ry*2+4); ctx.clip();
+    var hel=v._helix||[];
+    if(hel.length>=2){
+      for(var hi2=1; hi2<hel.length; hi2++){
+        var p0=ptAt(hel[hi2-1].a,hel[hi2-1].h), p1=ptAt(hel[hi2].a,hel[hi2].h);
+        var frac=hi2/hel.length;                  // 최근 구간일수록 진하게
+        ctx.strokeStyle=C.dot; ctx.globalAlpha=0.10+0.55*frac;
+        ctx.lineWidth=p1.f?2.4:1.2; ctx.setLineDash(p1.f?[]:[3,3]);
+        ctx.beginPath(); ctx.moveTo(p0.x,p0.y); ctx.lineTo(p1.x,p1.y); ctx.stroke();
+      }
+      ctx.globalAlpha=1; ctx.setLineDash([]);
+    }
+    // 현재 위치 점 (부드럽게 보간된 고도·방향)
+    var mAlt=dispAlt; var hd=(typeof v._dispHeading==='number')?v._dispHeading:(v.heading||0);
+    var dp=ptAt(mAlt,hd);
+    if(dp.y<yTop)dp.y=yTop; if(dp.y>yBot)dp.y=yBot;
+    ctx.shadowColor=C.glow; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(dp.x,dp.y,5,0,Math.PI*2); ctx.fillStyle=C.dot; ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.beginPath(); ctx.arc(dp.x,dp.y,5,0,Math.PI*2); ctx.strokeStyle=dark?'#1b1c1f':'#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.restore();
 
-    // 상태 태그 : 맨 아래 중앙(원통과 안 겹침)
+    // ── 상태 태그 : 나선 하강/상승 판단 ──
     var dir=0; if(alt-dispAlt>0.03)dir=1; else if(alt-dispAlt<-0.03)dir=-1;
-    var tag=(dir>0?'▲ 상승중':(dir<0?'▼ 하강중':'● 정지'))+' · '+floorOf(alt).code;
+    if(dir===0 && v.hist && v.hist.length>3){ var d2=v.hist[v.hist.length-1]-v.hist[v.hist.length-4];
+      if(d2>0.2)dir=1; else if(d2<-0.2)dir=-1; }
+    var turning=Math.abs(v.yawRate||0)>3;                 // 회전 중(램프)
+    var tag;
+    if(turning && dir>0)      tag='🌀 나선 상승중';
+    else if(turning && dir<0) tag='🌀 나선 하강중';
+    else if(dir>0)            tag='▲ 상승중';
+    else if(dir<0)            tag='▼ 하강중';
+    else                      tag='● 정지';
+    tag += ' · '+floorOf(alt).code;
     ctx.font="700 11px 'Noto Sans KR',sans-serif"; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
     ctx.fillStyle=(dir!==0)?C.dot:C.line;
     ctx.fillText(tag, CW/2, CH-8);
@@ -1001,6 +1036,16 @@
       v.over   = !!t.over;
       if(t.shock!=null)   v.shock=t.shock;
       v.impact = !!t.impact;
+      /* 나선(스파이럴) 궤적: 새 리포트마다 (고도,방향) 한 점 누적 */
+      if(t.alt!=null){
+        var hst=t.lastSeen?t.lastSeen.getTime():null;
+        if(hst===null || hst!==v._lastHelixTs){
+          v._helix=v._helix||[];
+          v._helix.push({a:t.alt, h:(v.heading||0)});
+          if(v._helix.length>48) v._helix.shift();
+          v._lastHelixTs=hst;
+        }
+      }
       v.devLastSeen=t.lastSeen; v.devOnline=t.online;
     });
   }
