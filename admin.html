@@ -155,8 +155,16 @@
   .stat .v{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:24px;color:var(--txt);}
   .stat .v.gold{color:var(--accent);}
   .chartwrap{position:relative;height:170px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);overflow:hidden;}
-  .chartwrap .ytag{position:absolute;top:7px;left:9px;font-family:'Saira',sans-serif;font-size:9.5px;letter-spacing:.13em;color:var(--muted);text-transform:uppercase;}
-  #liveChart{display:block;width:100%;height:100%;}
+  .chartwrap .ytag{position:absolute;top:7px;left:9px;font-family:'Saira',sans-serif;font-size:9.5px;letter-spacing:.13em;color:var(--muted);text-transform:uppercase;z-index:2;}
+  #liveChart,#rotChart{display:block;width:100%;height:100%;}
+  .chartrow{display:flex;gap:8px;}
+  .chartrow .chartwrap.half{flex:1 1 0;min-width:0;}
+  .lv-alert{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px;}
+  .lv-alert:empty{display:none;}
+  .lv-alert .al{font-size:12px;font-weight:700;padding:5px 10px;border-radius:8px;display:inline-flex;align-items:center;gap:5px;}
+  .lv-alert .al.spd{background:rgba(120,150,200,.14);color:#5b7fb0;}
+  .lv-alert .al.over,.lv-alert .al.shock{background:rgba(213,122,104,.18);color:#d5563e;}
+  .lv-alert .al.okv{background:rgba(123,184,154,.14);color:#4f9a78;}
   .lv-loc{margin-top:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px;}
   .lv-loc b{color:var(--txt);font-weight:600;}
   .panel-body{padding:18px;}
@@ -291,10 +299,17 @@
             <div class="stat"><div class="l">연료량</div><div class="v" id="lvBat">—</div></div>
             <div class="stat"><div class="l">상태</div><div class="v" id="lvMove" style="font-size:18px">—</div></div>
           </div>
-          <div class="chartwrap">
-            <span class="ytag">높이 (m) · 최근 변화</span>
-            <canvas id="liveChart"></canvas>
+          <div class="chartrow">
+            <div class="chartwrap half">
+              <span class="ytag">높이 (m) · 최근 변화</span>
+              <canvas id="liveChart"></canvas>
+            </div>
+            <div class="chartwrap half">
+              <span class="ytag">회전 · 방향 (자이로)</span>
+              <canvas id="rotChart"></canvas>
+            </div>
           </div>
+          <div class="lv-alert" id="lvAlert"></div>
           <div class="lv-loc">📍 <b id="lvLoc">—</b></div>
         </div>
       </aside>
@@ -607,8 +622,12 @@
   };
   // ── live panel ──
   var cv=document.getElementById('liveChart'), ctx=cv.getContext('2d'), CW=0,CH=0,DPR=1;
+  var rcv=document.getElementById('rotChart'), rctx=rcv?rcv.getContext('2d'):null, RW=0,RH=0;
   function resizeChart(){ var r=cv.getBoundingClientRect(); DPR=window.devicePixelRatio||1;
-    CW=r.width; CH=r.height; cv.width=CW*DPR; cv.height=CH*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); }
+    CW=r.width; CH=r.height; cv.width=CW*DPR; cv.height=CH*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    resizeRot(); }
+  function resizeRot(){ if(!rcv||!rctx) return; var r=rcv.getBoundingClientRect(); DPR=window.devicePixelRatio||1;
+    RW=r.width; RH=r.height; rcv.width=RW*DPR; rcv.height=RH*DPR; rctx.setTransform(DPR,0,0,DPR,0,0); }
   window.addEventListener('resize', resizeChart);
   function chartColors(){
     var dark=document.documentElement.getAttribute('data-theme')==='dark';
@@ -624,7 +643,7 @@
       document.getElementById('lvStatus').className='st'; document.getElementById('lvStatus').innerHTML='';
       document.getElementById('lvFloor').textContent='—'; document.getElementById('lvAlt').textContent='—';
       document.getElementById('lvBat').textContent='—'; document.getElementById('lvMove').textContent='—';
-      document.getElementById('lvLoc').textContent='—'; drawChart(null); return;
+      document.getElementById('lvLoc').textContent='—'; drawChart(null); drawRotation(null); updateAlert(null); return;
     }
     var es=carEffectiveStatus(v);
     var hasAlt=(typeof v.alt==='number'), f=hasAlt?floorOf(v.alt):null, st=stCls(es);
@@ -636,7 +655,7 @@
     document.getElementById('lvBat').textContent = batText(v.battery);
     document.getElementById('lvMove').textContent = hasAlt?(v.status==='점검'?'점검중':'수신중'):'—';
     document.getElementById('lvLoc').textContent = v.place + (f?('  ·  '+f.ko):'');
-    drawChart(v);
+    drawChart(v); drawRotation(v); updateAlert(v);
   }
   function drawChart(v){
     if(CW===0) resizeChart();
@@ -676,6 +695,69 @@
     var hx=X(h.length-1), hy=Y(h[h.length-1]);
     ctx.beginPath(); ctx.arc(hx,hy,3.4,0,Math.PI*2); ctx.fillStyle=C.dot;
     ctx.shadowColor=C.glow; ctx.shadowBlur=10; ctx.fill(); ctx.shadowBlur=0;
+  }
+  // ── 회전(방향) 나침반 : 자이로 heading + 회전방향 ──
+  function drawRotation(v){
+    if(!rctx) return;
+    if(RW===0) resizeRot();
+    var C=chartColors();
+    rctx.clearRect(0,0,RW,RH);
+    if(!v || typeof v.heading!=='number'){
+      rctx.fillStyle=C.empty; rctx.font="500 12px 'Noto Sans KR', sans-serif";
+      rctx.textAlign='center'; rctx.textBaseline='middle';
+      rctx.fillText(v?'자이로 수신 대기…':'차량을 선택하세요', RW/2, RH/2);
+      return;
+    }
+    var cx=RW/2, cy=RH/2+6, R=Math.min(RW-16, RH-30)/2;
+    // 다이얼 원
+    rctx.strokeStyle=C.grid; rctx.lineWidth=1.4;
+    rctx.beginPath(); rctx.arc(cx,cy,R,0,Math.PI*2); rctx.stroke();
+    // 45° 눈금 + 0/90/180/270
+    rctx.font="600 8px Saira, sans-serif"; rctx.fillStyle=C.lbl;
+    rctx.textAlign='center'; rctx.textBaseline='middle';
+    for(var d=0; d<360; d+=45){
+      var a=(d-90)*Math.PI/180;
+      var x1=cx+Math.cos(a)*(R-4), y1=cy+Math.sin(a)*(R-4);
+      var x2=cx+Math.cos(a)*R,     y2=cy+Math.sin(a)*R;
+      rctx.strokeStyle=C.grid; rctx.lineWidth=(d%90===0)?1.6:1;
+      rctx.beginPath(); rctx.moveTo(x1,y1); rctx.lineTo(x2,y2); rctx.stroke();
+      if(d%90===0){ var lx=cx+Math.cos(a)*(R-12), ly=cy+Math.sin(a)*(R-12);
+        rctx.fillText(d+'°', lx, ly); }
+    }
+    // 회전방향 → 바늘 색
+    var yaw=(typeof v.yawRate==='number')?v.yawRate:0;
+    var turning=Math.abs(yaw)>3;
+    var needle = turning ? C.line : C.baseLbl;
+    // 방위 바늘 (heading, 0=위쪽)
+    var ha=(v.heading-90)*Math.PI/180;
+    var nx=cx+Math.cos(ha)*(R-6), ny=cy+Math.sin(ha)*(R-6);
+    rctx.strokeStyle=needle; rctx.lineWidth=2.8; rctx.lineCap='round';
+    rctx.shadowColor=C.glow; rctx.shadowBlur=turning?9:4;
+    rctx.beginPath(); rctx.moveTo(cx,cy); rctx.lineTo(nx,ny); rctx.stroke(); rctx.shadowBlur=0;
+    // 중심 점
+    rctx.beginPath(); rctx.arc(cx,cy,3,0,Math.PI*2); rctx.fillStyle=needle; rctx.fill();
+    // 가운데 각도 + 회전상태 텍스트
+    rctx.fillStyle=C.line; rctx.font="700 15px Saira, sans-serif"; rctx.textBaseline='alphabetic';
+    rctx.fillText(Math.round(v.heading)+'°', cx, RH-6);
+    if(turning){
+      var dir=(yaw>0)?'▶ 우회전':'◀ 좌회전';   // 장착방향 반대면 부호 뒤집기
+      rctx.fillStyle=C.line; rctx.font="700 11px 'Noto Sans KR',sans-serif";
+      rctx.fillText(dir, cx, 14);
+    }
+  }
+  // ── 속도·충격 경고 배지 ──
+  function updateAlert(v){
+    var el=document.getElementById('lvAlert'); if(!el) return;
+    if(!v){ el.innerHTML=''; return; }
+    var html='';
+    if(typeof v.speed==='number'){
+      var sp=Math.round(v.speed);
+      html += v.over ? '<span class="al over">🚨 과속 '+sp+'km/h</span>'
+                     : '<span class="al spd">🚗 '+sp+' km/h</span>';
+    }
+    if(v.impact){ html += '<span class="al shock">⚠ 충격 감지'+(typeof v.shock==='number'?(' '+v.shock.toFixed(1)+'g'):'')+'</span>'; }
+    else if(typeof v.shock==='number' && v.shock>0.3){ html += '<span class="al shock">진동 '+v.shock.toFixed(1)+'g</span>'; }
+    el.innerHTML=html;
   }
   // ── pricing (차량별, Firestore 실시간 반영) ──
   function priceVal(v, keys){ var r=v.raw||{}; for(var i=0;i<keys.length;i++){ var x=num(r[keys[i]]); if(x!=null) return x; } return ''; }
@@ -839,6 +921,12 @@
         }
         v._lastAltTs = stamp;
       }
+      if(t.heading!=null) v.heading=t.heading;
+      if(t.yaw!=null)     v.yawRate=t.yaw;
+      if(t.speed!=null)   v.speed=t.speed;
+      v.over   = !!t.over;
+      if(t.shock!=null)   v.shock=t.shock;
+      v.impact = !!t.impact;
       v.devLastSeen=t.lastSeen; v.devOnline=t.online;
     });
   }
@@ -852,6 +940,9 @@
       var loc=(num(d.lat)!=null)?(Number(d.lat).toFixed(4)+', '+Number(d.lng||0).toFixed(4)):null;
       next[fid]={ battery:(fuel!=null?Math.round(fuel):null), place:loc,
         alt:(num(d.altitude)!=null?num(d.altitude):num(d.alt)),
+        heading:num(d.heading), yaw:num(d.yaw),
+        speed:num(d.speed), over:(d.over===true),
+        shock:num(d.shock), impact:(d.impact===true),
         lastSeen:ls, online:(d.status==='online'&&ls&&(Date.now()-ls.getTime()<60000)) };
     });
     DEV_TELE=next;
@@ -949,7 +1040,7 @@
         document.getElementById('lvMove').textContent = sv.status==='점검'?'점검중':(mv?(sv.alt<prev?'하강중 ▼':'상승중 ▲'):'정지');
         document.getElementById('lvLoc').textContent = sv.place+'  ·  '+f.ko;
       }
-      drawChart(sv);
+      drawChart(sv); drawRotation(sv); updateAlert(sv);
     }
     requestAnimationFrame(animate);
   }
