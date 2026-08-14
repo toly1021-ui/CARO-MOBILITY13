@@ -728,8 +728,9 @@
     var yaw=(typeof v.yawRate==='number')?v.yawRate:0;
     var turning=Math.abs(yaw)>3;
     var needle = turning ? C.line : C.baseLbl;
-    // 방위 바늘 (heading, 0=위쪽)
-    var ha=(v.heading-90)*Math.PI/180;
+    // 방위 바늘 (부드럽게 보간된 _dispHeading 사용, 0=위쪽)
+    var dh=(typeof v._dispHeading==='number')?v._dispHeading:v.heading;
+    var ha=(dh-90)*Math.PI/180;
     var nx=cx+Math.cos(ha)*(R-6), ny=cy+Math.sin(ha)*(R-6);
     rctx.strokeStyle=needle; rctx.lineWidth=2.8; rctx.lineCap='round';
     rctx.shadowColor=C.glow; rctx.shadowBlur=turning?9:4;
@@ -1024,23 +1025,42 @@
       console.log('[CARO 관제] ✅ Firestore 실시간 연결됨');
     }catch(e){ setConn(false); console.error('[CARO 관제] 연결 오류', e); }
   }
+  // 각도 최단경로 차이(-180~180)
+  function angDiff(target, cur){ var d=(target-cur)%360; if(d>180)d-=360; if(d<-180)d+=360; return d; }
+  var _liveKey=null;   // 데이터가 실제로 바뀌었을 때만 무거운 그래프 재렌더
+  function liveTextUpdate(sv){
+    if(typeof sv.alt!=='number'){
+      document.getElementById('lvFloor').textContent='—';
+      document.getElementById('lvAlt').textContent='기기 미연결';
+      document.getElementById('lvMove').textContent='—';
+    } else {
+      var f=floorOf(sv.alt);
+      document.getElementById('lvFloor').textContent = sv.status==='점검'?'—':f.code;
+      document.getElementById('lvAlt').textContent = (sv.alt>=0?'+':'')+sv.alt.toFixed(1)+'m';
+      var prev=sv.hist&&sv.hist.length>1?sv.hist[sv.hist.length-2]:sv.alt;
+      var mv=Math.abs(sv.alt-prev)>0.03;
+      document.getElementById('lvMove').textContent = sv.status==='점검'?'점검중':(mv?(sv.alt<prev?'하강중 ▼':'상승중 ▲'):'정지');
+      document.getElementById('lvLoc').textContent = sv.place+'  ·  '+f.ko;
+    }
+  }
   function animate(){
     var sv=FLEET.find(function(x){return x.id===selectedId;});
     if(sv && !document.getElementById('tab-dash').classList.contains('hide')){
-      if(typeof sv.alt!=='number'){
-        document.getElementById('lvFloor').textContent='—';
-        document.getElementById('lvAlt').textContent='기기 미연결';
-        document.getElementById('lvMove').textContent='—';
-      } else {
-        var f=floorOf(sv.alt);
-        document.getElementById('lvFloor').textContent = sv.status==='점검'?'—':f.code;
-        document.getElementById('lvAlt').textContent = (sv.alt>=0?'+':'')+sv.alt.toFixed(1)+'m';
-        var prev=sv.hist.length>1?sv.hist[sv.hist.length-2]:sv.alt;
-        var mv=Math.abs(sv.alt-prev)>0.03;
-        document.getElementById('lvMove').textContent = sv.status==='점검'?'점검중':(mv?(sv.alt<prev?'하강중 ▼':'상승중 ▲'):'정지');
-        document.getElementById('lvLoc').textContent = sv.place+'  ·  '+f.ko;
+      // (1) 데이터 변경 감지 → 바뀐 경우에만 무거운 높이그래프/텍스트/경고 재렌더 (렉 방지)
+      var lastAlt=(sv.hist&&sv.hist.length)?sv.hist[sv.hist.length-1]:sv.alt;
+      var key=[sv.hist?sv.hist.length:0,lastAlt,sv.alt,sv.status,sv.battery,sv.place,
+               sv.speed,sv.over,sv.shock,sv.impact,sv.heading].join('|');
+      if(key!==_liveKey){ _liveKey=key; liveTextUpdate(sv); drawChart(sv); updateAlert(sv); }
+      // (2) 회전 바늘은 매 프레임 목표각으로 부드럽게 보간 → 실시간 회전이 매끄럽게 (움직일 때만 다시 그림)
+      if(typeof sv.heading==='number'){
+        if(typeof sv._dispHeading!=='number') sv._dispHeading=sv.heading;
+        var diff=angDiff(sv.heading, sv._dispHeading);
+        if(Math.abs(diff)>0.25){
+          sv._dispHeading += diff*0.20;                 // easing (0.20 = 부드럽게)
+          if(sv._dispHeading>=360)sv._dispHeading-=360; if(sv._dispHeading<0)sv._dispHeading+=360;
+          drawRotation(sv);                             // 보간 중일 때만 나침반 재렌더
+        }
       }
-      drawChart(sv); drawRotation(sv); updateAlert(sv);
     }
     requestAnimationFrame(animate);
   }
