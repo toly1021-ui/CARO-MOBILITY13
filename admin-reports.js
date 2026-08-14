@@ -143,14 +143,14 @@
     }
 
     root.innerHTML =
-      '<div class="rp-card">'
-      + '<div class="rp-hd">'
+      '<div class="rp-hd">'                          /* 헤더를 카드 밖 위로 배치 */
       +   '<span class="rp-title">사고 접수 · 문의</span>'
       +   '<span class="rp-seg">'
       +     '<button data-v="acc" class="'+(view==='acc'?'on':'')+'">사고 '+accCache.length+'</button>'
       +     '<button data-v="inq" class="'+(view==='inq'?'on':'')+'">문의 '+inqCache.length+'</button>'
       +   '</span>'
       + '</div>'
+      + '<div class="rp-card">'
       + body
       + '</div>';
 
