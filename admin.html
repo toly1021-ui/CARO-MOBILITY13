@@ -828,7 +828,17 @@
       if(!v) return;
       if(t.battery!=null) v.battery=t.battery;
       if(t.place) v.place=t.place;
-      if(t.alt!=null) v.alt=t.alt;
+      if(t.alt!=null){
+        v.alt=t.alt;
+        /* 높이 그래프(hist): 기기가 새 값 보낼 때마다 히스토리에 누적 */
+        v.hist = v.hist || [];
+        var stamp = t.lastSeen ? t.lastSeen.getTime() : null;
+        if(v.hist.length===0){ v.hist.push(t.alt); v.hist.push(t.alt); }        /* 첫 수신: 점 2개 시드 → 그래프 즉시 그려짐 */
+        else if(stamp===null || stamp!==v._lastAltTs){                          /* 새 리포트일 때만 1점 추가(중복 방지) */
+          v.hist.push(t.alt); if(v.hist.length>80) v.hist.shift();
+        }
+        v._lastAltTs = stamp;
+      }
       v.devLastSeen=t.lastSeen; v.devOnline=t.online;
     });
   }
