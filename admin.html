@@ -314,6 +314,25 @@
         </div>
       </aside>
     </div>
+    <!-- 주행·이벤트 기록 (데이터 수집) -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-hd">
+        <div><h3>주행·이벤트 기록</h3></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="pill" id="logCount">0건</span>
+          <button class="btn" id="logCsvBtn" onclick="exportLogCsv()">CSV 내보내기</button>
+        </div>
+      </div>
+      <div class="demo-note" style="margin:0 0 8px">📋 IoT 기기가 기록한 <b>충격·과속·층 변화</b> 이벤트와 <b>60초 주기 위치</b>가 여기에 쌓입니다. (기기별 최근 200건)</div>
+      <div class="tbl-scroll" style="max-height:260px">
+        <table class="fleet" id="logTable">
+          <thead><tr>
+            <th>시각</th><th>종류</th><th>층</th><th>속도</th><th>충격</th><th>위치</th>
+          </tr></thead>
+          <tbody id="logBody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:22px">기록 수신 대기…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </section>
   <!-- ===================== TAB: PRICE ===================== -->
   <section id="tab-price" class="hide">
@@ -1062,10 +1081,71 @@
       FN.onSnapshot(FN.collection(db,'bl_cars'),      function(s){ applyCars(s,'THE BLACK'); }, function(e){ console.warn('bl_cars',e); });
       FN.onSnapshot(FN.collection(db,'reservations'), function(s){ applyResv(s); },             function(e){ console.warn('resv',e); });
       FN.onSnapshot(FN.collection(db,'devices'),      function(s){ applyDevices(s); },          function(e){ console.warn('devices',e); });
+      startLogs();
       setConn(true);
       console.log('[CARO 관제] ✅ Firestore 실시간 연결됨');
     }catch(e){ setConn(false); console.error('[CARO 관제] 연결 오류', e); }
   }
+  // ── 데이터 수집(기록): devices/CARO-001/events + telemetry 구독 ──
+  var LOG_ROWS=[];
+  var LOG_DEV='CARO-001';
+  function floorCode(fl){ return (fl>=1)?(fl+'F'):('B'+(1-fl)); }
+  function logTs(t){ try{ var d=t&&t.toDate?t.toDate():(t?new Date(t):null); if(!d)return '';
+    return (d.getMonth()+1)+'/'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2); }catch(e){return '';} }
+  function evLabel(e){ return e==='impact'?'⚠ 충격':(e==='overspeed'?'🚨 과속':(e==='floor'?'🔼 층변화':'· 주기')); }
+  function renderLogs(){
+    var b=document.getElementById('logBody'); if(!b) return;
+    var rows=LOG_ROWS.slice().sort(function(a,z){return z._ms-a._ms;}).slice(0,200);
+    var cnt=document.getElementById('logCount'); if(cnt) cnt.textContent=rows.length+'건';
+    if(!rows.length){ b.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:22px">기록 수신 대기…</td></tr>'; return; }
+    b.innerHTML=rows.map(function(r){
+      var loc=(typeof r.lat==='number')?(r.lat.toFixed(4)+', '+(typeof r.lng==='number'?r.lng.toFixed(4):'0')):'—';
+      var sp=(typeof r.speed==='number')?(Math.round(r.speed)+' km/h'):'—';
+      var sh=(typeof r.shock==='number'&&r.shock>0)?(r.shock.toFixed(1)+'g'):'—';
+      var fl=(r.floor!=null)?floorCode(r.floor):'—';
+      var warn=(r.event==='impact'||r.event==='overspeed');
+      return '<tr'+(warn?' style="color:#d5563e;font-weight:600"':'')+'><td style="font-family:Saira;font-size:12px">'+logTs(r.ts)+'</td>'+
+        '<td>'+evLabel(r.event)+'</td><td>'+fl+'</td><td>'+sp+'</td><td>'+sh+'</td><td style="color:var(--muted);font-size:12px">'+loc+'</td></tr>';
+    }).join('');
+  }
+  function startLogs(){
+    var db=window.FB_DB, FN=window.FB_FN; if(!db||!FN||!FN.query) return;
+    ['events','telemetry'].forEach(function(sub){
+      try{
+        var q=FN.query(FN.collection(db,'devices',LOG_DEV,sub), FN.orderBy('ts','desc'), FN.limit(200));
+        FN.onSnapshot(q, function(snap){
+          LOG_ROWS=LOG_ROWS.filter(function(r){return r._sub!==sub;});
+          snap.forEach(function(doc){ var d=doc.data()||{};
+            var ms=(d.ts&&d.ts.toDate)?d.ts.toDate().getTime():0;
+            LOG_ROWS.push({_sub:sub,_id:doc.id,_ms:ms,ts:d.ts,
+              event:(d.event||(sub==='telemetry'?'':'')),
+              floor:(d.floor!=null?Number(d.floor):null), alt:num(d.alt), heading:num(d.heading),
+              shock:num(d.shock), lat:num(d.lat), lng:num(d.lng), speed:num(d.speed)});
+          });
+          renderLogs();
+        }, function(e){ console.warn('logs '+sub, e); });
+      }catch(e){ console.warn('startLogs '+sub, e); }
+    });
+  }
+  window.exportLogCsv=function(){
+    var rows=LOG_ROWS.slice().sort(function(a,z){return z._ms-a._ms;});
+    if(!rows.length){ if(window.toast)toast('내보낼 기록이 없습니다'); return; }
+    var head=['시각','종류','층','고도(m)','방향(deg)','속도(km/h)','충격(g)','위도','경도'];
+    var lines=[head.join(',')];
+    rows.forEach(function(r){
+      var fl=(r.floor!=null)?floorCode(r.floor):'';
+      lines.push([logTs(r.ts), (r.event||'주기'), fl,
+        (r.alt!=null?r.alt:''), (r.heading!=null?Math.round(r.heading):''),
+        (r.speed!=null?Math.round(r.speed):''), (r.shock!=null?r.shock:''),
+        (r.lat!=null?r.lat:''), (r.lng!=null?r.lng:'')].join(','));
+    });
+    var csv='﻿'+lines.join('\n');
+    var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='CARO-001_주행기록.csv'; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    if(window.toast) toast('CSV '+rows.length+'건 내보냄');
+  };
   // 각도 최단경로 차이(-180~180)
   function angDiff(target, cur){ var d=(target-cur)%360; if(d>180)d-=360; if(d<-180)d+=360; return d; }
   var _liveKey=null;   // 데이터가 실제로 바뀌었을 때만 무거운 그래프 재렌더
