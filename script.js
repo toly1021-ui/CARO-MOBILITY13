@@ -2405,6 +2405,57 @@ function renderMyReservations(){
 var ctrlResIdx=-1;
 var ctrlPhotoOpen=false;
 /* ─────────────────────────────────────────────
+   디바이스 ↔ 차량 매핑 (하드코딩 제거 · 자동 해석)
+   우선순위: devices 컬렉션 carId/carName 매핑
+            → 차량 deviceId 필드 → 이름(코나)=CARO-001 → 레거시(1번차)
+───────────────────────────────────────────── */
+window.CARO_DEVICE_MAP = window.CARO_DEVICE_MAP || {};   /* {carId: deviceId} */
+
+function caroFindCarById(carId){
+  try{
+    var all=(typeof CARS_DATA!=='undefined'?CARS_DATA:[]).concat(typeof BL_CARS!=='undefined'?BL_CARS:[]);
+    return all.find(function(c){ return String(c.id)===String(carId); }) || null;
+  }catch(e){ return null; }
+}
+
+function caroResolveDeviceId(carId){
+  try{
+    if(carId==null) return null;
+    var key=String(carId);
+    if(window.CARO_DEVICE_MAP[key]) return window.CARO_DEVICE_MAP[key];   /* 1) 관리자 등록 매핑 */
+    var car=caroFindCarById(carId);
+    if(car && car.deviceId) return car.deviceId;                          /* 2) 차량 deviceId 필드 */
+    if(car && /코나/.test(car.name||'')) return 'CARO-001';               /* 3) 코나 실기기 */
+    if(key==='1') return 'CARO-001';                                      /* 4) 레거시 기본 */
+  }catch(e){}
+  return null;
+}
+window.caroResolveDeviceId = caroResolveDeviceId;
+
+/* devices 컬렉션 실시간 스캔 → carId→deviceId 매핑 자동 구성
+   (관리자 대시보드에서 기기에 carId 또는 carName을 지정해 두면 자동 반영) */
+function caroLoadDeviceMap(){
+  try{
+    if(!(typeof fbReady==='function' && fbReady())){ setTimeout(caroLoadDeviceMap,1500); return; }
+    var fn=window.FB_FN, db=window.FB_DB;
+    fn.onSnapshot(fn.collection(db,'devices'), function(snap){
+      var map={};
+      snap.forEach(function(ds){
+        var d=ds.data()||{};
+        if(d.carId!=null){ map[String(d.carId)]=ds.id; return; }
+        if(d.carName){
+          var all=(typeof CARS_DATA!=='undefined'?CARS_DATA:[]).concat(typeof BL_CARS!=='undefined'?BL_CARS:[]);
+          var c=all.find(function(x){ return (x.name||'')===d.carName; });
+          if(c) map[String(c.id)]=ds.id;
+        }
+      });
+      window.CARO_DEVICE_MAP=map;
+    }, function(){ /* 권한/네트워크 오류 무시 */ });
+  }catch(e){}
+}
+setTimeout(caroLoadDeviceMap, 2000);
+
+/* ─────────────────────────────────────────────
    디바이스 명령 전송 (도어락/언락/시동차단)
 ───────────────────────────────────────────── */
 function sendDeviceCommand(carId, cmdType){
@@ -2417,8 +2468,7 @@ function sendDeviceCommand(carId, cmdType){
     return Promise.resolve(false);
   }
   var fn = window.FB_FN, db = window.FB_DB;
-  /* 임시: carId=1 → CARO-001. 디바이스 늘어나면 devices 컬렉션 동적 조회로 교체 */
-  var deviceId = (String(carId) === '1') ? 'CARO-001' : null;
+  var deviceId = caroResolveDeviceId(carId);
   if(!deviceId){
     console.warn('차량에 연결된 디바이스 없음:', carId);
     showCtrlToast('⚠️ 이 차량은 디바이스 미연결');
@@ -2523,6 +2573,23 @@ window.sendDeviceCommand = sendDeviceCommand;
       var lastSeen = (d.lastSeen && d.lastSeen.toDate) ? d.lastSeen.toDate() : null;
       var isOnline = d.status === 'online' && lastSeen && (new Date() - lastSeen) < 60000;
       updateBadge(isOnline ? 'online' : 'offline', lastSeen);
+
+      /* ── 실기기 텔레메트리 반영 ── */
+      try{
+        var cid = (ctrlResIdx>=0 && myReservations[ctrlResIdx]) ? myReservations[ctrlResIdx].car.id : null;
+        /* 연료/배터리 잔량 (fuel · fuelLevel · battery 중 존재하는 값) */
+        var fuelVal = (d.fuel!=null?d.fuel:(d.fuelLevel!=null?d.fuelLevel:(d.battery!=null?d.battery:null)));
+        if(cid!=null && fuelVal!=null && isFinite(fuelVal)){
+          window.fuelLevels = window.fuelLevels || {};
+          window.fuelLevels[cid] = Math.max(0,Math.min(100,Math.round(fuelVal)));
+          if(typeof window.caroRefreshFuel==='function') window.caroRefreshFuel();
+        }
+        /* 주행거리(odometer/drivenKm) — 예약에 누적, 반납 정산에 자동 합산 */
+        var km = (d.drivenKm!=null?d.drivenKm:(d.odometer!=null?d.odometer:null));
+        if(cid!=null && km!=null && isFinite(km) && myReservations[ctrlResIdx]){
+          myReservations[ctrlResIdx].deviceKm = Math.round(km);
+        }
+      }catch(e){}
     });
   }
 
@@ -2540,7 +2607,7 @@ window.sendDeviceCommand = sendDeviceCommand;
       setTimeout(function(){
         if(typeof ctrlResIdx !== 'undefined' && ctrlResIdx >= 0 && myReservations[ctrlResIdx]){
           var carId = myReservations[ctrlResIdx].car.id;
-          var deviceId = (String(carId) === '1') ? 'CARO-001' : null;
+          var deviceId = caroResolveDeviceId(carId);
           subscribeDeviceStatus(deviceId);
         }
       }, 250);
@@ -2597,22 +2664,9 @@ function ctrlActionHome(type){
       }
       return;
     }
-  /* 비상등 — 실제 기기로 명령 전송 (문열림/잠금과 동일 방식) */
-  if(type==='hazard'){
-      var bH=document.getElementById('ctrl-btn-hazard');
-      if(bH){ bH.classList.add('ctrl-sq-btn-active'); setTimeout(function(){ bH.classList.remove('ctrl-sq-btn-active'); },2000); }
-      var carIdH = (ctrlResIdx>=0 && myReservations[ctrlResIdx]) ? myReservations[ctrlResIdx].car.id : null;
-      if(carIdH){
-        sendDeviceCommand(carIdH, 'hazard').then(function(ok){
-          if(ok) showCtrlToast('⚠️ 비상등 3회 점멸 명령 전송됨');
-        });
-      } else {
-        showCtrlToast('⚠️ 비상등이 3회 점멸되었습니다.');
-      }
-      return;
-    }
   var pkText=document.getElementById('home-ctrl-park')?document.getElementById('home-ctrl-park').textContent:'확인 중';
   var msgs={
+    hazard:'⚠️ 비상등이 3회 점멸되었습니다.',
     locate:'📍 주차 위치: '+pkText,
   };
   if(msgs[type]) showCtrlToast(msgs[type]);

@@ -746,7 +746,11 @@
   function fuelOf(car){
     if(!car) return null;
     var id=car.id;
-    var pct=(window.fuelLevels&&id!=null&&fuelLevels[id]) || (window.getFuelLevel?getFuelLevel(id):0);
+    /* 실기기(IoT)가 보고한 실제 연료값이 있으면 최우선 사용 (0%도 유효) */
+    if(window.fuelLevels && id!=null && window.fuelLevels[id]!=null && isFinite(window.fuelLevels[id])){
+      return Math.max(0,Math.min(100,Math.round(window.fuelLevels[id])));
+    }
+    var pct=(window.getFuelLevel?getFuelLevel(id):0);
     if(!pct){ pct=Math.floor(Math.random()*60)+20; try{ if(window.fuelLevels&&id!=null) fuelLevels[id]=pct; }catch(e){} }
     return pct;
   }
@@ -832,6 +836,8 @@
     try{ injectFuel(); }catch(e){}
     try{ rearrange(); }catch(e){}
   }
+  /* IoT 기기가 연료값을 보고하면 즉시 게이지 갱신 (script.js에서 호출) */
+  window.caroRefreshFuel=function(){ try{ injectFuel(); }catch(e){} };
   function enhancePhotoSheet(){
     var box=document.querySelector('#photo-modal-overlay .photo-modal-box'); if(!box) return;
     if(box.dataset.caroPhoto){ return; }
