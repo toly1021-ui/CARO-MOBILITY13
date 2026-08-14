@@ -543,7 +543,7 @@
         '<td><div class="bat"><div class="track"><div class="fill" style="width:'+batWidth(v.battery)+'%;background:'+batColor(v.battery)+'"></div></div><span>'+batText(v.battery)+'</span></div></td>'+
         '<td style="color:var(--muted)">'+v.place+'</td>'+
         '<td><span class="floor-badge">'+((v.status==='점검'||!f)?'—':f.code)+'</span></td>'+
-        '<td style="color:var(--muted2);font-family:Saira;font-size:12px">방금</td>'+
+        '<td style="color:var(--muted2);font-family:Saira;font-size:12px">'+devRecentCell(v)+'</td>'+
         '<td><button class="btn sm stbtn" onclick="event.stopPropagation();toggleStatus(\''+v.id+'\')">'+(unavail?'복구':'사용불가')+'</button></td>'+
       '</tr>';
     }).join('');
@@ -814,6 +814,47 @@
     FLEET=FLEET.filter(function(v){ return v.grade!==grade || seen[v.id]; });
     afterData();
   }
+  // ── IoT devices 컬렉션 병합 (GPS·연료·온라인 상태) ──
+  var DEV_TELE = {};   // FLEET id → 텔레메트리
+  function devMatchFleetId(dev, devId){
+    if(dev.carId!=null){ var a=FLEET.find(function(v){return String(v.docId)===String(dev.carId);}); if(a) return a.id; }
+    if(dev.carName){ var b=FLEET.find(function(v){return (v.name||'')===dev.carName;}); if(b) return b.id; }
+    if(String(devId)==='CARO-001'){ var k=FLEET.find(function(v){return /코나/.test(v.name||'');}); if(k) return k.id; }
+    return null;
+  }
+  function devMergeTelemetry(){
+    Object.keys(DEV_TELE).forEach(function(fid){
+      var t=DEV_TELE[fid], v=FLEET.find(function(x){return x.id===fid;});
+      if(!v) return;
+      if(t.battery!=null) v.battery=t.battery;
+      if(t.place) v.place=t.place;
+      if(t.alt!=null) v.alt=t.alt;
+      v.devLastSeen=t.lastSeen; v.devOnline=t.online;
+    });
+  }
+  function applyDevices(snap){
+    var next={};
+    snap.forEach(function(doc){
+      var d=doc.data()||{}, id=doc.id;
+      var fid=devMatchFleetId(d,id); if(!fid) return;
+      var ls=(d.lastSeen&&d.lastSeen.toDate)?d.lastSeen.toDate():(d.lastSeen?new Date(d.lastSeen):null);
+      var fuel=(d.fuel!=null?d.fuel:(d.fuelLevel!=null?d.fuelLevel:(d.battery!=null?d.battery:null)));
+      var loc=(num(d.lat)!=null)?(Number(d.lat).toFixed(4)+', '+Number(d.lng||0).toFixed(4)):null;
+      next[fid]={ battery:(fuel!=null?Math.round(fuel):null), place:loc,
+        alt:(num(d.altitude)!=null?num(d.altitude):num(d.alt)),
+        lastSeen:ls, online:(d.status==='online'&&ls&&(Date.now()-ls.getTime()<60000)) };
+    });
+    DEV_TELE=next;
+    devMergeTelemetry();
+    renderKPIs(); renderFleet(); renderLive();
+    console.log('[CARO 관제] 📡 devices 병합:', Object.keys(DEV_TELE).length, '대');
+  }
+  function devRecentCell(v){
+    if(v.devOnline) return '<span style="color:#7bb89a;font-weight:700;">● 실시간</span>';
+    if(v.devLastSeen){ var m=Math.floor((Date.now()-v.devLastSeen.getTime())/60000);
+      return m<1?'방금':(m<60?(m+'분 전'):(Math.floor(m/60)+'시간 전')); }
+    return '방금';
+  }
   function fmtTs(t){ try{ var d=t&&t.toDate?t.toDate():(t?new Date(t):null);
     return d?((d.getMonth()+1)+'/'+d.getDate()+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)):''; }catch(e){return '';} }
   function carName(d){
@@ -864,6 +905,7 @@
   function afterData(){
     if(!selectedId || !FLEET.find(function(x){return x.id===selectedId;}))
       selectedId = FLEET.length?FLEET[0].id:null;
+    devMergeTelemetry();   /* cars 갱신 후에도 기기 텔레메트리 유지 */
     renderKPIs(); renderFleet(); renderLive();
   }
   function startFirestore(tries){
@@ -876,6 +918,7 @@
       FN.onSnapshot(FN.collection(db,'cars'),         function(s){ applyCars(s,'일반'); },     function(e){ console.warn('cars',e); });
       FN.onSnapshot(FN.collection(db,'bl_cars'),      function(s){ applyCars(s,'THE BLACK'); }, function(e){ console.warn('bl_cars',e); });
       FN.onSnapshot(FN.collection(db,'reservations'), function(s){ applyResv(s); },             function(e){ console.warn('resv',e); });
+      FN.onSnapshot(FN.collection(db,'devices'),      function(s){ applyDevices(s); },          function(e){ console.warn('devices',e); });
       setConn(true);
       console.log('[CARO 관제] ✅ Firestore 실시간 연결됨');
     }catch(e){ setConn(false); console.error('[CARO 관제] 연결 오류', e); }
