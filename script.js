@@ -511,6 +511,8 @@ document.addEventListener('DOMContentLoaded', function(){
         var aname=localStorage.getItem('caro_auto_name')||aid;
         if(al==='1'&&aid){
           userInfo.id=aid; userInfo.name=aname;
+          window._caroLoggedIn = true;      /* 하단바·홈 UI 활성화 */
+          try{ loadUserData(aid); }catch(e){}  /* 예약·카드 데이터 복원 */
           var wn=document.getElementById('home-welcome-name');
           if(wn) wn.textContent=aname+' 님, 안녕하세요 👋';
           var hn=document.getElementById('hmenu-name');
@@ -1366,6 +1368,7 @@ function handleLogin(){
     /* 버튼 원복 */
     if(btn){ btn.disabled=false; }
     if(err) err.textContent='';
+    window._caroLoggedIn = true;   /* 하단바·홈 UI 활성화 */
     /* userInfo 세팅 */
     userInfo.id   = id;
     userInfo.uid  = uid||'';
@@ -1799,6 +1802,7 @@ function handleLogout(){
     if(pw) pw.value='';
   }catch(e){if(id)id.value='';if(pw)pw.value='';}
   clearSession();
+  window._caroLoggedIn = false;   /* 하단바 숨김 */
   userInfo={id:'',email:'',license:'',name:''};
   /* 🔒 보안: 로그아웃 시 이전 계정의 예약·이용내역·카드 정보 메모리/캐시 완전 제거 */
   myReservations=[]; cancelledHistory=[]; savedCards=[];
@@ -2593,9 +2597,22 @@ function ctrlActionHome(type){
       }
       return;
     }
+  /* 비상등 — 실제 기기로 명령 전송 (문열림/잠금과 동일 방식) */
+  if(type==='hazard'){
+      var bH=document.getElementById('ctrl-btn-hazard');
+      if(bH){ bH.classList.add('ctrl-sq-btn-active'); setTimeout(function(){ bH.classList.remove('ctrl-sq-btn-active'); },2000); }
+      var carIdH = (ctrlResIdx>=0 && myReservations[ctrlResIdx]) ? myReservations[ctrlResIdx].car.id : null;
+      if(carIdH){
+        sendDeviceCommand(carIdH, 'hazard').then(function(ok){
+          if(ok) showCtrlToast('⚠️ 비상등 3회 점멸 명령 전송됨');
+        });
+      } else {
+        showCtrlToast('⚠️ 비상등이 3회 점멸되었습니다.');
+      }
+      return;
+    }
   var pkText=document.getElementById('home-ctrl-park')?document.getElementById('home-ctrl-park').textContent:'확인 중';
   var msgs={
-    hazard:'⚠️ 비상등이 3회 점멸되었습니다.',
     locate:'📍 주차 위치: '+pkText,
   };
   if(msgs[type]) showCtrlToast(msgs[type]);
