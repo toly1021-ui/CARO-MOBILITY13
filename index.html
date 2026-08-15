@@ -594,13 +594,13 @@
     <div class="myres-title-row">
         <span class="myres-main-title" data-i18n="menu_my_reserve">예약 확인</span>
     </div>
-    <div class="myres-body" id="my-reservation-list" style="padding-bottom:90px;">
+    <div class="myres-body" id="my-reservation-list" style="padding-bottom:128px;">
         <div class="empty-reservation">
             <div class="empty-icon">📋</div>
             <div class="empty-text" data-i18n="no_reservation">예약 내역이 없습니다</div>
         </div>
     </div>
-    <button onclick="goTo('home-screen')" style="position:fixed;left:16px;right:16px;bottom:calc(74px + var(--sab,0px));height:52px;background:var(--accent,#18191c);color:#fff;border:0;border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;z-index:901;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);cursor:pointer;">← 뒤로</button>
+    <button onclick="goTo('home-screen')" style="position:fixed;left:16px;right:16px;bottom:calc(16px + var(--sab,0px));height:52px;background:var(--accent,#18191c);color:#fff;border:0;border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;z-index:901;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);cursor:pointer;">← 뒤로</button>
 </div>
 
 <!-- ══ USAGE DETAIL MODAL ══ -->
@@ -956,7 +956,7 @@
 <div id="payment-info-screen" class="screen">
     <div class="metal-bg"></div>
     <div class="page-header center-header">
-        <button class="back-icon-btn" onclick="history.back()">←</button>
+        <span style="width:36px;"></span>
         <span class="page-title">결제 정보 / 운전면허</span>
         <span style="width:36px;"></span>
     </div>
@@ -1003,7 +1003,7 @@
             <button class="submit-btn" onclick="saveLicenseFromPI()" style="margin-top:4px;">저장</button>
         </div>
 
-        <button class="back-bottom-btn" onclick="history.back()">뒤로</button>
+        <button class="back-bottom-btn" onclick="goTo('home-screen')">뒤로</button>
     </div>
 </div>
 <!-- ══ DONE ══ -->
@@ -1973,7 +1973,7 @@
 
 <!-- ══ Firebase SDK ══ -->
 <script type="module" src="firebase-config.js?v=3"></script>
-<script src="script.js?v=8"></script>
+<script src="script.js?v=9"></script>
 <script src="script-photo-upload.js?v=4"></script>
 <script src="customer-notices.js?v=8"></script>
 <script src="customer-redesign.js?v=164"></script>
