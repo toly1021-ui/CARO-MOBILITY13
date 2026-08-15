@@ -131,10 +131,8 @@ button:active{opacity:.82;}
 /* ── 메탈 배경 ── */
 .metal-bg{
   position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(ellipse 80% 50% at 35% 28%,rgba(255,255,255,.38) 0%,transparent 65%),
-    radial-gradient(ellipse 60% 40% at 70% 76%,rgba(255,255,255,.16) 0%,transparent 60%),
-    linear-gradient(165deg,#dde1e7 0%,#c8cdd4 22%,#b9bec7 42%,#cdd1d8 57%,#d9dde4 72%,#c3c8d0 87%,#b6bbc3 100%);
+  /* 홈(카로 대기화면)과 동일한 평평한 실버 배경으로 통일 — 위/아래 색 차이 제거 */
+  background:var(--silver-base);
 }
 
 /* ── 화면 공통 ── */
@@ -1310,6 +1308,9 @@ button:active{opacity:.82;}
 
 /* 기타 */
 .modal-footer{padding:10px 20px 16px;border-top:1px solid var(--border);}
+/* 이용/예약 상세 모달 '확인' 버튼: 왼쪽 쏠림 → 가운데 + 화면폭 대칭 */
+#usage-detail-modal .modal-footer,#res-detail-modal .modal-footer{display:flex;justify-content:center;gap:10px;}
+#usage-detail-modal .modal-footer .submit-btn,#res-detail-modal .modal-footer .submit-btn{flex:1;width:auto;margin:0;max-width:none;}
 /* 이용/예약 상세 모달의 확인 버튼: 가운데 정렬 + 화면폭 대칭 */
 #usage-detail-modal .modal-footer,#res-detail-modal .modal-footer{display:flex;justify-content:center;gap:10px;}
 #usage-detail-modal .modal-footer .submit-btn,#res-detail-modal .modal-footer .submit-btn{flex:1;width:auto;margin:0;}
