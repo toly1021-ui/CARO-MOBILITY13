@@ -1310,6 +1310,9 @@ button:active{opacity:.82;}
 
 /* 기타 */
 .modal-footer{padding:10px 20px 16px;border-top:1px solid var(--border);}
+/* 이용/예약 상세 모달의 확인 버튼: 가운데 정렬 + 화면폭 대칭 */
+#usage-detail-modal .modal-footer,#res-detail-modal .modal-footer{display:flex;justify-content:center;gap:10px;}
+#usage-detail-modal .modal-footer .submit-btn,#res-detail-modal .modal-footer .submit-btn{flex:1;width:auto;margin:0;}
 .home-welcome-text{flex:1;}
 .panel-desc{font-size:.78rem;color:var(--text-m);line-height:1.6;margin-bottom:12px;}
 .accent{color:var(--accent)!important;}
