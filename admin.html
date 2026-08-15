@@ -187,6 +187,17 @@
   .lv-alert .al.okv{background:rgba(123,184,154,.14);color:#4f9a78;}
   .lv-loc{margin-top:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px;}
   .lv-loc b{color:var(--txt);font-weight:600;}
+  /* 원격 제어 (고객센터 대리 실행) */
+  .lv-ctrl{margin-top:12px;border:1px solid var(--border);border-radius:12px;background:var(--panel2);overflow:hidden;}
+  .lv-ctrl-hd{padding:9px 11px;border-bottom:1px solid var(--border);font-size:12.5px;font-weight:700;color:var(--txt);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .lv-ctrl-hd small{color:var(--muted);font-weight:500;font-size:10.5px;margin-left:auto;}
+  .lv-ctrl-btns{display:flex;gap:8px;padding:11px;}
+  .lv-ctrl .cbtn{flex:1;padding:13px 6px;border-radius:10px;border:1px solid var(--border2);font-size:13px;font-weight:800;cursor:pointer;font-family:inherit;transition:.13s;color:var(--txt);background:var(--panel);}
+  .lv-ctrl .cbtn:hover{border-color:#c8a96e;transform:translateY(-1px);}
+  .lv-ctrl .cbtn:active{transform:translateY(0);}
+  .lv-ctrl .cbtn.open{color:#4f9a78;}
+  .lv-ctrl .cbtn.lock{color:#5b7fb0;}
+  .lv-ctrl .cbtn.hazard{color:#d5563e;}
   .panel-body{padding:18px;}
   .ptable{width:100%;border-collapse:collapse;font-size:13px;}
   .ptable th{text-align:center;padding:10px 12px;color:var(--muted);font-weight:600;font-size:11.5px;border-bottom:1px solid var(--border);}
@@ -348,6 +359,15 @@
                 <thead><tr><th>시각</th><th>종류</th><th>층</th><th>속도</th></tr></thead>
                 <tbody id="logBody"><tr><td colspan="4" class="lv-log-empty">기록 수신 대기…</td></tr></tbody>
               </table>
+            </div>
+          </div>
+          <!-- 원격 제어 : 고객 폰 고장/미작동 시 고객센터에서 대신 실행 (앱과 동일) -->
+          <div class="lv-ctrl">
+            <div class="lv-ctrl-hd">🔧 원격 제어 <b id="ctrlCar" style="color:var(--muted);font-weight:500"></b><small>고객 폰 고장 시 대리 실행</small></div>
+            <div class="lv-ctrl-btns">
+              <button class="cbtn open"   onclick="caroAdminCmd('unlock')">🔓 문 열기</button>
+              <button class="cbtn lock"   onclick="caroAdminCmd('lock')">🔒 문 잠그기</button>
+              <button class="cbtn hazard" onclick="caroAdminCmd('hazard')">⚠ 비상등</button>
             </div>
           </div>
         </div>
@@ -1178,6 +1198,7 @@
     var v=FLEET.find(function(x){return x.id===selectedId;});
     var dev = v ? (DEV_IDMAP[v.id]||null) : null;
     var carEl=document.getElementById('logCar'); if(carEl) carEl.textContent = v?('· '+v.name):'';
+    var ctrlEl=document.getElementById('ctrlCar'); if(ctrlEl) ctrlEl.textContent = v?('· '+v.name+(dev?'':' (기기미연결)')):'';
     if(dev===_logDev) return;                 // 이미 그 차량 구독중 → 유지
     stopLogs(); LOG_ROWS=[]; _logDev=dev;
     if(!dev){ renderLogs(v?'이 차량은 IoT 기기 미등록':'차량을 선택하세요'); return; }
@@ -1222,6 +1243,30 @@
     document.body.removeChild(a); setTimeout(function(){URL.revokeObjectURL(url);},1500);
   }
   // 선택한 날짜만 CSV (전체 날짜면 전체)
+  // ── 원격 제어 : 선택 차량의 기기로 명령 전송 (앱 sendDeviceCommand와 동일 포맷) ──
+  window.caroAdminCmd=function(type){
+    var v=FLEET.find(function(x){return x.id===selectedId;});
+    if(!v){ if(window.toast)toast('차량을 먼저 선택하세요'); return; }
+    var dev=DEV_IDMAP[v.id];
+    if(!dev){ if(window.toast)toast('이 차량은 IoT 기기 미연결'); return; }
+    var db=window.FB_DB, FN=window.FB_FN;
+    if(!db||!FN||!FN.setDoc){ if(window.toast)toast('Firebase 연결 대기'); return; }
+    var label = (type==='unlock')?'문 열기':((type==='lock')?'문 잠그기':'비상등');
+    if(!window.confirm(v.name+' — 「'+label+'」 명령을 지금 보낼까요?')) return;
+    var cmdId='cmd_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+    FN.setDoc(FN.doc(db,'devices',dev,'commands',cmdId), {
+      type:type, status:'pending', issuedBy:'admin',
+      issuedByEmail:(typeof ADMIN_EMAIL!=='undefined'?ADMIN_EMAIL:'admin'),
+      issuedAt:FN.serverTimestamp(), timestamp:Date.now()
+    }).then(function(){
+      if(window.toast)toast('📡 '+label+' 전송됨 · '+v.name);
+      var ref=FN.doc(db,'devices',dev,'commands',cmdId), un=null;
+      un=FN.onSnapshot(ref,function(s){ if(!s.exists())return; var d=s.data()||{};
+        if(d.status==='done'){ if(window.toast)toast('✅ '+label+' 완료'); if(un)un(); }
+        else if(d.status==='failed'){ if(window.toast)toast('❌ '+label+' 실패'); if(un)un(); } });
+      setTimeout(function(){ if(un)un(); },30000);
+    }).catch(function(e){ if(window.toast)toast('⚠ 전송 실패: '+(e.code||e.message)); });
+  };
   window.exportLogCsv=function(){
     var all=LOG_ROWS.slice().sort(function(a,z){return z._ms-a._ms;});
     if(!all.length){ if(window.toast)toast('내보낼 기록이 없습니다'); return; }
