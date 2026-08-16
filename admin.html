@@ -12,6 +12,43 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Saira:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!-- 차량 실시간 지도(Leaflet, 키 불필요·OSM 타일) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style id="caro-admin-addons">
+  /* ── 차량 실시간 지도 ── */
+  #fleetMap{width:100%;height:340px;border-radius:12px;overflow:hidden;background:var(--panel2);}
+  .leaflet-container{font-family:'Noto Sans KR',sans-serif;background:var(--panel2);}
+  .caro-mk{background:#18191c;color:#fff;border:2px solid #fff;border-radius:14px;padding:2px 8px;
+    font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+  .caro-mk.sel{background:var(--gold);color:#1b2027;border-color:var(--gold-soft);}
+  .caro-mk.off{background:#7b828d;opacity:.7;}
+  .caro-mk .fl{opacity:.75;font-weight:500;margin-left:3px;}
+  /* ── 기기 상태 진단 패널 ── */
+  .diag{margin-top:12px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;}
+  .diag-hd{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:9px;display:flex;align-items:center;gap:6px;}
+  .diag-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;}
+  .diag-it{display:flex;align-items:center;justify-content:space-between;font-size:12px;}
+  .diag-it .k{color:var(--muted);}
+  .diag-it .val{font-weight:700;display:inline-flex;align-items:center;gap:5px;}
+  .diag-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted2);}
+  .diag-dot.ok{background:var(--ok);} .diag-dot.bad{background:var(--bad);} .diag-dot.warn{background:var(--warn);}
+  /* ── 층 보정 버튼 ── */
+  .cal-wrap{margin-top:9px;padding-top:9px;border-top:1px dashed var(--border2);}
+  .cal-hd{font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .cal-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+  .cal-row .fbtn{flex:0 0 auto;background:var(--panel);border:1px solid var(--border2);color:var(--txt);
+    border-radius:8px;padding:5px 9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Saira',sans-serif;}
+  .cal-row .fbtn:hover{border-color:var(--gold);color:var(--gold-soft);}
+  .cal-row .fbtn.reset{margin-left:auto;color:var(--bad);border-color:var(--bad);opacity:.85;}
+  /* ── 알림 토글 ── */
+  .notif-btn{background:none;border:1px solid var(--border2);border-radius:8px;color:var(--muted);
+    cursor:pointer;padding:5px 9px;font-size:13px;display:inline-flex;align-items:center;gap:5px;font-weight:600;}
+  .notif-btn.on{color:var(--gold-soft);border-color:var(--gold);}
+  .notif-btn .lbl{font-size:12px;}
+  @keyframes caroFlash{0%,100%{background:var(--panel);}50%{background:rgba(209,90,72,.22);}}
+  .lv-alert .al.flash{animation:caroFlash .6s ease 3;}
+</style>
 <style id="caro-admin-theme">
   :root{
     /* ── 라이트 (기본) ── */
@@ -274,6 +311,7 @@
     </div>
     <div class="topright">
       <span class="conn"><span class="dot"></span>실시간 연결</span>
+      <button class="notif-btn on" id="notifBtn" title="충격·과속 이벤트 알림 켜기/끄기" onclick="caroToggleNotif()"><span class="ic">🔔</span><span class="lbl">알림</span></button>
       <span class="clock" id="clock">--:--:--</span>
       <button class="theme-btn" id="themeBtn" title="라이트/다크 전환" aria-label="테마 전환"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.5A8 8 0 1 1 10.5 4a6.3 6.3 0 0 0 9.5 9.5Z"/></svg></button>
       <div class="admin">
@@ -361,6 +399,20 @@
               </table>
             </div>
           </div>
+          <!-- 기기 상태 진단 : 각 센서·통신 정상 여부 한눈에 -->
+          <div class="diag" id="diagPanel">
+            <div class="diag-hd">🩺 기기 상태 진단 <b id="diagCar" style="color:var(--muted);font-weight:500"></b></div>
+            <div class="diag-grid" id="diagGrid">
+              <div class="diag-it"><span class="k">통신</span><span class="val" id="dgComm"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">마지막 수신</span><span class="val" id="dgSeen">—</span></div>
+              <div class="diag-it"><span class="k">GPS 위성</span><span class="val" id="dgGps"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">기압계(고도)</span><span class="val" id="dgBme"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">자이로(방향)</span><span class="val" id="dgImu"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">환경</span><span class="val" id="dgEnv"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">지상기준 학습</span><span class="val" id="dgGround"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">주행 상태</span><span class="val" id="dgMove">—</span></div>
+            </div>
+          </div>
           <!-- 원격 제어 : 고객 폰 고장/미작동 시 고객센터에서 대신 실행 (앱과 동일) -->
           <div class="lv-ctrl">
             <div class="lv-ctrl-hd">🔧 원격 제어 <b id="ctrlCar" style="color:var(--muted);font-weight:500"></b><small>고객 폰 고장 시 대리 실행</small></div>
@@ -369,9 +421,30 @@
               <button class="cbtn lock"   onclick="caroAdminCmd('lock')">🔒 문 잠그기</button>
               <button class="cbtn hazard" onclick="caroAdminCmd('hazard')">⚠ 비상등</button>
             </div>
+            <!-- 층 보정 : 기기가 지금 있는 실제 층을 알려주면 그 지점 기준으로 재보정 -->
+            <div class="cal-wrap">
+              <div class="cal-hd">🏢 층 보정 — 이 차가 <b>지금 있는 실제 층</b>을 눌러 기준을 맞춥니다 (건물마다 지하 시작층이 달라도 자동 정확)</div>
+              <div class="cal-row">
+                <button class="fbtn" onclick="caroSetFloor('B3')">B3</button>
+                <button class="fbtn" onclick="caroSetFloor('B2')">B2</button>
+                <button class="fbtn" onclick="caroSetFloor('B1')">B1</button>
+                <button class="fbtn" onclick="caroSetFloor('1')">1F</button>
+                <button class="fbtn" onclick="caroSetFloor('2')">2F</button>
+                <button class="fbtn" onclick="caroSetFloor('3')">3F</button>
+                <button class="fbtn reset" onclick="caroResetFloor()">↺ 기준 초기화(GPS 재학습)</button>
+              </div>
+            </div>
           </div>
         </div>
       </aside>
+    </div>
+    <!-- 차량 실시간 지도 : 기기 GPS 좌표를 지도 위 마커로 (마커 클릭 → 그 차량 선택) -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-hd">
+        <div><h3>차량 실시간 위치</h3></div>
+        <span class="pill" id="mapPill">GPS 수신 대기</span>
+      </div>
+      <div id="fleetMap"></div>
     </div>
   </section>
   <!-- ===================== TAB: PRICE ===================== -->
@@ -702,7 +775,7 @@
       document.getElementById('lvStatus').className='st'; document.getElementById('lvStatus').innerHTML='';
       document.getElementById('lvFloor').textContent='—'; document.getElementById('lvAlt').textContent='—';
       document.getElementById('lvBat').textContent='—'; document.getElementById('lvMove').textContent='—';
-      document.getElementById('lvLoc').textContent='—'; drawChart(null); drawRotation(null); updateAlert(null); return;
+      document.getElementById('lvLoc').textContent='—'; drawChart(null); drawRotation(null); updateAlert(null); renderDiag(null); return;
     }
     var es=carEffectiveStatus(v);
     var hasAlt=(typeof v.alt==='number'), f=hasAlt?floorOf(v.alt):null, st=stCls(es);
@@ -714,8 +787,128 @@
     document.getElementById('lvBat').textContent = batText(v.battery);
     document.getElementById('lvMove').textContent = hasAlt?(v.status==='점검'?'점검중':'수신중'):'—';
     document.getElementById('lvLoc').textContent = v.place + (f?('  ·  '+f.ko):'');
-    drawChart(v); drawRotation(v); updateAlert(v);
+    drawChart(v); drawRotation(v); updateAlert(v); renderDiag(v);
   }
+
+  // ═══════════ 기기 상태 진단 패널 ═══════════
+  function dgSet(id, dotCls, txt){
+    var el=document.getElementById(id); if(!el) return;
+    el.innerHTML='<span class="diag-dot '+(dotCls||'')+'"></span>'+txt;
+  }
+  function renderDiag(v){
+    var carEl=document.getElementById('diagCar'); if(carEl) carEl.textContent = v?('· '+v.name):'';
+    if(!v || typeof v.alt!=='number' && v.lat==null && v.devLastSeen==null){
+      ['dgComm','dgGps','dgBme','dgImu','dgEnv','dgGround'].forEach(function(id){ dgSet(id,'', '기기 미연결'); });
+      var s=document.getElementById('dgSeen'); if(s)s.textContent='—';
+      var m=document.getElementById('dgMove'); if(m)m.textContent='—';
+      return;
+    }
+    // 통신
+    if(v.devOnline) dgSet('dgComm','ok','온라인');
+    else dgSet('dgComm','bad','오프라인');
+    // 마지막 수신
+    var seenEl=document.getElementById('dgSeen');
+    if(seenEl){ if(v.devLastSeen){ var mn=Math.floor((Date.now()-v.devLastSeen.getTime())/60000);
+      seenEl.textContent = mn<1?'방금':(mn<60?(mn+'분 전'):(Math.floor(mn/60)+'시간 전')); } else seenEl.textContent='—'; }
+    // GPS
+    if(v.sats!=null && v.sats>0) dgSet('dgGps', (v.sats>=6?'ok':'warn'), '위성 '+v.sats+'개 · fix O');
+    else if(v.lat!=null) dgSet('dgGps','warn','좌표만');
+    else dgSet('dgGps','bad','실내(fix X)');
+    // 기압계(고도)
+    if(typeof v.alt==='number') dgSet('dgBme','ok','정상');
+    else dgSet('dgBme','bad','미연결');
+    // 자이로(방향)
+    if(typeof v.heading==='number') dgSet('dgImu','ok','정상');
+    else dgSet('dgImu','bad','미연결');
+    // 환경(지하/지상/확인중)
+    var env=v.env||'';
+    if(env==='지상') dgSet('dgEnv','ok','지상');
+    else if(/지하/.test(env)) dgSet('dgEnv','warn',env);
+    else dgSet('dgEnv','', env||'확인중');
+    // 지상기준 학습
+    if(v.groundSet) dgSet('dgGround','ok','완료');
+    else dgSet('dgGround','warn','학습 대기');
+    // 주행 상태
+    var mEl=document.getElementById('dgMove');
+    if(mEl){ var sp=(typeof v.speed==='number')?(' '+Math.round(v.speed)+'km/h'):'';
+      mEl.textContent = v.moving?('주행중'+sp):'정지'; }
+  }
+
+  // ═══════════ 차량 실시간 지도 (Leaflet) ═══════════
+  var _map=null, _mk={}, _mapFit=false;
+  function caroMapInit(){
+    if(_map || typeof L==='undefined') return;
+    var el=document.getElementById('fleetMap'); if(!el) return;
+    _map=L.map(el,{zoomControl:true, attributionControl:false}).setView([37.4563,126.7052],13); // 인천 기본
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_map);
+  }
+  function caroMapUpdate(){
+    caroMapInit(); if(!_map) return;
+    var pts=[], have=0;
+    FLEET.forEach(function(v){
+      if(typeof v.lat!=='number' || typeof v.lng!=='number') return;
+      have++;
+      var sel=(v.id===selectedId), off=!v.devOnline;
+      var f=(typeof v.alt==='number')?floorOf(v.alt):null;
+      var cls='caro-mk'+(sel?' sel':'')+(off?' off':'');
+      var html='<div class="'+cls+'">'+v.name+(f?('<span class="fl">'+f.code+'</span>'):'')+'</div>';
+      var icon=L.divIcon({className:'', html:html, iconSize:null});
+      if(_mk[v.id]){ _mk[v.id].setLatLng([v.lat,v.lng]).setIcon(icon); }
+      else {
+        _mk[v.id]=L.marker([v.lat,v.lng],{icon:icon}).addTo(_map);
+        _mk[v.id].on('click',(function(id){ return function(){ selectedId=id; renderFleet(); renderLive(); syncLogsToSelection(); caroMapUpdate(); }; })(v.id));
+      }
+      pts.push([v.lat,v.lng]);
+    });
+    // 사라진 차량 마커 제거
+    Object.keys(_mk).forEach(function(id){ if(!FLEET.find(function(v){return v.id===id && typeof v.lat==='number';})){ _map.removeLayer(_mk[id]); delete _mk[id]; } });
+    var pill=document.getElementById('mapPill');
+    if(pill) pill.textContent = have?('차량 '+have+'대 표시'):'GPS 수신 대기';
+    if(!_mapFit && pts.length){ _mapFit=true; try{ _map.fitBounds(pts,{padding:[40,40],maxZoom:17}); }catch(e){} }
+  }
+
+  // ═══════════ 이벤트 알림 (소리/푸시) ═══════════
+  var _notif={on:true}, _evPrev={};
+  window.caroToggleNotif=function(){
+    _notif.on=!_notif.on;
+    var b=document.getElementById('notifBtn'); if(b) b.classList.toggle('on',_notif.on);
+    if(_notif.on){
+      if(window.Notification && Notification.permission==='default'){ try{ Notification.requestPermission(); }catch(e){} }
+      if(window.toast)toast('🔔 이벤트 알림 켜짐 (충격·과속)');
+    } else { if(window.toast)toast('🔕 이벤트 알림 꺼짐'); }
+  };
+  function caroBeep(){
+    try{ var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
+      _notif.ac=_notif.ac||new AC(); var ac=_notif.ac;
+      var o=ac.createOscillator(), g=ac.createGain();
+      o.type='square'; o.frequency.value=880; g.gain.value=0.06;
+      o.connect(g); g.connect(ac.destination); o.start();
+      o.frequency.setValueAtTime(880,ac.currentTime); o.frequency.setValueAtTime(1320,ac.currentTime+0.12);
+      g.gain.setValueAtTime(0.06,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+0.35);
+      o.stop(ac.currentTime+0.36);
+    }catch(e){}
+  }
+  function caroNotify(title, body){
+    if(!_notif.on) return;
+    caroBeep();
+    if(window.toast) toast('🔴 '+title+' · '+body);
+    try{ if(window.Notification && Notification.permission==='granted'){ new Notification(title,{body:body,tag:'caro-ev'}); } }catch(e){}
+  }
+  // devices 스냅샷마다 충격/과속 '상승엣지'를 감지해 알림 (전 차량 대상)
+  //   첫 로드에선 현재 상태만 기록(_seeded)하고 알림은 울리지 않음 → 접속 시 오탐 방지
+  function caroCheckEvents(){
+    var seeded=_notif.seeded;
+    FLEET.forEach(function(v){
+      var p=_evPrev[v.id]||{};
+      if(seeded){
+        if(v.impact && !p.impact){ caroNotify('⚠ 충격 감지', v.name+(typeof v.shock==='number'?(' · '+v.shock.toFixed(1)+'g'):'')); }
+        if(v.over && !p.over){ caroNotify('🚨 과속', v.name+(typeof v.speed==='number'?(' · '+Math.round(v.speed)+'km/h'):'')); }
+      }
+      _evPrev[v.id]={impact:!!v.impact, over:!!v.over};
+    });
+    _notif.seeded=true;
+  }
+
   // 둥근 사각형 헬퍼
   function rrect(x,y,w,h,r){
     if(r>w/2)r=w/2; if(r>h/2)r=h/2;
@@ -953,7 +1146,7 @@
       ['dash','price','resv','notice','chat','debt','set'].forEach(function(id){
         var el=document.getElementById('tab-'+id); if(el) el.classList.toggle('hide', id!==t.dataset.tab);
       });
-      if(t.dataset.tab==='dash') resizeChart();
+      if(t.dataset.tab==='dash'){ resizeChart(); if(_map){ setTimeout(function(){ try{ _map.invalidateSize(); caroMapUpdate(); }catch(e){} },60); } }
       if(t.dataset.tab==='price') renderPriceFleet();
       if(t.dataset.tab==='chat' && window.renderSupportStats) window.renderSupportStats();
       if(t.dataset.tab==='debt' && window.renderDebtAdmin) window.renderDebtAdmin();
@@ -1032,6 +1225,12 @@
       v.over   = !!t.over;
       if(t.shock!=null)   v.shock=t.shock;
       v.impact = !!t.impact;
+      if(t.lat!=null)     v.lat=t.lat;
+      if(t.lng!=null)     v.lng=t.lng;
+      if(t.sats!=null)    v.sats=t.sats;
+      if(t.env)           v.env=t.env;
+      v.groundSet = !!t.groundSet;
+      v.moving    = !!t.moving;
       /* 3D 나선 궤적: 새 리포트마다 (고도, 방향, 누적회전) 한 점 누적 */
       if(t.alt!=null){
         var hst=t.lastSeen?t.lastSeen.getTime():null;
@@ -1066,16 +1265,19 @@
       var fuel=(d.fuel!=null?d.fuel:(d.fuelLevel!=null?d.fuelLevel:(d.battery!=null?d.battery:null)));
       var loc=(num(d.lat)!=null)?(Number(d.lat).toFixed(4)+', '+Number(d.lng||0).toFixed(4)):null;
       next[fid]={ battery:(fuel!=null?Math.round(fuel):null), place:loc,
+        lat:num(d.lat), lng:num(d.lng), sats:num(d.sats),
         alt:(num(d.altitude)!=null?num(d.altitude):num(d.alt)),
         heading:num(d.heading), yaw:num(d.yaw),
         speed:num(d.speed), over:(d.over===true),
         shock:num(d.shock), impact:(d.impact===true),
-        env:(d.env||''), groundSet:(d.groundSet===true),
+        env:(d.env||''), groundSet:(d.groundSet===true), moving:(d.moving===true),
         lastSeen:ls, online:(d.status==='online'&&ls&&(Date.now()-ls.getTime()<60000)) };
     });
     DEV_TELE=next; DEV_IDMAP=idmap;
     devMergeTelemetry();
+    caroCheckEvents();                         // 충격·과속 상승엣지 → 알림
     renderKPIs(); renderFleet(); renderLive();
+    caroMapUpdate();                           // 지도 마커 갱신
     syncLogsToSelection();                     // 선택 차량의 기기 기록 구독(바뀌었으면 재구독)
     console.log('[CARO 관제] 📡 devices 병합:', Object.keys(DEV_TELE).length, '대');
   }
@@ -1251,21 +1453,21 @@
   }
   // 선택한 날짜만 CSV (전체 날짜면 전체)
   // ── 원격 제어 : 선택 차량의 기기로 명령 전송 (앱 sendDeviceCommand와 동일 포맷) ──
-  window.caroAdminCmd=function(type){
+  // 공통 기기 명령 전송 (unlock/lock/hazard/setfloor/resetfloor 모두 동일 포맷)
+  function sendDeviceCmd(type, extra, label){
     var v=FLEET.find(function(x){return x.id===selectedId;});
     if(!v){ if(window.toast)toast('차량을 먼저 선택하세요'); return; }
     var dev=DEV_IDMAP[v.id];
     if(!dev){ if(window.toast)toast('이 차량은 IoT 기기 미연결'); return; }
     var db=window.FB_DB, FN=window.FB_FN;
     if(!db||!FN||!FN.setDoc){ if(window.toast)toast('Firebase 연결 대기'); return; }
-    var label = (type==='unlock')?'문 열기':((type==='lock')?'문 잠그기':'비상등');
     if(!window.confirm(v.name+' — 「'+label+'」 명령을 지금 보낼까요?')) return;
     var cmdId='cmd_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
-    FN.setDoc(FN.doc(db,'devices',dev,'commands',cmdId), {
-      type:type, status:'pending', issuedBy:'admin',
+    var payload={ type:type, status:'pending', issuedBy:'admin',
       issuedByEmail:(typeof ADMIN_EMAIL!=='undefined'?ADMIN_EMAIL:'admin'),
-      issuedAt:FN.serverTimestamp(), timestamp:Date.now()
-    }).then(function(){
+      issuedAt:FN.serverTimestamp(), timestamp:Date.now() };
+    if(extra) Object.keys(extra).forEach(function(k){ payload[k]=extra[k]; });
+    FN.setDoc(FN.doc(db,'devices',dev,'commands',cmdId), payload).then(function(){
       if(window.toast)toast('📡 '+label+' 전송됨 · '+v.name);
       var ref=FN.doc(db,'devices',dev,'commands',cmdId), un=null;
       un=FN.onSnapshot(ref,function(s){ if(!s.exists())return; var d=s.data()||{};
@@ -1273,6 +1475,19 @@
         else if(d.status==='failed'){ if(window.toast)toast('❌ '+label+' 실패'); if(un)un(); } });
       setTimeout(function(){ if(un)un(); },30000);
     }).catch(function(e){ if(window.toast)toast('⚠ 전송 실패: '+(e.code||e.message)); });
+  }
+  window.caroAdminCmd=function(type){
+    var label = (type==='unlock')?'문 열기':((type==='lock')?'문 잠그기':'비상등');
+    sendDeviceCmd(type, null, label);
+  };
+  // 층 보정: 지금 이 차가 있는 실제 층(value)을 기기에 알려 그 지점 기준으로 재보정
+  window.caroSetFloor=function(val){
+    var disp = (/^b/i.test(val)) ? ('지하'+val.slice(1)+'층') : (val+'층');
+    sendDeviceCmd('setfloor', {value:String(val)}, '층 보정 → '+disp);
+  };
+  // 기준 초기화: 기기가 다시 GPS로 지상 기준을 자동 학습하도록
+  window.caroResetFloor=function(){
+    sendDeviceCmd('resetfloor', null, '층 기준 초기화(GPS 재학습)');
   };
   window.exportLogCsv=function(){
     var all=LOG_ROWS.slice().sort(function(a,z){return z._ms-a._ms;});
