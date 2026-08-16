@@ -640,6 +640,11 @@
   // ── helpers ──
   function floorOf(a){ var fl=1+Math.round(a/FLOOR_H);
     return fl>=1 ? {code:fl+'F', ko:'지상 '+fl+'층'} : {code:'B'+(1-fl), ko:'지하 '+(1-fl)+'층'}; }
+  // 기기가 직접 보고한 층 번호(펌웨어 층보정·학습 반영) 우선 사용
+  function floorOfNum(fl){ return fl>=1 ? {code:fl+'F', ko:'지상 '+fl+'층'} : {code:'B'+(1-fl), ko:'지하 '+(1-fl)+'층'}; }
+  // 표시용 층: 기기 보고 floor가 있으면 그걸(정확), 없으면 고도로 추정
+  function floorView(v){ if(v && typeof v.devFloor==='number') return floorOfNum(v.devFloor);
+    if(v && typeof v.alt==='number') return floorOf(v.alt); return null; }
   function batColor(b){ if(b==null) return '#3a3d44'; return b>50?'#c8a96e':(b>20?'#e0a86c':'#d57a68'); }
   function batText(b){ return (b==null)?'—':b+'%'; }
   function batWidth(b){ return (b==null)?0:b; }
@@ -726,7 +731,7 @@
     var list = FLEET.slice().sort(function(a,b){ return carNum(a)-carNum(b); });
     var rows = list.map(function(v){
       var es=carEffectiveStatus(v);
-      var hasAlt=(typeof v.alt==='number'), f=hasAlt?floorOf(v.alt):null, st=stCls(es);
+      var hasAlt=(typeof v.alt==='number'), f=floorView(v), st=stCls(es);
       var unavail=(v.status==='점검');
       var muted=_vehMuted[v.id];
       return '<tr class="'+(v.id===selectedId?'sel':'')+(unavail?' rowbad':'')+'" data-id="'+v.id+'">'+
@@ -828,7 +833,7 @@
       document.getElementById('lvLoc').textContent='—'; drawChart(null); drawRotation(null); updateAlert(null); renderDiag(null); return;
     }
     var es=carEffectiveStatus(v);
-    var hasAlt=(typeof v.alt==='number'), f=hasAlt?floorOf(v.alt):null, st=stCls(es);
+    var hasAlt=(typeof v.alt==='number'), f=floorView(v), st=stCls(es);
     document.getElementById('lvName').innerHTML = v.name+'<small>'+(v.plate||'번호판 미등록')+' · '+v.grade+'</small>';
     document.getElementById('lvStatus').className='st '+st;
     document.getElementById('lvStatus').innerHTML='<i></i>'+es;
@@ -893,7 +898,7 @@
   // 와드(위치) 마커 SVG — 앱 스플래시 와드와 동일 형태
   function wardHtml(v){
     var sel=(v.id===selectedId), off=!v.devOnline;
-    var f=(typeof v.alt==='number')?floorOf(v.alt):null;
+    var f=floorView(v);
     var cls='caro-ward'+(sel?' sel':'')+(off?' off':'');
     return '<div class="'+cls+'">'+
       '<svg viewBox="132 92 248 350"><path d="M256 396C256 396 360 292 360 208A104 104 0 0 0 152 208C152 292 256 396 256 396Z" fill="currentColor"/><path d="M293 171A52 52 0 1 0 293 245" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round"/></svg>'+
@@ -1351,6 +1356,7 @@
       if(t.lat!=null)     v.lat=t.lat;
       if(t.lng!=null)     v.lng=t.lng;
       if(t.sats!=null)    v.sats=t.sats;
+      if(t.floor!=null)   v.devFloor=t.floor;   // 기기가 보고한 정확한 층(펌웨어 보정 반영)
       if(t.env)           v.env=t.env;
       v.groundSet = !!t.groundSet;
       v.moving    = !!t.moving;
@@ -1388,7 +1394,7 @@
       var fuel=(d.fuel!=null?d.fuel:(d.fuelLevel!=null?d.fuelLevel:(d.battery!=null?d.battery:null)));
       var loc=(num(d.lat)!=null)?(Number(d.lat).toFixed(4)+', '+Number(d.lng||0).toFixed(4)):null;
       next[fid]={ battery:(fuel!=null?Math.round(fuel):null), place:loc,
-        lat:num(d.lat), lng:num(d.lng), sats:num(d.sats),
+        lat:num(d.lat), lng:num(d.lng), sats:num(d.sats), floor:num(d.floor),
         alt:(num(d.altitude)!=null?num(d.altitude):num(d.alt)),
         heading:num(d.heading), yaw:num(d.yaw),
         speed:num(d.speed), over:(d.over===true),
@@ -1641,7 +1647,7 @@
       document.getElementById('lvAlt').textContent='기기 미연결';
       document.getElementById('lvMove').textContent='—';
     } else {
-      var f=floorOf(sv.alt);
+      var f=floorView(sv)||floorOf(sv.alt);
       document.getElementById('lvFloor').textContent = sv.status==='점검'?'—':(f.code + (sv.env?(' · '+sv.env):''));
       document.getElementById('lvAlt').textContent = (sv.alt>=0?'+':'')+sv.alt.toFixed(1)+'m';
       var prev=sv.hist&&sv.hist.length>1?sv.hist[sv.hist.length-2]:sv.alt;
@@ -1655,7 +1661,7 @@
     if(sv && !document.getElementById('tab-dash').classList.contains('hide')){
       // (1) 데이터 변경 감지 → 바뀐 경우에만 무거운 높이그래프/텍스트/경고 재렌더 (렉 방지)
       var lastAlt=(sv.hist&&sv.hist.length)?sv.hist[sv.hist.length-1]:sv.alt;
-      var key=[sv.hist?sv.hist.length:0,lastAlt,sv.alt,sv.status,sv.battery,sv.place,
+      var key=[sv.hist?sv.hist.length:0,lastAlt,sv.alt,sv.devFloor,sv.env,sv.status,sv.battery,sv.place,
                sv.speed,sv.over,sv.shock,sv.impact,sv.heading].join('|');
       if(key!==_liveKey){ _liveKey=key; liveTextUpdate(sv); drawChart(sv); updateAlert(sv); }
       // (2a) 원기둥 속 차 높이도 목표값으로 부드럽게 보간 → 지하/지상 이동이 스르륵
