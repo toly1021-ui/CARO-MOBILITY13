@@ -1041,8 +1041,14 @@
           if(v._lastRawH==null){ v._cumRot=0; }
           else { var dd=((nh-v._lastRawH)%360); if(dd>180)dd-=360; if(dd<-180)dd+=360; v._cumRot=(v._cumRot||0)+dd; }
           v._lastRawH=nh;
-          v._helix.push({a:t.alt, h:nh, c:v._cumRot});
-          if(v._helix.length>400) v._helix.shift();
+          /* ★ 3D 나선엔 '회전이 크거나(≥20°) 고도 변화가 클 때만(≥0.8m)' 기록 — 작은 흔들림은 무시 */
+          var _lp = v._helix.length ? v._helix[v._helix.length-1] : null;
+          var _bigRot = _lp && Math.abs((v._cumRot||0) - _lp.c) >= 20;
+          var _bigAlt = _lp && Math.abs((t.alt||0) - _lp.a) >= 0.8;
+          if(!_lp || _bigRot || _bigAlt){
+            v._helix.push({a:t.alt, h:nh, c:v._cumRot});
+            if(v._helix.length>400) v._helix.shift();
+          }
           v._lastHelixTs=hst;
         }
       }
@@ -1064,6 +1070,7 @@
         heading:num(d.heading), yaw:num(d.yaw),
         speed:num(d.speed), over:(d.over===true),
         shock:num(d.shock), impact:(d.impact===true),
+        env:(d.env||''), groundSet:(d.groundSet===true),
         lastSeen:ls, online:(d.status==='online'&&ls&&(Date.now()-ls.getTime()<60000)) };
     });
     DEV_TELE=next; DEV_IDMAP=idmap;
@@ -1297,7 +1304,7 @@
       document.getElementById('lvMove').textContent='—';
     } else {
       var f=floorOf(sv.alt);
-      document.getElementById('lvFloor').textContent = sv.status==='점검'?'—':f.code;
+      document.getElementById('lvFloor').textContent = sv.status==='점검'?'—':(f.code + (sv.env?(' · '+sv.env):''));
       document.getElementById('lvAlt').textContent = (sv.alt>=0?'+':'')+sv.alt.toFixed(1)+'m';
       var prev=sv.hist&&sv.hist.length>1?sv.hist[sv.hist.length-2]:sv.alt;
       var mv=Math.abs(sv.alt-prev)>0.03;
