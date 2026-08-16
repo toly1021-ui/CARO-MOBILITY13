@@ -12,40 +12,68 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Saira:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-<!-- 차량 실시간 지도(Leaflet, 키 불필요·OSM 타일) -->
+<!-- 카카오 지도(앱과 동일 키). 실패 시 자동으로 Leaflet+OSM 폴백 -->
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=905e7fbf530218a38e0b0871fa7d1471&autoload=false&libraries=services"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style id="caro-admin-addons">
-  /* ── 차량 실시간 지도 ── */
-  #fleetMap{width:100%;height:340px;border-radius:12px;overflow:hidden;background:var(--panel2);}
+  /* ── 실시간 관제 패널: 너무 길어지지 않게 내부 스크롤 + 칸마다 여백 ── */
+  .card.live .lv-body{max-height:calc(100vh - 150px);overflow-y:auto;overflow-x:hidden;
+    padding-right:6px;display:flex;flex-direction:column;gap:13px;}
+  .card.live .lv-body::-webkit-scrollbar{width:7px;}
+  .card.live .lv-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+  .card.live .lv-body > div{margin:0;}   /* gap이 간격 담당 → 개별 마진 리셋 */
+  /* ── 차량 실시간 지도 (3D 나선과 동일 사이즈) ── */
+  .mapwrap{position:relative;height:238px;border-radius:12px;overflow:hidden;background:var(--panel2);border:1px solid var(--border);}
+  #fleetMap{width:100%;height:100%;}
+  .mapwrap .ytag{position:absolute;top:8px;left:10px;z-index:5;font-size:11px;color:var(--muted);
+    background:var(--panel);padding:2px 8px;border-radius:8px;border:1px solid var(--border);}
+  .mapwrap .mpill{position:absolute;top:8px;right:10px;z-index:5;font-size:11px;color:var(--muted);
+    background:var(--panel);padding:2px 8px;border-radius:8px;border:1px solid var(--border);}
   .leaflet-container{font-family:'Noto Sans KR',sans-serif;background:var(--panel2);}
-  .caro-mk{background:#18191c;color:#fff;border:2px solid #fff;border-radius:14px;padding:2px 8px;
-    font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.3);}
-  .caro-mk.sel{background:var(--gold);color:#1b2027;border-color:var(--gold-soft);}
-  .caro-mk.off{background:#7b828d;opacity:.7;}
-  .caro-mk .fl{opacity:.75;font-weight:500;margin-left:3px;}
+  /* 와드(위치) 마커 */
+  .caro-ward{position:relative;display:flex;flex-direction:column;align-items:center;transform:translateY(-4px);}
+  .caro-ward svg{width:30px;height:38px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35));color:#8b93a0;}
+  .caro-ward.sel svg{color:var(--gold-soft);}
+  .caro-ward.off svg{color:#aab0ba;opacity:.75;}
+  .caro-ward .lab{margin-top:-2px;background:#18191c;color:#fff;border-radius:10px;padding:1px 7px;
+    font-size:11px;font-weight:700;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.3);}
+  .caro-ward.sel .lab{background:var(--gold);color:#1b2027;}
   /* ── 기기 상태 진단 패널 ── */
-  .diag{margin-top:12px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;}
-  .diag-hd{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:9px;display:flex;align-items:center;gap:6px;}
-  .diag-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;}
+  .diag{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+  .diag-hd{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .diag-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 14px;}
   .diag-it{display:flex;align-items:center;justify-content:space-between;font-size:12px;}
   .diag-it .k{color:var(--muted);}
   .diag-it .val{font-weight:700;display:inline-flex;align-items:center;gap:5px;}
   .diag-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted2);}
   .diag-dot.ok{background:var(--ok);} .diag-dot.bad{background:var(--bad);} .diag-dot.warn{background:var(--warn);}
+  /* ── 원격 제어 칸 여백 ── */
+  .lv-ctrl{padding:13px 14px;}
   /* ── 층 보정 버튼 ── */
-  .cal-wrap{margin-top:9px;padding-top:9px;border-top:1px dashed var(--border2);}
-  .cal-hd{font-size:12px;color:var(--muted);margin-bottom:6px;}
-  .cal-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
-  .cal-row .fbtn{flex:0 0 auto;background:var(--panel);border:1px solid var(--border2);color:var(--txt);
-    border-radius:8px;padding:5px 9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Saira',sans-serif;}
+  .cal-wrap{margin-top:11px;padding-top:11px;border-top:1px dashed var(--border2);}
+  .cal-hd{font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .cal-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;}
+  .cal-row .fbtn{flex:0 0 auto;min-width:38px;background:var(--panel);border:1px solid var(--border2);color:var(--txt);
+    border-radius:8px;padding:6px 9px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Saira',sans-serif;text-align:center;}
   .cal-row .fbtn:hover{border-color:var(--gold);color:var(--gold-soft);}
-  .cal-row .fbtn.reset{margin-left:auto;color:var(--bad);border-color:var(--bad);opacity:.85;}
-  /* ── 알림 토글 ── */
+  .cal-row .fbtn.b{color:var(--use);}
+  .cal-reset-wrap{display:flex;justify-content:center;margin-top:10px;}
+  .cal-reset{background:var(--panel);border:1px solid var(--bad);color:var(--bad);opacity:.9;
+    border-radius:8px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;}
+  .cal-reset:hover{opacity:1;background:rgba(209,90,72,.08);}
+  /* ── 알림 토글 (헤더 마스터) ── */
   .notif-btn{background:none;border:1px solid var(--border2);border-radius:8px;color:var(--muted);
     cursor:pointer;padding:5px 9px;font-size:13px;display:inline-flex;align-items:center;gap:5px;font-weight:600;}
   .notif-btn.on{color:var(--gold-soft);border-color:var(--gold);}
   .notif-btn .lbl{font-size:12px;}
+  /* ── 차량 목록: 이름 앞 종모양(대칭 정렬) ── */
+  .vn{display:flex;align-items:center;gap:8px;}
+  .vbell{flex:0 0 18px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--gold-soft);opacity:.9;}
+  .vbell.muted{color:var(--muted2);opacity:.55;}
+  .vbell svg{width:15px;height:15px;}
+  .vn .vtext{display:flex;flex-direction:column;min-width:0;}
   @keyframes caroFlash{0%,100%{background:var(--panel);}50%{background:rgba(209,90,72,.22);}}
   .lv-alert .al.flash{animation:caroFlash .6s ease 3;}
 </style>
@@ -368,6 +396,13 @@
             <div class="stat"><div class="l">연료량</div><div class="v" id="lvBat">—</div></div>
             <div class="stat"><div class="l">상태</div><div class="v" id="lvMove" style="font-size:18px">—</div></div>
           </div>
+          <!-- 차량 실시간 지도 : 와드 마커 (3D 나선 위에 배치) -->
+          <div class="mapwrap">
+            <span class="ytag">차량 실시간 위치</span>
+            <span class="mpill" id="mapPill">GPS 수신 대기</span>
+            <div id="fleetMap"></div>
+          </div>
+          <!-- 3D 나선 -->
           <div class="chartwrap" style="height:238px">
             <span class="ytag">3D 나선 · 기압+자이로 (고도+회전)</span>
             <canvas id="liveChart"></canvas>
@@ -378,7 +413,59 @@
           </div>
           <div class="lv-alert" id="lvAlert"></div>
           <div class="lv-loc">📍 <b id="lvLoc">—</b></div>
-          <!-- 주행·이벤트 기록 : 선택한 차량 전용(차량마다 별도) -->
+          <!-- 원격 제어 : 3D 나선 아래 배치 -->
+          <div class="lv-ctrl">
+            <div class="lv-ctrl-hd">🔧 원격 제어 <b id="ctrlCar" style="color:var(--muted);font-weight:500"></b><small>원격 실행</small></div>
+            <div class="lv-ctrl-btns">
+              <button class="cbtn open"   onclick="caroAdminCmd('unlock')">🔓 문 열기</button>
+              <button class="cbtn lock"   onclick="caroAdminCmd('lock')">🔒 문 잠그기</button>
+              <button class="cbtn hazard" onclick="caroAdminCmd('hazard')">⚠ 비상등</button>
+            </div>
+            <!-- 층 보정 : 해당 차량 위치 조정 (지하10층~지상10층) -->
+            <div class="cal-wrap">
+              <div class="cal-hd">🏢 층보정 — 해당 차량 위치 조정 · 이 차가 <b>지금 있는 실제 층</b>을 눌러 기준을 맞춥니다</div>
+              <div class="cal-row">
+                <button class="fbtn b" onclick="caroSetFloor('B10')">B10</button>
+                <button class="fbtn b" onclick="caroSetFloor('B9')">B9</button>
+                <button class="fbtn b" onclick="caroSetFloor('B8')">B8</button>
+                <button class="fbtn b" onclick="caroSetFloor('B7')">B7</button>
+                <button class="fbtn b" onclick="caroSetFloor('B6')">B6</button>
+                <button class="fbtn b" onclick="caroSetFloor('B5')">B5</button>
+                <button class="fbtn b" onclick="caroSetFloor('B4')">B4</button>
+                <button class="fbtn b" onclick="caroSetFloor('B3')">B3</button>
+                <button class="fbtn b" onclick="caroSetFloor('B2')">B2</button>
+                <button class="fbtn b" onclick="caroSetFloor('B1')">B1</button>
+                <button class="fbtn" onclick="caroSetFloor('1')">1F</button>
+                <button class="fbtn" onclick="caroSetFloor('2')">2F</button>
+                <button class="fbtn" onclick="caroSetFloor('3')">3F</button>
+                <button class="fbtn" onclick="caroSetFloor('4')">4F</button>
+                <button class="fbtn" onclick="caroSetFloor('5')">5F</button>
+                <button class="fbtn" onclick="caroSetFloor('6')">6F</button>
+                <button class="fbtn" onclick="caroSetFloor('7')">7F</button>
+                <button class="fbtn" onclick="caroSetFloor('8')">8F</button>
+                <button class="fbtn" onclick="caroSetFloor('9')">9F</button>
+                <button class="fbtn" onclick="caroSetFloor('10')">10F</button>
+              </div>
+              <div class="cal-reset-wrap">
+                <button class="cal-reset" onclick="caroResetFloor()">↺ 기준 초기화 (GPS 재학습)</button>
+              </div>
+            </div>
+          </div>
+          <!-- 기기 상태 진단 : 각 센서·통신 정상 여부 한눈에 -->
+          <div class="diag" id="diagPanel">
+            <div class="diag-hd">🩺 기기 상태 진단 <b id="diagCar" style="color:var(--muted);font-weight:500"></b></div>
+            <div class="diag-grid" id="diagGrid">
+              <div class="diag-it"><span class="k">통신</span><span class="val" id="dgComm"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">마지막 수신</span><span class="val" id="dgSeen">—</span></div>
+              <div class="diag-it"><span class="k">GPS 위성</span><span class="val" id="dgGps"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">기압계(고도)</span><span class="val" id="dgBme"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">자이로(방향)</span><span class="val" id="dgImu"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">환경</span><span class="val" id="dgEnv"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">지상기준 학습</span><span class="val" id="dgGround"><span class="diag-dot"></span>—</span></div>
+              <div class="diag-it"><span class="k">주행 상태</span><span class="val" id="dgMove">—</span></div>
+            </div>
+          </div>
+          <!-- 주행·이벤트 기록 : 최하단 배치 -->
           <div class="lv-log">
             <div class="lv-log-hd">
               <span>주행·이벤트 기록 <b id="logCar" style="color:var(--muted);font-weight:500"></b></span>
@@ -399,52 +486,8 @@
               </table>
             </div>
           </div>
-          <!-- 기기 상태 진단 : 각 센서·통신 정상 여부 한눈에 -->
-          <div class="diag" id="diagPanel">
-            <div class="diag-hd">🩺 기기 상태 진단 <b id="diagCar" style="color:var(--muted);font-weight:500"></b></div>
-            <div class="diag-grid" id="diagGrid">
-              <div class="diag-it"><span class="k">통신</span><span class="val" id="dgComm"><span class="diag-dot"></span>—</span></div>
-              <div class="diag-it"><span class="k">마지막 수신</span><span class="val" id="dgSeen">—</span></div>
-              <div class="diag-it"><span class="k">GPS 위성</span><span class="val" id="dgGps"><span class="diag-dot"></span>—</span></div>
-              <div class="diag-it"><span class="k">기압계(고도)</span><span class="val" id="dgBme"><span class="diag-dot"></span>—</span></div>
-              <div class="diag-it"><span class="k">자이로(방향)</span><span class="val" id="dgImu"><span class="diag-dot"></span>—</span></div>
-              <div class="diag-it"><span class="k">환경</span><span class="val" id="dgEnv"><span class="diag-dot"></span>—</span></div>
-              <div class="diag-it"><span class="k">지상기준 학습</span><span class="val" id="dgGround"><span class="diag-dot"></span>—</span></div>
-              <div class="diag-it"><span class="k">주행 상태</span><span class="val" id="dgMove">—</span></div>
-            </div>
-          </div>
-          <!-- 원격 제어 : 고객 폰 고장/미작동 시 고객센터에서 대신 실행 (앱과 동일) -->
-          <div class="lv-ctrl">
-            <div class="lv-ctrl-hd">🔧 원격 제어 <b id="ctrlCar" style="color:var(--muted);font-weight:500"></b><small>고객 폰 고장 시 대리 실행</small></div>
-            <div class="lv-ctrl-btns">
-              <button class="cbtn open"   onclick="caroAdminCmd('unlock')">🔓 문 열기</button>
-              <button class="cbtn lock"   onclick="caroAdminCmd('lock')">🔒 문 잠그기</button>
-              <button class="cbtn hazard" onclick="caroAdminCmd('hazard')">⚠ 비상등</button>
-            </div>
-            <!-- 층 보정 : 기기가 지금 있는 실제 층을 알려주면 그 지점 기준으로 재보정 -->
-            <div class="cal-wrap">
-              <div class="cal-hd">🏢 층 보정 — 이 차가 <b>지금 있는 실제 층</b>을 눌러 기준을 맞춥니다 (건물마다 지하 시작층이 달라도 자동 정확)</div>
-              <div class="cal-row">
-                <button class="fbtn" onclick="caroSetFloor('B3')">B3</button>
-                <button class="fbtn" onclick="caroSetFloor('B2')">B2</button>
-                <button class="fbtn" onclick="caroSetFloor('B1')">B1</button>
-                <button class="fbtn" onclick="caroSetFloor('1')">1F</button>
-                <button class="fbtn" onclick="caroSetFloor('2')">2F</button>
-                <button class="fbtn" onclick="caroSetFloor('3')">3F</button>
-                <button class="fbtn reset" onclick="caroResetFloor()">↺ 기준 초기화(GPS 재학습)</button>
-              </div>
-            </div>
-          </div>
         </div>
       </aside>
-    </div>
-    <!-- 차량 실시간 지도 : 기기 GPS 좌표를 지도 위 마커로 (마커 클릭 → 그 차량 선택) -->
-    <div class="card" style="margin-top:14px">
-      <div class="card-hd">
-        <div><h3>차량 실시간 위치</h3></div>
-        <span class="pill" id="mapPill">GPS 수신 대기</span>
-      </div>
-      <div id="fleetMap"></div>
     </div>
   </section>
   <!-- ===================== TAB: PRICE ===================== -->
@@ -683,8 +726,10 @@
       var es=carEffectiveStatus(v);
       var hasAlt=(typeof v.alt==='number'), f=hasAlt?floorOf(v.alt):null, st=stCls(es);
       var unavail=(v.status==='점검');
+      var muted=_vehMuted[v.id];
       return '<tr class="'+(v.id===selectedId?'sel':'')+(unavail?' rowbad':'')+'" data-id="'+v.id+'">'+
-        '<td><div class="vn"><b class="carname" onclick="event.stopPropagation();openEdit(\''+v.id+'\')">'+v.name+'</b><small>'+(v.plate||'번호판 미등록')+'</small></div></td>'+
+        '<td><div class="vn"><span class="vbell'+(muted?' muted':'')+'" onclick="event.stopPropagation();caroBellToggle(\''+v.id+'\')" title="이 차량 이벤트 알림 켜기/끄기">'+bellSvg(muted)+'</span>'+
+          '<span class="vtext"><b class="carname" onclick="event.stopPropagation();openEdit(\''+v.id+'\')">'+v.name+'</b><small>'+(v.plate||'번호판 미등록')+'</small></span></div></td>'+
         '<td><span class="grade '+(v.grade==='THE BLACK'?'black':'')+'">'+v.grade+'</span></td>'+
         '<td><span class="st '+st+'"><i></i>'+es+'</span></td>'+
         '<td><div class="bat"><div class="track"><div class="fill" style="width:'+batWidth(v.battery)+'%;background:'+batColor(v.battery)+'"></div></div><span>'+batText(v.battery)+'</span></div></td>'+
@@ -834,48 +879,123 @@
       mEl.textContent = v.moving?('주행중'+sp):'정지'; }
   }
 
-  // ═══════════ 차량 실시간 지도 (Leaflet) ═══════════
-  var _map=null, _mk={}, _mapFit=false;
+  // ═══════════ 차량 실시간 지도 ═══════════
+  //   카카오 지도 우선(앱과 동일 키). 로드 실패/도메인 미등록 시 Leaflet+OSM로 자동 폴백.
+  var _mapKind=null;       // 'kakao' | 'leaflet' | null
+  var _kmap=null, _kmk={}; // 카카오 지도·오버레이
+  var _lmap=null, _lmk={}; // Leaflet 지도·마커
+  var _mapFit=false;
+  // 와드(위치) 마커 SVG — 앱 스플래시 와드와 동일 형태
+  function wardHtml(v){
+    var sel=(v.id===selectedId), off=!v.devOnline;
+    var f=(typeof v.alt==='number')?floorOf(v.alt):null;
+    var cls='caro-ward'+(sel?' sel':'')+(off?' off':'');
+    return '<div class="'+cls+'">'+
+      '<svg viewBox="132 92 248 350"><path d="M256 396C256 396 360 292 360 208A104 104 0 0 0 152 208C152 292 256 396 256 396Z" fill="currentColor"/><path d="M293 171A52 52 0 1 0 293 245" fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round"/></svg>'+
+      '<span class="lab">'+v.name+(f?(' '+f.code):'')+'</span></div>';
+  }
+  function pickCar(id){ selectedId=id; renderFleet(); renderLive(); syncLogsToSelection(); caroMapUpdate(); }
   function caroMapInit(){
-    if(_map || typeof L==='undefined') return;
+    if(_mapKind) return;
     var el=document.getElementById('fleetMap'); if(!el) return;
-    _map=L.map(el,{zoomControl:true, attributionControl:false}).setView([37.4563,126.7052],13); // 인천 기본
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_map);
+    // 1) 카카오 시도
+    try{
+      if(window.kakao && kakao.maps && typeof kakao.maps.load==='function'){
+        kakao.maps.load(function(){
+          try{
+            _kmap=new kakao.maps.Map(el,{center:new kakao.maps.LatLng(37.4563,126.7052), level:6});
+            _mapKind='kakao'; caroMapUpdate();
+          }catch(e){ caroMapInitLeaflet(el); }
+        });
+        // kakao.maps.load는 비동기 → 잠깐 뒤에도 안 잡히면 폴백
+        setTimeout(function(){ if(!_mapKind) caroMapInitLeaflet(el); }, 2500);
+        return;
+      }
+    }catch(e){}
+    caroMapInitLeaflet(el);
+  }
+  function caroMapInitLeaflet(el){
+    if(_mapKind || typeof L==='undefined' || !el) return;
+    _lmap=L.map(el,{zoomControl:true, attributionControl:false}).setView([37.4563,126.7052],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_lmap);
+    _mapKind='leaflet'; caroMapUpdate();
   }
   function caroMapUpdate(){
-    caroMapInit(); if(!_map) return;
+    if(!_mapKind){ caroMapInit(); return; }
     var pts=[], have=0;
     FLEET.forEach(function(v){
       if(typeof v.lat!=='number' || typeof v.lng!=='number') return;
-      have++;
-      var sel=(v.id===selectedId), off=!v.devOnline;
-      var f=(typeof v.alt==='number')?floorOf(v.alt):null;
-      var cls='caro-mk'+(sel?' sel':'')+(off?' off':'');
-      var html='<div class="'+cls+'">'+v.name+(f?('<span class="fl">'+f.code+'</span>'):'')+'</div>';
-      var icon=L.divIcon({className:'', html:html, iconSize:null});
-      if(_mk[v.id]){ _mk[v.id].setLatLng([v.lat,v.lng]).setIcon(icon); }
-      else {
-        _mk[v.id]=L.marker([v.lat,v.lng],{icon:icon}).addTo(_map);
-        _mk[v.id].on('click',(function(id){ return function(){ selectedId=id; renderFleet(); renderLive(); syncLogsToSelection(); caroMapUpdate(); }; })(v.id));
+      have++; pts.push([v.lat,v.lng]);
+      if(_mapKind==='kakao'){
+        var pos=new kakao.maps.LatLng(v.lat,v.lng);
+        if(_kmk[v.id]){ _kmk[v.id].setPosition(pos); _kmk[v.id].setContent(wardHtml(v)); }
+        else {
+          var ov=new kakao.maps.CustomOverlay({position:pos, content:wardHtml(v), yAnchor:1, clickable:true});
+          ov.setMap(_kmap); _kmk[v.id]=ov;
+        }
+      } else if(_mapKind==='leaflet'){
+        var icon=L.divIcon({className:'', html:wardHtml(v), iconSize:[0,0]});
+        if(_lmk[v.id]){ _lmk[v.id].setLatLng([v.lat,v.lng]).setIcon(icon); }
+        else {
+          _lmk[v.id]=L.marker([v.lat,v.lng],{icon:icon}).addTo(_lmap);
+          _lmk[v.id].on('click',(function(id){ return function(){ pickCar(id); }; })(v.id));
+        }
       }
-      pts.push([v.lat,v.lng]);
     });
-    // 사라진 차량 마커 제거
-    Object.keys(_mk).forEach(function(id){ if(!FLEET.find(function(v){return v.id===id && typeof v.lat==='number';})){ _map.removeLayer(_mk[id]); delete _mk[id]; } });
+    // 카카오 오버레이는 DOM 클릭 위임(오버레이 내부 클릭 → 차량 선택)
+    if(_mapKind==='kakao'){
+      var mel=document.getElementById('fleetMap');
+      if(mel && !mel._caroClickBound){ mel._caroClickBound=true;
+        mel.addEventListener('click', function(ev){
+          var w=ev.target.closest && ev.target.closest('.caro-ward'); if(!w) return;
+          var lab=w.querySelector('.lab'); if(!lab) return;
+          var nm=lab.textContent.replace(/\s+[B]?\d+F?$/,'').trim();
+          var hit=FLEET.find(function(x){return (x.name||'')===nm;}); if(hit) pickCar(hit.id);
+        });
+      }
+    }
+    // 사라진 마커 제거
+    var store=(_mapKind==='kakao')?_kmk:_lmk;
+    Object.keys(store).forEach(function(id){
+      if(!FLEET.find(function(v){return v.id===id && typeof v.lat==='number';})){
+        if(_mapKind==='kakao'){ store[id].setMap(null); } else { _lmap.removeLayer(store[id]); }
+        delete store[id];
+      }
+    });
     var pill=document.getElementById('mapPill');
-    if(pill) pill.textContent = have?('차량 '+have+'대 표시'):'GPS 수신 대기';
-    if(!_mapFit && pts.length){ _mapFit=true; try{ _map.fitBounds(pts,{padding:[40,40],maxZoom:17}); }catch(e){} }
+    if(pill) pill.textContent = have?('차량 '+have+'대 · '+(_mapKind==='kakao'?'카카오':'지도')):'GPS 수신 대기';
+    if(!_mapFit && pts.length){ _mapFit=true;
+      try{
+        if(_mapKind==='kakao'){ var b=new kakao.maps.LatLngBounds();
+          pts.forEach(function(p){ b.extend(new kakao.maps.LatLng(p[0],p[1])); }); _kmap.setBounds(b); }
+        else if(_mapKind==='leaflet'){ _lmap.fitBounds(pts,{padding:[40,40],maxZoom:17}); }
+      }catch(e){}
+    }
+  }
+  function caroMapResize(){
+    try{ if(_mapKind==='kakao'&&_kmap){ _kmap.relayout(); } else if(_mapKind==='leaflet'&&_lmap){ _lmap.invalidateSize(); } }catch(e){}
+    caroMapUpdate();
   }
 
-  // ═══════════ 이벤트 알림 (소리/푸시) ═══════════
-  var _notif={on:true}, _evPrev={};
+  // ═══════════ 이벤트 알림 (소리/푸시) — 헤더=마스터, 차량별=종모양 ═══════════
+  var _notif={on:true}, _evPrev={}, _vehMuted={};
+  function bellSvg(muted){
+    return muted
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.9 17.9 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2a1 1 0 0 1 1 1v.6a6 6 0 0 1 5 5.9V13l1.7 2.6a1 1 0 0 1-.85 1.5H5.15a1 1 0 0 1-.85-1.5L6 13V9.5a6 6 0 0 1 5-5.9V3a1 1 0 0 1 1-1Z"/><path d="M10 19h4a2 2 0 0 1-4 0Z"/></svg>';
+  }
+  window.caroBellToggle=function(id){
+    _vehMuted[id]=!_vehMuted[id];
+    if(window.toast) toast(_vehMuted[id]?'🔕 이 차량 알림 끔':'🔔 이 차량 알림 켬');
+    renderFleet();
+  };
   window.caroToggleNotif=function(){
     _notif.on=!_notif.on;
     var b=document.getElementById('notifBtn'); if(b) b.classList.toggle('on',_notif.on);
     if(_notif.on){
       if(window.Notification && Notification.permission==='default'){ try{ Notification.requestPermission(); }catch(e){} }
-      if(window.toast)toast('🔔 이벤트 알림 켜짐 (충격·과속)');
-    } else { if(window.toast)toast('🔕 이벤트 알림 꺼짐'); }
+      if(window.toast)toast('🔔 전체 알림 켜짐 (충격·과속)');
+    } else { if(window.toast)toast('🔕 전체 알림 꺼짐'); }
   };
   function caroBeep(){
     try{ var AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
@@ -900,7 +1020,7 @@
     var seeded=_notif.seeded;
     FLEET.forEach(function(v){
       var p=_evPrev[v.id]||{};
-      if(seeded){
+      if(seeded && !_vehMuted[v.id]){        // 이 차량 종모양이 꺼져있으면 알림 안 함
         if(v.impact && !p.impact){ caroNotify('⚠ 충격 감지', v.name+(typeof v.shock==='number'?(' · '+v.shock.toFixed(1)+'g'):'')); }
         if(v.over && !p.over){ caroNotify('🚨 과속', v.name+(typeof v.speed==='number'?(' · '+Math.round(v.speed)+'km/h'):'')); }
       }
@@ -1146,7 +1266,7 @@
       ['dash','price','resv','notice','chat','debt','set'].forEach(function(id){
         var el=document.getElementById('tab-'+id); if(el) el.classList.toggle('hide', id!==t.dataset.tab);
       });
-      if(t.dataset.tab==='dash'){ resizeChart(); if(_map){ setTimeout(function(){ try{ _map.invalidateSize(); caroMapUpdate(); }catch(e){} },60); } }
+      if(t.dataset.tab==='dash'){ resizeChart(); setTimeout(function(){ caroMapResize(); },60); }
       if(t.dataset.tab==='price') renderPriceFleet();
       if(t.dataset.tab==='chat' && window.renderSupportStats) window.renderSupportStats();
       if(t.dataset.tab==='debt' && window.renderDebtAdmin) window.renderDebtAdmin();
