@@ -731,7 +731,7 @@
       var muted=_vehMuted[v.id];
       return '<tr class="'+(v.id===selectedId?'sel':'')+(unavail?' rowbad':'')+'" data-id="'+v.id+'">'+
         '<td><div class="vn"><span class="vbell'+(muted?' muted':'')+'" onclick="event.stopPropagation();caroBellToggle(\''+v.id+'\')" title="이 차량 이벤트 알림 켜기/끄기">'+bellSvg(muted)+'</span>'+
-          '<span class="vtext"><b class="carname" onclick="event.stopPropagation();openEdit(\''+v.id+'\')">'+v.name+'</b><small>'+(v.plate||'번호판 미등록')+'</small></span></div></td>'+
+          '<span class="vtext"><b class="carname" ondblclick="event.stopPropagation();openEdit(\''+v.id+'\')" title="클릭: 관제 보기 · 더블클릭: 정보 수정">'+v.name+'</b><small>'+(v.plate||'번호판 미등록')+'</small></span></div></td>'+
         '<td><span class="grade '+(v.grade==='THE BLACK'?'black':'')+'">'+v.grade+'</span></td>'+
         '<td><span class="st '+st+'"><i></i>'+es+'</span></td>'+
         '<td><div class="bat"><div class="track"><div class="fill" style="width:'+batWidth(v.battery)+'%;background:'+batColor(v.battery)+'"></div></div><span>'+batText(v.battery)+'</span></div></td>'+
@@ -744,7 +744,10 @@
     document.getElementById('fleetBody').innerHTML = rows ||
       '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:26px">Firestore 연결 중… 등록된 차량이 여기에 실시간으로 표시됩니다.</td></tr>';
     document.querySelectorAll('#fleetBody tr[data-id]').forEach(function(tr){
-      tr.addEventListener('click', function(){ selectedId=tr.getAttribute('data-id'); renderFleet(); renderLive(); syncLogsToSelection(); });
+      tr.addEventListener('click', function(){
+        selectedId=tr.getAttribute('data-id'); _liveKey=null;   // 즉시 새 차량으로 재렌더
+        renderFleet(); renderLive(); syncLogsToSelection(); caroMapUpdate();
+      });
     });
   }
   window.toggleStatus = function(id){
@@ -897,6 +900,18 @@
       '<span class="lab">'+v.name+(f?(' '+f.code):'')+'</span></div>';
   }
   function pickCar(id){ selectedId=id; renderFleet(); renderLive(); syncLogsToSelection(); caroMapUpdate(); }
+  // 차량 좌표: 기기 GPS(v.lat/lng) 우선, 없으면 위치 문자열("위도, 경도")에서 파싱
+  function carLatLng(v){
+    if(!v) return null;
+    if(typeof v.lat==='number' && typeof v.lng==='number') return [v.lat,v.lng];
+    if(typeof v.place==='string'){ var m=v.place.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/); if(m) return [parseFloat(m[1]),parseFloat(m[2])]; }
+    return null;
+  }
+  var _selK=null, _selL=null;   // 선택 차량 단일 마커(카카오/Leaflet)
+  function caroClearMarkers(){
+    try{ if(_selK){ _selK.setMap(null); _selK=null; } }catch(e){}
+    try{ if(_selL){ _lmap.removeLayer(_selL); _selL=null; } }catch(e){}
+  }
   function caroMapInit(){
     if(_mapKind) return;
     var el=document.getElementById('fleetMap'); if(!el) return;
@@ -922,60 +937,34 @@
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(_lmap);
     _mapKind='leaflet'; caroMapUpdate();
   }
+  // 지도는 '선택한 그 차량 한 대'만 표시 → 차량마다 각자 위치, 절대 안 겹침
+  var _lastMapSel=null;
   function caroMapUpdate(){
     if(!_mapKind){ caroMapInit(); return; }
-    var pts=[], have=0;
-    FLEET.forEach(function(v){
-      if(typeof v.lat!=='number' || typeof v.lng!=='number') return;
-      have++; pts.push([v.lat,v.lng]);
-      if(_mapKind==='kakao'){
-        var pos=new kakao.maps.LatLng(v.lat,v.lng);
-        if(_kmk[v.id]){ _kmk[v.id].setPosition(pos); _kmk[v.id].setContent(wardHtml(v)); }
-        else {
-          var ov=new kakao.maps.CustomOverlay({position:pos, content:wardHtml(v), yAnchor:1, clickable:true});
-          ov.setMap(_kmap); _kmk[v.id]=ov;
-        }
-      } else if(_mapKind==='leaflet'){
-        var icon=L.divIcon({className:'', html:wardHtml(v), iconSize:[0,0]});
-        if(_lmk[v.id]){ _lmk[v.id].setLatLng([v.lat,v.lng]).setIcon(icon); }
-        else {
-          _lmk[v.id]=L.marker([v.lat,v.lng],{icon:icon}).addTo(_lmap);
-          _lmk[v.id].on('click',(function(id){ return function(){ pickCar(id); }; })(v.id));
-        }
-      }
-    });
-    // 카카오 오버레이는 DOM 클릭 위임(오버레이 내부 클릭 → 차량 선택)
-    if(_mapKind==='kakao'){
-      var mel=document.getElementById('fleetMap');
-      if(mel && !mel._caroClickBound){ mel._caroClickBound=true;
-        mel.addEventListener('click', function(ev){
-          var w=ev.target.closest && ev.target.closest('.caro-ward'); if(!w) return;
-          var lab=w.querySelector('.lab'); if(!lab) return;
-          var nm=lab.textContent.replace(/\s+[B]?\d+F?$/,'').trim();
-          var hit=FLEET.find(function(x){return (x.name||'')===nm;}); if(hit) pickCar(hit.id);
-        });
-      }
-    }
-    // 사라진 마커 제거
-    var store=(_mapKind==='kakao')?_kmk:_lmk;
-    Object.keys(store).forEach(function(id){
-      if(!FLEET.find(function(v){return v.id===id && typeof v.lat==='number';})){
-        if(_mapKind==='kakao'){ store[id].setMap(null); } else { _lmap.removeLayer(store[id]); }
-        delete store[id];
-      }
-    });
+    caroClearMarkers();
+    var v=FLEET.find(function(x){return x.id===selectedId;});
+    var ll=carLatLng(v);
     var pill=document.getElementById('mapPill');
-    if(pill) pill.textContent = have?('차량 '+have+'대 · '+(_mapKind==='kakao'?'카카오':'지도')):'GPS 수신 대기';
-    if(!_mapFit && pts.length){ _mapFit=true;
-      try{
-        if(_mapKind==='kakao'){ var b=new kakao.maps.LatLngBounds();
-          pts.forEach(function(p){ b.extend(new kakao.maps.LatLng(p[0],p[1])); }); _kmap.setBounds(b); }
-        else if(_mapKind==='leaflet'){ _lmap.fitBounds(pts,{padding:[40,40],maxZoom:17}); }
-      }catch(e){}
+    if(!v){ _lastMapSel=null; if(pill) pill.textContent='차량 선택'; return; }
+    if(!ll){ _lastMapSel=selectedId; if(pill) pill.textContent='이 차량 위치 정보 없음'; return; }
+    var live=(typeof v.lat==='number');           // 기기 실시간 좌표 여부
+    var doCenter=(selectedId!==_lastMapSel);       // 선택이 바뀔 때만 지도 이동(사용자 팬 방해 안 함)
+    _lastMapSel=selectedId;
+    if(_mapKind==='kakao'){
+      var pos=new kakao.maps.LatLng(ll[0],ll[1]);
+      _selK=new kakao.maps.CustomOverlay({position:pos, content:wardHtml(v), yAnchor:1});
+      _selK.setMap(_kmap);
+      if(doCenter){ try{ _kmap.setCenter(pos); _kmap.setLevel(live?4:5); }catch(e){} }
+    } else if(_mapKind==='leaflet'){
+      var icon=L.divIcon({className:'', html:wardHtml(v), iconSize:[0,0]});
+      _selL=L.marker([ll[0],ll[1]],{icon:icon}).addTo(_lmap);
+      if(doCenter){ try{ _lmap.setView([ll[0],ll[1]], live?16:15); }catch(e){} }
     }
+    if(pill) pill.textContent = v.name+' · '+(live?(v.devOnline?'실시간':'최근 위치'):'등록 위치');
   }
   function caroMapResize(){
     try{ if(_mapKind==='kakao'&&_kmap){ _kmap.relayout(); } else if(_mapKind==='leaflet'&&_lmap){ _lmap.invalidateSize(); } }catch(e){}
+    _lastMapSel=null;   // 리사이즈 후엔 선택 차량으로 다시 중앙 정렬
     caroMapUpdate();
   }
 
@@ -1318,10 +1307,22 @@
   }
   // ── IoT devices 컬렉션 병합 (GPS·연료·온라인 상태) ──
   var DEV_TELE = {};   // FLEET id → 텔레메트리
+  // 기기 → 차량 자동 배정 (기기마다 자기 차량 데이터만, 절대 안 겹침)
   function devMatchFleetId(dev, devId){
+    // 1) 기기 문서에 carId/carName이 있으면 그걸 최우선 (관리자가 명시 지정한 경우)
     if(dev.carId!=null){ var a=FLEET.find(function(v){return String(v.docId)===String(dev.carId);}); if(a) return a.id; }
     if(dev.carName){ var b=FLEET.find(function(v){return (v.name||'')===dev.carName;}); if(b) return b.id; }
-    if(String(devId)==='CARO-001'){ var k=FLEET.find(function(v){return /코나/.test(v.name||'');}); if(k) return k.id; }
+    // 2) 기기ID 번호를 차량 번호에 자동 매칭: CARO-001→0001(코나), CARO-006→0006(아반떼) …
+    //    → 새 차에 기기(예: CARO-002)를 달면 별도 설정 없이 그 차량 관제로 자동 연결
+    var md=String(devId).match(/(\d+)/);
+    if(md){ var n=parseInt(md[1],10);
+      var c=FLEET.find(function(v){
+        var pn=parseInt(String(v.plate||'').replace(/\D/g,''),10);   // 표시번호(플레이트)
+        var dn=parseInt(String(v.docId||'').replace(/\D/g,''),10);   // 문서ID 번호
+        return pn===n || dn===n;
+      });
+      if(c) return c.id;
+    }
     return null;
   }
   function devMergeTelemetry(){
