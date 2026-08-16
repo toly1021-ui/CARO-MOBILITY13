@@ -850,7 +850,8 @@
     document.getElementById('lvFloor').textContent = (v.status==='점검'||!f)?'—':f.code;
     document.getElementById('lvAlt').textContent = hasAlt?((v.alt>=0?'+':'')+v.alt.toFixed(1)+'m'):'기기 미연결';
     document.getElementById('lvBat').textContent = batText(v.battery);
-    document.getElementById('lvMove').textContent = hasAlt?(v.status==='점검'?'점검중':'수신중'):'—';
+    var _spd=(typeof v.speed==='number')?Math.round(v.speed):null;
+    document.getElementById('lvMove').textContent = !hasAlt?'—':(v.status==='점검'?'점검중':(v.moving?('주행중'+(_spd!=null?(' '+_spd+'km/h'):'')):'정지'));
     document.getElementById('lvLoc').textContent = v.place + (f?('  ·  '+f.ko):'');
     drawChart(v); drawRotation(v); updateAlert(v); renderDiag(v);
   }
@@ -924,8 +925,10 @@
   // 차량 좌표: 기기 GPS(v.lat/lng) 우선, 없으면 위치 문자열("위도, 경도")에서 파싱
   function carLatLng(v){
     if(!v) return null;
-    if(typeof v.lat==='number' && typeof v.lng==='number') return [v.lat,v.lng];
-    if(typeof v.place==='string'){ var m=v.place.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/); if(m) return [parseFloat(m[1]),parseFloat(m[2])]; }
+    if(typeof v.lat==='number' && typeof v.lng==='number') return [v.lat,v.lng];   // 실제 GPS 우선
+    // ★ 기기 연결 차량은 실제 GPS만 신뢰 → GPS 없으면 '위치없음'(엉뚱한 시드좌표에 안 찍힘).
+    //   미연결(데모) 차량만 목록의 위치문자열을 파싱해 표시.
+    if(!DEV_IDMAP[v.id] && typeof v.place==='string'){ var m=v.place.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/); if(m) return [parseFloat(m[1]),parseFloat(m[2])]; }
     return null;
   }
   var _selK=null, _selL=null;   // 선택 차량 단일 마커(카카오/Leaflet)
@@ -968,20 +971,23 @@
     var pill=document.getElementById('mapPill');
     if(!v){ _lastMapSel=null; if(pill) pill.textContent='차량 선택'; return; }
     if(!ll){ _lastMapSel=selectedId; if(pill) pill.textContent='이 차량 위치 정보 없음'; return; }
-    var live=(typeof v.lat==='number');           // 기기 실시간 좌표 여부
-    var doCenter=(selectedId!==_lastMapSel);       // 선택이 바뀔 때만 지도 이동(사용자 팬 방해 안 함)
+    var live=(typeof v.lat==='number' && typeof v.lng==='number');   // 기기 실시간 좌표 여부
+    var selChanged=(selectedId!==_lastMapSel);
     _lastMapSel=selectedId;
+    // ★ 실시간 추적: 선택이 바뀌면 그 차량으로 이동+줌, GPS 좌표가 살아있으면 매 갱신마다 따라감(줌 유지)
     if(_mapKind==='kakao'){
       var pos=new kakao.maps.LatLng(ll[0],ll[1]);
       _selK=new kakao.maps.CustomOverlay({position:pos, content:wardHtml(v), yAnchor:1});
       _selK.setMap(_kmap);
-      if(doCenter){ try{ _kmap.setCenter(pos); _kmap.setLevel(live?4:5); }catch(e){} }
+      try{ if(selChanged){ _kmap.setCenter(pos); _kmap.setLevel(live?3:5); }
+           else if(live){ _kmap.setCenter(pos); } }catch(e){}   // 이동 중이면 계속 중앙 추적
     } else if(_mapKind==='leaflet'){
       var icon=L.divIcon({className:'', html:wardHtml(v), iconSize:[0,0]});
       _selL=L.marker([ll[0],ll[1]],{icon:icon}).addTo(_lmap);
-      if(doCenter){ try{ _lmap.setView([ll[0],ll[1]], live?16:15); }catch(e){} }
+      try{ if(selChanged){ _lmap.setView([ll[0],ll[1]], live?16:15); }
+           else if(live){ _lmap.panTo([ll[0],ll[1]]); } }catch(e){}
     }
-    if(pill) pill.textContent = v.name+' · '+(live?(v.devOnline?'실시간':'최근 위치'):'등록 위치');
+    if(pill) pill.textContent = v.name+' · '+(live?(v.devOnline?'🛰 실시간 추적':'최근 위치'):'등록 위치');
   }
   function caroMapResize(){
     try{ if(_mapKind==='kakao'&&_kmap){ _kmap.relayout(); } else if(_mapKind==='leaflet'&&_lmap){ _lmap.invalidateSize(); } }catch(e){}
@@ -1684,10 +1690,11 @@
       var f=floorView(sv)||floorOf(sv.alt);
       document.getElementById('lvFloor').textContent = sv.status==='점검'?'—':(f.code + (sv.env?(' · '+sv.env):''));
       document.getElementById('lvAlt').textContent = (sv.alt>=0?'+':'')+sv.alt.toFixed(1)+'m';
-      var prev=sv.hist&&sv.hist.length>1?sv.hist[sv.hist.length-2]:sv.alt;
-      var mv=Math.abs(sv.alt-prev)>0.03;
-      document.getElementById('lvMove').textContent = sv.status==='점검'?'점검중':(mv?(sv.alt<prev?'하강중 ▼':'상승중 ▲'):'정지');
-      document.getElementById('lvLoc').textContent = sv.place+'  ·  '+f.ko;
+      // 상태: 실시간 주행/정지 (기기 moving 플래그 + 속도)
+      var spd=(typeof sv.speed==='number')?Math.round(sv.speed):null;
+      document.getElementById('lvMove').textContent = sv.status==='점검'?'점검중'
+        :(sv.moving?('주행중'+(spd!=null?(' '+spd+'km/h'):'')):'정지');
+      document.getElementById('lvLoc').textContent = (sv.place||'—')+'  ·  '+f.ko;
     }
   }
   function animate(){
@@ -1696,7 +1703,7 @@
       // (1) 데이터 변경 감지 → 바뀐 경우에만 무거운 높이그래프/텍스트/경고 재렌더 (렉 방지)
       var lastAlt=(sv.hist&&sv.hist.length)?sv.hist[sv.hist.length-1]:sv.alt;
       var key=[sv.hist?sv.hist.length:0,lastAlt,sv.alt,sv.devFloor,sv.env,sv.status,sv.battery,sv.place,
-               sv.speed,sv.over,sv.shock,sv.impact,sv.heading].join('|');
+               sv.lat,sv.lng,sv.moving,sv.speed,sv.over,sv.shock,sv.impact,sv.heading].join('|');
       if(key!==_liveKey){ _liveKey=key; liveTextUpdate(sv); drawChart(sv); updateAlert(sv); }
       // (2a) 원기둥 속 차 높이도 목표값으로 부드럽게 보간 → 지하/지상 이동이 스르륵
       if(typeof sv.alt==='number'){
