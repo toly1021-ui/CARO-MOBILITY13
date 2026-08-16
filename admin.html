@@ -17,12 +17,14 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style id="caro-admin-addons">
-  /* ── 실시간 관제 패널: 너무 길어지지 않게 내부 스크롤 + 칸마다 여백 ── */
-  .card.live .lv-body{max-height:calc(100vh - 150px);overflow-y:auto;overflow-x:hidden;
-    padding-right:6px;display:flex;flex-direction:column;gap:13px;}
+  /* ── 실시간 관제 패널: 세로 스크롤로만. (flex는 자식을 찌그러뜨려서 쓰지 않음) ── */
+  .card.live .lv-body{max-height:calc(100vh - 150px);overflow-y:auto;overflow-x:hidden;padding-right:6px;}
   .card.live .lv-body::-webkit-scrollbar{width:7px;}
   .card.live .lv-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
-  .card.live .lv-body > div{margin:0;}   /* gap이 간격 담당 → 개별 마진 리셋 */
+  .card.live .lv-body > div{margin-bottom:13px;}   /* 칸마다 세로 여백 */
+  .card.live .lv-body > div:last-child{margin-bottom:0;}
+  /* 지도·나선은 절대 눌리지 않게 고정 높이 보장 */
+  .card.live .mapwrap,.card.live .chartwrap{height:238px;min-height:238px;flex:none;}
   /* ── 차량 실시간 지도 (3D 나선과 동일 사이즈) ── */
   .mapwrap{position:relative;height:238px;border-radius:12px;overflow:hidden;background:var(--panel2);border:1px solid var(--border);}
   #fleetMap{width:100%;height:100%;}
