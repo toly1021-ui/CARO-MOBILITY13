@@ -145,16 +145,6 @@
     .nh-orb .nh-carimg{ width:128px; height:70px; object-fit:contain; margin-bottom:4px; display:block; }
     .nh-orb h1{ font-size:15.5px; font-weight:800; color:var(--text-1); }
     .nh-orb p{ font-size:12px; font-weight:700; color:var(--p1-slate,#5a6470); margin-top:7px; }
-    /* 접속 시 홈 콘텐츠 부드럽게 나타나기 */
-    .nh-root.nh-in{ animation:nhIn .32s ease both; }
-    @keyframes nhIn{ from{ opacity:0; } to{ opacity:1; } }
-    /* 예약 데이터 로딩 중 스켈레톤(빈 '예약 없음' 깜빡임 방지) */
-    .nh-orb.skel{ cursor:default; }
-    .nh-orb .nh-skcar{ width:122px; height:66px; border-radius:13px; margin-bottom:12px; }
-    .nh-orb .nh-skln{ width:120px; height:12px; border-radius:7px; }
-    .nh-orb .nh-skln.w2{ width:78px; margin-top:10px; }
-    .nh-orb .nh-skcar,.nh-orb .nh-skln{ background:linear-gradient(90deg,#e6eaef 25%,#f3f6f9 37%,#e6eaef 63%); background-size:400% 100%; animation:nhSk 1.15s ease infinite; }
-    @keyframes nhSk{ 0%{ background-position:100% 0; } 100%{ background-position:0 0; } }
     .nh-gauge{ position:absolute; top:50%; left:50%; width:268px; height:268px; transform:translate(-50%,-50%); pointer-events:none; z-index:1; }
     .nh-gauge svg{ width:100%; height:100%; display:block; }
     .nh-gfill{ stroke:var(--accent,#18191c); }
@@ -426,7 +416,6 @@
     return { next:next, prev:prev };
   }
 
-  var _bootT=Date.now();   /* 접속 시각 — 예약 데이터 로딩 유예창 판단용 */
   function render(){
     var host=document.getElementById('home-screen'); if(!host) return;
     injectCss(); injectSprite(); styleSplash(); styleEvent();
@@ -435,15 +424,11 @@
 
     var act=getActive();
     var bk=getBooking();
-    /* 접속 직후(로그인·데이터 로딩 전) 예약이 아직 안 보이면 '예약 없음' 대신 스켈레톤 → 빈 화면 깜빡임 방지 */
-    var settling = (window._caroLoggedIn && !bk && (Date.now()-_bootT < 1400));
     var fuelPct = bk ? getFuel(bk.r) : null;
     var orbInner = bk
       ? '<span class="nh-chip" style="display:inline-block;padding:5px 13px;border-radius:11px;font-size:10px;font-weight:800;background:var(--accent);color:#fff;margin-bottom:10px">'+(bk.active?'이용 중':'예약됨')+'</span>'
         +carImgTag(bk.r)+'<h1>'+esc(carName(bk.r))+'</h1><p>'+(bk.active?remainTxt(bk.e):startTxt(bk.s))+'</p>'+fuelText(fuelPct)
-      : settling
-        ? '<div class="nh-skcar"></div><div class="nh-skln"></div><div class="nh-skln w2"></div>'
-        : wardSvg('nh-pin')+'<h1>지금 바로 타기</h1><p>예약한 차량이 없습니다</p>';
+      : wardSvg('nh-pin')+'<h1>지금 바로 타기</h1><p>예약한 차량이 없습니다</p>';
 
     var activeCard = act
       ? '<div class="nh-active"><span class="nh-badge">이용 중</span>'
@@ -479,10 +464,8 @@
       +'<button class="nh-icbtn" data-menu="1">'+ic('nh-menu')+'</button></div></div>'
       +'<div class="nh-hero"><div class="nh-halo"></div><div class="nh-ring"></div>'
       +(bk&&fuelPct!=null?fuelGauge(fuelPct):'')
-      +'<div class="nh-orb'+(settling?' skel':'')+'" data-orb="1">'+orbInner+'</div></div>'
+      +'<div class="nh-orb" data-orb="1">'+orbInner+'</div></div>'
       +(act?activeCard:recent)+menu+black+evBanner+plan;
-    /* 콘텐츠 부드럽게 페이드 인 (접속 시 '툭' 튀어나옴 방지) */
-    try{ root.classList.remove('nh-in'); void root.offsetWidth; root.classList.add('nh-in'); }catch(e){}
 
     root.querySelector('[data-orb]').onclick=function(){ go(getActive()?'my-reservation-screen':'rental-screen'); };
     var recEl=root.querySelector('[data-recent]'); if(recEl) recEl.onclick=function(){ go('usage-history-screen'); };
@@ -550,7 +533,7 @@
     if(document.getElementById('nh-nav')) return;
     var TABS=[
       {l:'홈', i:'nh-home', id:'home-screen'},
-      {l:'예약하기', i:'nh-pinnav', id:'rental-screen'},
+      {l:'거점', i:'nh-pinnav', id:'rental-screen'},
       {l:'이용내역', i:'nh-listnav', id:'usage-history-screen'},
       {l:'내정보', i:'nh-user', id:'mypage-screen'}
     ];
@@ -569,17 +552,10 @@
   function boot(){
     injectCss(); styleSplash(); styleEvent();
     render(); tabbar();
-    /* 홈 진입 render 는 아래 클래스 옵저버(557)가 담당 → goTo 래퍼에서 중복 호출 제거(이중 재그리기=깜빡임·렉 방지) */
-    if(has('goTo')){ var _g=window.goTo; window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='event-screen') setTimeout(styleEvent,30); return r; }; }
+    if(has('goTo')){ var _g=window.goTo; window.goTo=function(id){ var r=_g.apply(this,arguments); if(id==='home-screen') setTimeout(render,30); if(id==='event-screen') setTimeout(styleEvent,30); return r; }; }
     var home=document.getElementById('home-screen');
     if(home && window.MutationObserver){ new MutationObserver(function(){ if(home.classList.contains('active')) render(); }).observe(home,{attributes:true,attributeFilter:['class']}); }
     [600,1600,3200].forEach(function(t){ setTimeout(render,t); });
-    /* ★ 앱 켜자마자 예약차량 즉시 반영: 예약 데이터가 늦게 로딩되면 뜨는 즉시 한 번 재렌더 */
-    var _bkSeen=false, _bkT=setInterval(function(){ try{
-      if(_bkSeen){ clearInterval(_bkT); return; }
-      if(getBooking()){ _bkSeen=true; clearInterval(_bkT); render(); }
-    }catch(e){} }, 600);
-    setTimeout(function(){ try{ clearInterval(_bkT); }catch(e){} }, 30000);
     setInterval(function(){ var h=document.getElementById('home-screen'); if(h && h.classList.contains('active') && getActive()) render(); }, 60000);
     console.log('[디자인] ✅ 홈 리디자인 v28 (light_P1)');
   }
@@ -2324,7 +2300,7 @@
         if(ex){
           var d=snap.data()||{};
           var pm=d.perms||{};
-          var hasAny=['cars','pricing','notices','resv'].some(function(k){ return pm[k]; });
+          var hasAny=['cars','pricing','notices','resv','control'].some(function(k){ return pm[k]; });
           if(d.active!==false && hasAny){ perms=pm; isStaff=true; }
           else { perms=null; isStaff=false; }
         } else { perms=null; isStaff=false; }
@@ -2494,9 +2470,10 @@
     {key:'cars',label:'차량 관리',sub:'등록·수정·삭제'},
     {key:'pricing',label:'요금 관리',sub:'시간당·주행·월요금'},
     {key:'notices',label:'공지·이벤트',sub:'등록·수정·삭제'},
-    {key:'resv',label:'예약 관리',sub:'조회·처리'}
+    {key:'resv',label:'예약 관리',sub:'조회·처리'},
+    {key:'control',label:'통합 관제센터',sub:'실시간 관제·원격 제어'}
   ];
-  var PILL={cars:'차량',pricing:'요금',notices:'공지',resv:'예약'};
+  var PILL={cars:'차량',pricing:'요금',notices:'공지',resv:'예약',control:'관제'};
   var cache=[], snapStarted=false, editingEmail=null;
 
   function isSuper(){
@@ -6952,8 +6929,8 @@
    +'.hr-gi .bx{width:50px;height:50px;border-radius:15px 15px 15px 6px;background:var(--p1-soft,#f2f3f5);display:flex;align-items:center;justify-content:center;}'
    +'.hr-gi .bx svg{width:24px;height:24px;stroke:var(--p1-slate,#5a6470);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;}'
    +'.hr-gi span{font-size:.74rem;font-weight:700;color:var(--text-1,#1b2027);}'
-   +'.hr-gi .bdg{position:absolute;top:-7px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.56rem;font-weight:800;padding:2px 7px;border-radius:7px;background:var(--accent,#18191c);color:#fff;}'
-   +'.hr-gi .bdg.gd{background:var(--accent,#18191c);color:#fff;}'
+   +'.hr-gi .bdg{position:absolute;top:-7px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.56rem;font-weight:800;padding:2px 7px;border-radius:7px;background:var(--accent,#18191c);color:#fff;box-shadow:inset 0 -1.5px 0 rgba(200,169,110,.55);}'
+   +'.hr-gi .bdg.gd{background:#c8a96e;color:#231c0e;box-shadow:none;}'
    +'.hr-sec{margin-top:22px;}'
    +'.hr-sec h2{font-size:15px;font-weight:800;color:var(--text-1,#1b2027);margin:0 2px 10px;}'
    +'.hr-quick{margin-top:22px;background:#fff;border:1px solid var(--p1-line,#e8eaee);border-radius:20px 20px 20px 8px;padding:16px 6px;display:grid;grid-template-columns:repeat(4,1fr);box-shadow:0 2px 8px -6px rgba(40,48,58,.14);}'
@@ -6965,17 +6942,17 @@
    +'.hr-nw{display:flex;align-items:center;gap:11px;padding:14px 16px;border-bottom:1px solid var(--p1-soft,#f2f3f5);cursor:pointer;}'
    +'.hr-nw:last-child{border-bottom:0;}'
    +'.hr-nw .tag{flex:0 0 auto;font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:7px;background:var(--p1-soft,#f2f3f5);color:var(--p1-accent-d,#57616d);}'
-   +'.hr-nw .tag.ev{background:var(--accent,#18191c);color:#fff;}'
+   +'.hr-nw .tag.ev{background:var(--accent,#18191c);color:#fff;box-shadow:inset 0 -1.5px 0 rgba(200,169,110,.55);}'
    +'.hr-nw b{flex:1;min-width:0;font-size:.84rem;font-weight:700;color:var(--text-1,#1b2027);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
    +'.hr-nw .ar{color:#c8ced6;flex:0 0 auto;}'
     /* 팁 */
    +'.hr-tips{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 8px;scrollbar-width:none;}'
    +'.hr-tips::-webkit-scrollbar{display:none;}'
-   +'.hr-tip{flex:0 0 auto;width:168px;border-radius:18px 18px 18px 7px;padding:14px;cursor:pointer;background:linear-gradient(150deg,#eef1f4 0%,#dde2e8 100%);border:1px solid rgba(90,100,112,.14);box-shadow:0 4px 14px -9px rgba(40,48,58,.3);}'
-   +'.hr-tip .tic{width:34px;height:34px;border-radius:11px 11px 11px 4px;background:rgba(90,100,112,.12);display:flex;align-items:center;justify-content:center;margin-bottom:10px;}'
-   +'.hr-tip .tic svg{width:18px;height:18px;stroke:var(--p1-slate,#5a6470);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}'
-   +'.hr-tip b{font-size:.8rem;font-weight:800;color:var(--text-1,#1b2027);line-height:1.4;display:block;}'
-   +'.hr-tip small{font-size:.66rem;font-weight:600;color:#6b727c;margin-top:4px;display:block;}';
+   +'.hr-tip{flex:0 0 auto;width:168px;border-radius:18px 18px 18px 7px;padding:14px;cursor:pointer;background:linear-gradient(150deg,#3a424c 0%,#23262e 100%);box-shadow:0 6px 16px -9px rgba(24,25,28,.5);}'
+   +'.hr-tip .tic{width:34px;height:34px;border-radius:11px 11px 11px 4px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;margin-bottom:10px;}'
+   +'.hr-tip .tic svg{width:18px;height:18px;stroke:#c8a96e;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}'
+   +'.hr-tip b{font-size:.8rem;font-weight:800;color:#fff;line-height:1.4;display:block;}'
+   +'.hr-tip small{font-size:.66rem;font-weight:600;color:#aab0b8;margin-top:4px;display:block;}';
   (document.head||document.documentElement).appendChild(st);
 
   var IC={
@@ -7027,7 +7004,7 @@
     var g=document.createElement('div'); g.className='hr-grid';
     g.innerHTML=
       '<div class="hr-gi" data-mi="0"><span class="bx">'+use('nh-car')+'</span><span>내 예약</span></div>'
-     +'<div class="hr-gi" data-go="rental-screen"><span class="bx">'+use('nh-pinnav')+'</span><span>예약하기</span></div>'
+     +'<div class="hr-gi" data-go="rental-screen"><span class="bx">'+use('nh-pinnav')+'</span><span>거점</span></div>'
      +'<div class="hr-gi" data-mi="1"><span class="bdg">월 구독</span><span class="bx">'+use('nh-cal')+'</span><span>월 렌트</span></div>'
      +'<div class="hr-gi" data-mi="2"><span class="bdg gd">혜택</span><span class="bx">'+use('nh-gift')+'</span><span>이벤트</span></div>';
     menu.insertAdjacentElement('beforebegin', g);
@@ -7036,29 +7013,24 @@
     /* 퀵 줄 + 공지·소식 + 팁 — 맨 아래 */
     var tail=document.createElement('div');
     tail.innerHTML=
-      '<div class="hr-sec hr-news-sec" style="display:none"><h2>공지·소식</h2><div class="hr-news"></div></div>'
-      +'<div class="hr-sec"><h2>알아두면 든든한 팁</h2><div class="hr-tips">'
-       +'<div class="hr-tip" data-mi="3"><span class="tic">'+ico('cam')+'</span><b>주행 전 10분,<br>외관 사진 필수</b><small>분쟁 예방의 첫걸음</small></div>'
-       +'<div class="hr-tip" data-mi="3"><span class="tic">'+ico('check')+'</span><b>반납 전<br>체크리스트</b><small>두고 내린 물건 확인</small></div>'
-       +'<div class="hr-tip" data-go="cs-screen"><span class="tic">'+ico('shield')+'</span><b>사고가 났다면<br>침착하게</b><small>단계별 사고 접수</small></div>'
-      +'</div></div>'
-      /* ★ 동그라미 친 퀵메뉴(고객센터/이용내역/결제·면허/이용 가이드) → 맨 아래로 이동 */
-      +'<div class="hr-quick">'
+      '<div class="hr-quick">'
        +'<div class="hr-qi" data-mi="5">'+use('nh-head')+'<span>고객센터</span></div>'
        +'<div class="hr-qi" data-go="usage-history-screen">'+use('nh-listnav')+'<span>이용내역</span></div>'
        +'<div class="hr-qi" data-mi="4">'+use('nh-wallet')+'<span>결제·면허</span></div>'
        +'<div class="hr-qi" data-mi="3">'+use('nh-book')+'<span>이용 가이드</span></div>'
       +'</div>'
-      /* ★ 하단 플로팅 '차량 제어' 바·탭바가 버튼을 안 가리도록 여백 */
-      +'<div class="hr-botspace" style="height:44px"></div>';
+      +'<div class="hr-sec hr-news-sec" style="display:none"><h2>공지·소식</h2><div class="hr-news"></div></div>'
+      +'<div class="hr-sec"><h2>알아두면 든든한 팁</h2><div class="hr-tips">'
+       +'<div class="hr-tip" data-mi="3"><span class="tic">'+ico('cam')+'</span><b>주행 전 10분,<br>외관 사진 필수</b><small>분쟁 예방의 첫걸음</small></div>'
+       +'<div class="hr-tip" data-mi="3"><span class="tic">'+ico('check')+'</span><b>반납 전<br>체크리스트</b><small>두고 내린 물건 확인</small></div>'
+       +'<div class="hr-tip" data-go="cs-screen"><span class="tic">'+ico('shield')+'</span><b>사고가 났다면<br>침착하게</b><small>단계별 사고 접수</small></div>'
+      +'</div></div>';
     while(tail.firstChild){ root.appendChild(tail.firstChild); }
 
     root.querySelectorAll('.hr-grid [data-go],.hr-quick [data-go],.hr-tips [data-go]').forEach(function(el){ el.addEventListener('click',function(){ go(el.getAttribute('data-go')); }); });
     root.querySelectorAll('.hr-grid [data-mi],.hr-quick [data-mi],.hr-tips [data-mi]').forEach(function(el){ el.addEventListener('click',function(){ mi(el.getAttribute('data-mi')); }); });
     _newsSig='';   /* 골격 새로 만들었으니 공지 박스 강제 재작성 */
     newsRefresh();
-    /* 골격 재생성과 동시에 '이용 준비' 카드도 같은 틱에 복구 → 깜빡임 제거 */
-    try{ if(window.__caroRR) window.__caroRR(); }catch(e){}
   }
 
   var home=document.getElementById('home-screen');
@@ -7100,14 +7072,14 @@
    +'.hr-ready p{margin:0 0 10px;font-size:.72rem;font-weight:600;color:#8a919c;}'
    +'.hr-rd{display:flex;align-items:center;gap:10px;padding:11px 2px;border-top:1px solid var(--p1-soft,#f2f3f5);cursor:pointer;}'
    +'.hr-rd .dot{flex:0 0 auto;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;}'
-   +'.hr-rd.todo .dot{background:rgba(90,100,112,.14);}'
-   +'.hr-rd.todo .dot::after{content:"";width:7px;height:7px;border-radius:50%;background:var(--p1-slate,#5a6470);}'
+   +'.hr-rd.todo .dot{background:rgba(200,169,110,.16);}'
+   +'.hr-rd.todo .dot::after{content:"";width:7px;height:7px;border-radius:50%;background:#c8a96e;}'
    +'.hr-rd.done .dot{background:var(--p1-soft,#f2f3f5);}'
    +'.hr-rd.done .dot svg{width:12px;height:12px;stroke:var(--p1-slate,#5a6470);fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}'
    +'.hr-rd b{flex:1;font-size:.82rem;font-weight:700;color:var(--text-1,#1b2027);}'
    +'.hr-rd.done b{color:#9aa1ab;text-decoration:line-through;text-decoration-color:rgba(154,161,171,.5);}'
    +'.hr-rd .st{flex:0 0 auto;font-size:.68rem;font-weight:800;}'
-   +'.hr-rd.todo .st{color:var(--p1-slate,#5a6470);}'
+   +'.hr-rd.todo .st{color:#c8a96e;}'
    +'.hr-rd.done .st{color:#aab0b8;}'
     /* 4) 예약 화면 취소 수수료 요약 */
    +'.res-cancel-note{margin:12px 0 14px;background:var(--p1-card,#fff);border:1px solid var(--p1-line,#e8eaee);border-radius:16px 16px 16px 7px;overflow:hidden;box-shadow:0 2px 8px -6px rgba(40,48,58,.12);}'
@@ -7179,16 +7151,8 @@
       +'<span class="dot">'+(done?IC_CHECK:'')+'</span><b>'+label+'</b>'
       +'<span class="st">'+(done?'완료':'등록 필요')+'</span></div>';
   }
-  /* 계정 데이터 로드 완료 신호: userInfo·savedCards 는 초기부터 빈 값으로 존재하므로
-     userInfo.id 가 채워졌는지(=로그인+계정데이터 로드 완료)로 판단 → 로딩 중 순간 표시 방지 */
-  function acctLoaded(){ return !!(window.userInfo && window.userInfo.id); }
-  function dataReady(logged){
-    if(!logged) return true;
-    return acctLoaded();
-  }
-  var _rdTimer=null;
-  /* 실제 DOM 반영 — 상태(s)에 맞춰 카드 추가/갱신/제거 */
-  function applyReady(s){
+  function renderReady(){
+    var s=readyState();
     var root=document.querySelector('#home-screen .nh-root');
     var grid=root?root.querySelector('.hr-grid'):null;
     var card=root?root.querySelector('.hr-ready'):null;
@@ -7197,53 +7161,60 @@
       if(card) card.remove();
       _rdSig=s.sig; return;
     }
-    if(card && _rdSig===s.sig) return;   /* 이미 동일 내용 → 재작성 안 함 */
-    if(!card){ card=document.createElement('div'); card.className='hr-ready'; grid.insertAdjacentElement('afterend',card); }
+    if(card && _rdSig===s.sig) return;   /* 변화 없으면 재작성 안 함 */
     _rdSig=s.sig;
-    var both=(!s.lic&&!s.card);   /* 둘 다 미등록 → 예약 차단 안내 */
-    card.innerHTML='<h3>이용 준비, 조금만 더</h3><p>'
-      +(both?'운전면허와 결제 카드를 등록해야 차량을 예약할 수 있어요':'등록을 마치면 바로 차량을 이용할 수 있어요')+'</p>'
+    if(!card){ card=document.createElement('div'); card.className='hr-ready'; grid.insertAdjacentElement('afterend',card); }
+    card.innerHTML='<h3>이용 준비, 조금만 더</h3><p>등록을 마치면 바로 차량을 이용할 수 있어요</p>'
       +row('lic','운전면허 등록',s.lic)
       +row('card','결제 카드 등록',s.card);
     card.querySelectorAll('.hr-rd.todo').forEach(function(el){
       el.addEventListener('click',function(){ go('payment-info-screen'); });
     });
   }
-  function renderReady(){
-    var s=readyState();
-    /* 계정 로드 전엔 아무 것도 하지 않음 → '사라졌다 나왔다' 방지 */
-    if(!dataReady(s.logged)) return;
-    /* 이미 반영된 상태와 동일 → 즉시 처리(골격이 다시 그려져 카드가 지워졌으면 곧바로 복구) */
-    if(s.sig===_rdSig){ applyReady(s); return; }
-    /* 상태가 바뀜(로딩 완료·등록 변화) → 550ms 디바운스: 로딩 중 잠깐 스치는 값은 무시 */
-    clearTimeout(_rdTimer);
-    _rdTimer=setTimeout(function(){ try{ var s2=readyState(); if(dataReady(s2.logged)) applyReady(s2); }catch(e){} }, 550);
-  }
-  /* 홈 골격(nh-root)이 다시 그려질 때 grid 와 같은 틱(enrich)에서 카드도 복구 → 공백 없이 깜빡임 제거.
-     별도 subtree 옵저버는 제거(배너 회전마다 돌아 렉 유발) — enrich 호출 + 완만한 인터벌만 사용. */
-  window.__caroRR=function(){ try{ renderReady(); }catch(e){} };
   setInterval(function(){ try{ renderReady(); }catch(e){} }, 2500);
-  [500,1200,2400,4000].forEach(function(t){ setTimeout(function(){ try{ renderReady(); }catch(e){} }, t); });
+  [800,2000].forEach(function(t){ setTimeout(function(){ try{ renderReady(); }catch(e){} }, t); });
 
-  /* ───── 차량 예약 차단: 운전면허·결제 카드 둘 다 미등록 시 예약 진입 차단 ───── */
-  function bothMissing(){
-    var s=readyState();
-    return s.logged && acctLoaded() && !s.lic && !s.card;  /* 계정 로드 후에만 차단 판단 */
-  }
-  function blockReserve(){
-    try{ if(window.showToast) showToast('운전면허와 결제 카드를 먼저 등록해 주세요.'); }catch(e){}
-    try{ if(window.goTo) goTo('payment-info-screen'); }catch(e){}
-  }
-  function wrapReserve(name){
-    var orig=window[name];
-    if(typeof orig!=='function'||orig.__caroGuarded) return;
-    var wrapped=function(){ if(bothMissing()){ blockReserve(); return; } return orig.apply(this,arguments); };
-    wrapped.__caroGuarded=true;
-    window[name]=wrapped;
-  }
-  function installReserveGuards(){ ['selectCar','selectBlCar'].forEach(wrapReserve); }
-  installReserveGuards();
-  [600,1500,3000].forEach(function(t){ setTimeout(installReserveGuards,t); });
+  console.log('[프로] ✅ 완성도 패치 v1 (네트워크·빈화면 CTA·이용 준비 카드)');
+})();
 
-  console.log('[프로] ✅ 완성도 패치 v1 (네트워크·빈화면 CTA·이용 준비 카드·예약 차단)');
+/* ═══════════════════════════════════════════════════════════
+   [관제] 앱 관리자 모드 → 신형 통합 관제센터(admin-control.html) 진입 카드
+   ─ dev-screen 맨 위에 골드 카드 추가. 새 관제 대시보드를 새 창으로 연다.
+   ─ 모바일에서도 새 대시보드가 반응형으로 동작.
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  var G='#c8a96e', GS='#dcc28f', PANEL='#1b1d21', BD='#2b2e34';
+  function inject(){
+    var body=document.querySelector('#dev-screen .dev-body');
+    if(!body) return;
+    /* ★ 권한 게이트: 최고관리자 또는 '통합 관제센터(control)' 권한을 부여받은 계정에만 표시.
+       권한이 없거나 회수되면 카드도 즉시 제거(실패 시 안 보이는 쪽이 기본 = 안전). */
+    var allowed=false;
+    try{ allowed = !!(window.caroCan && window.caroCan('control')); }catch(e){ allowed=false; }
+    var existing=document.getElementById('caro-ctl-entry');
+    if(!allowed){ if(existing) existing.remove(); return; }
+    if(existing) return;
+    var d=document.createElement('div');
+    d.className='dev-section'; d.id='caro-ctl-entry';
+    d.innerHTML=
+      '<button type="button" id="caro-ctl-btn" style="width:100%;text-align:left;cursor:pointer;'
+      +'background:linear-gradient(135deg,rgba(200,169,110,.14),rgba(200,169,110,.04));'
+      +'border:1px solid rgba(200,169,110,.4);border-radius:16px;padding:18px 20px;color:'+GS+';'
+      +'display:flex;align-items:center;gap:14px;font-family:inherit;">'
+      +'<span style="font-size:26px;">🛰</span>'
+      +'<span style="flex:1;"><span style="display:block;font-size:16px;font-weight:800;color:'+G+';letter-spacing:1px;">통합 관제센터</span>'
+      +'<span style="display:block;font-size:12px;opacity:.75;margin-top:3px;">실시간 지도 · 원격 제어 · 층 보정 · 이벤트 알림</span></span>'
+      +'<span style="font-size:20px;color:'+G+';">›</span></button>';
+    d.querySelector('#caro-ctl-btn').onclick=function(){
+      window.open('admin-control.html','_blank');
+    };
+    body.insertBefore(d, body.firstElementChild);
+  }
+  /* dev-screen은 로그인/권한 확인 후 렌더되므로 몇 번 재시도 + 주기 재평가(권한 회수 즉시 반영) */
+  [500,1500,3000,6000].forEach(function(t){ setTimeout(inject,t); });
+  setInterval(inject, 5000);
+  document.addEventListener('click',function(e){
+    if(e.target && e.target.closest && e.target.closest('#caro-admin-entry')) setTimeout(inject,600);
+  });
+  console.log('[관제] ✅ 앱 관리자 모드 → 통합 관제센터 진입 카드');
 })();
