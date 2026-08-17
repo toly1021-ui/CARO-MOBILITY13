@@ -637,7 +637,7 @@ function waitAuth(n){
       FN.getDoc(FN.doc(db,'admin_accounts',String(u.email).toLowerCase())).then(function(s){
         var ex=s&&(typeof s.exists==='function'?s.exists():s.exists);
         var d=ex?(s.data()||{}):{}; var pm=(ex&&d.active!==false&&d.perms)?d.perms:{};
-        var hasCtrl=pm.control===true, hasOps=!!(pm.cars||pm.pricing||pm.notices||pm.resv);
+        var hasCtrl=pm.control===true, hasOps=!!(pm.ops||pm.cars||pm.pricing||pm.notices||pm.resv);
         if(hasCtrl||hasOps){ enter(u.email+(d.name?(' · '+d.name):''), pm, false); }
         else {
           FN.signOut(A); $('g-err').textContent='접근 권한이 없습니다 — 최고관리자에게 권한을 요청하세요';
@@ -653,7 +653,7 @@ function waitAuth(n){
   function enter(label, pm, isSuper){
     $('gate').style.display='none'; $('adm').textContent=label;
     var canCtrl = isSuper || (pm&&pm.control===true);
-    var canOps  = isSuper || !!(pm&&(pm.cars||pm.pricing||pm.notices||pm.resv));
+    var canOps  = isSuper || !!(pm&&(pm.ops||pm.cars||pm.pricing||pm.notices||pm.resv));
     /* 팀별 탭 노출 */
     $('nt-live').style.display = canCtrl?'':'none';
     $('nt-ops').style.display  = canOps?'':'none';
