@@ -160,7 +160,7 @@ button{font-family:inherit;cursor:pointer;}
 <div id="gate">
   <div class="gbox">
     <div class="logo">CARO MOBILITY<small>CONTROL CENTER</small></div>
-    <input id="g-em" type="email" placeholder="관리자 이메일" autocomplete="username">
+    <input id="g-em" type="text" placeholder="관리자 아이디 (CAROMOBILITY 또는 이메일)" autocomplete="username">
     <input id="g-pw" type="password" placeholder="비밀번호" autocomplete="current-password">
     <button id="g-btn">로그인</button>
     <div class="gerr" id="g-err"></div>
@@ -556,6 +556,7 @@ function csvExport(){
 function doLogin(){
   var A=window.FB_AUTH, FN=window.FB_FN;
   var em=$('g-em').value.trim(), pw=$('g-pw').value;
+  if(em.toUpperCase()==='CAROMOBILITY') em=ADMIN_EMAIL;   /* 앱과 동일한 최고관리자 별명 지원 */
   if(!em||!pw){ $('g-err').textContent='이메일과 비밀번호를 입력하세요'; return; }
   $('g-btn').textContent='로그인 중…';
   FN.signInWithEmailAndPassword(A,em,pw).catch(function(e){
