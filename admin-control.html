@@ -34,6 +34,11 @@ button{font-family:inherit;cursor:pointer;}
 .adm{font-size:12px;color:var(--muted);}
 .lgout{background:none;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 14px;font-size:12px;}
 .lgout:hover{border-color:var(--bad);color:var(--bad);}
+.navtabs{display:flex;gap:6px;margin-left:10px;}
+.ntab{background:none;border:1px solid var(--border2);color:var(--muted);border-radius:9px;
+  padding:7px 16px;font-size:12.5px;font-weight:700;letter-spacing:.5px;transition:all .15s;}
+.ntab:hover{color:var(--gold-soft);border-color:var(--gold-dim);}
+.ntab.on{background:var(--gold);color:#15161a;border-color:var(--gold);}
 
 /* ── KPI ── */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:18px 22px 0;}
@@ -170,10 +175,19 @@ button{font-family:inherit;cursor:pointer;}
 
 <div class="topbar">
   <div class="logo">CARO MOBILITY<small>CONTROL CENTER</small></div>
+  <div class="navtabs">
+    <button class="ntab on" id="nt-live" onclick="switchView('live')">실시간 관제</button>
+    <button class="ntab" id="nt-ops" onclick="switchView('ops')">운영 관리</button>
+  </div>
   <span class="sync off" id="sync">CONNECTING…</span>
   <span class="clock" id="clock">--:--:--</span>
   <span class="adm" id="adm">—</span>
   <button class="lgout" id="lgout">로그아웃</button>
+</div>
+
+<!-- 운영 관리 (요금·예약·회원·공지·정산 — 기존 시스템 전체 내장) -->
+<div id="opsview" style="display:none;position:fixed;top:63px;left:0;right:0;bottom:0;background:var(--bg);z-index:40;">
+  <iframe id="opsframe" style="width:100%;height:100%;border:none;background:var(--bg);" title="운영 관리"></iframe>
 </div>
 
 <div class="kpis">
@@ -255,6 +269,16 @@ var $=function(id){return document.getElementById(id);};
 
 /* ── 시계 (텍스트만 갱신: 부하 0) ── */
 setInterval(function(){ $('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false}); },1000);
+
+/* ── 탭 전환: 실시간 관제 ↔ 운영 관리(기존 시스템 내장) ── */
+function switchView(v){
+  var ops=(v==='ops');
+  $('nt-live').classList.toggle('on',!ops);
+  $('nt-ops').classList.toggle('on',ops);
+  $('opsview').style.display=ops?'block':'none';
+  var fr=$('opsframe');
+  if(ops && !fr.src){ fr.src='admin-ops.html'; }   /* 첫 진입 때만 로드(관제 성능에 영향 없음) */
+}
 
 /* ── 토스트 ── */
 var _tt=null;
