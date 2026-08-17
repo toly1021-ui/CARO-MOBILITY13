@@ -1777,10 +1777,20 @@
       return setTimeout(function(){ waitAuth(tries+1); }, 200);
     }
     FN.onAuthStateChanged(A, function(u){
-      if(u && u.email === ADMIN_EMAIL){
+      if(u && u.email === ADMIN_EMAIL){                    /* 최고관리자: 무조건 통과 */
         hideGate(); document.getElementById('adminEmail').textContent=u.email; startOnce();
       } else if(u){
-        FN.signOut(A); showGate('관리자 계정이 아닙니다 — '+ADMIN_EMAIL+' 로 로그인하세요');
+        /* ★ 운영팀 계정도 입장: 운영 관련 권한(요금/예약/공지/차량) 중 하나라도 있으면 허용.
+           (탭별 세부 접근은 페이지 내부 caroCan 권한이 각각 제어) */
+        FN.getDoc(FN.doc(window.FB_DB,'admin_accounts',String(u.email).toLowerCase())).then(function(s){
+          var ex=s&&(typeof s.exists==='function'?s.exists():s.exists);
+          var d=ex?(s.data()||{}):{}; var pm=(ex&&d.active!==false&&d.perms)?d.perms:{};
+          if(pm.cars||pm.pricing||pm.notices||pm.resv){
+            hideGate(); document.getElementById('adminEmail').textContent=u.email+(d.name?(' · '+d.name):''); startOnce();
+          } else {
+            FN.signOut(A); showGate('운영 관리 권한이 없습니다 — 최고관리자에게 권한을 요청하세요');
+          }
+        }).catch(function(){ FN.signOut(A); showGate('권한 확인 실패 — 다시 시도하세요'); });
       } else { showGate(''); }
     });
     document.getElementById('lg-btn').addEventListener('click', doLogin);

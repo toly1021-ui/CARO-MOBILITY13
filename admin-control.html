@@ -628,19 +628,19 @@ function waitAuth(n){
   if(!window.FB_READY||!A||!FN){ if(n>60){ $('g-err').textContent='Firebase 미연결'; return; }
     return setTimeout(function(){waitAuth(n+1);},200); }
   FN.onAuthStateChanged(A,function(u){
-    if(u&&u.email===ADMIN_EMAIL){                       /* 최고관리자: 무조건 통과 */
-      enter(u.email+' · 최고관리자');
+    if(u&&u.email===ADMIN_EMAIL){                       /* 최고관리자: 두 탭 모두 */
+      enter('최고관리자', {control:true,cars:true,pricing:true,notices:true,resv:true}, true);
     } else if(u){
-      /* ★ 기존 권한 체계 그대로: 최고관리자가 admin_accounts에 '관제(control)' 권한을
-         부여한 활성 계정만 입장. (앱 관리자 모드와 동일한 판정 — 부여/회수 즉시 반영) */
+      /* ★ 팀별 접근: '관제(control)' 권한자는 실시간 관제 탭, 운영 권한자는 운영 관리 탭.
+         둘 중 하나라도 있으면 입장하고, 가진 권한의 탭만 보인다. (부여/회수 즉시 반영) */
       var db=window.FB_DB;
       FN.getDoc(FN.doc(db,'admin_accounts',String(u.email).toLowerCase())).then(function(s){
         var ex=s&&(typeof s.exists==='function'?s.exists():s.exists);
-        var d=ex?(s.data()||{}):{};
-        if(ex && d.active!==false && d.perms && d.perms.control===true){
-          enter(u.email+(d.name?(' · '+d.name):''));
-        } else {
-          FN.signOut(A); $('g-err').textContent='관제센터 권한이 없습니다 — 최고관리자에게 권한을 요청하세요';
+        var d=ex?(s.data()||{}):{}; var pm=(ex&&d.active!==false&&d.perms)?d.perms:{};
+        var hasCtrl=pm.control===true, hasOps=!!(pm.cars||pm.pricing||pm.notices||pm.resv);
+        if(hasCtrl||hasOps){ enter(u.email+(d.name?(' · '+d.name):''), pm, false); }
+        else {
+          FN.signOut(A); $('g-err').textContent='접근 권한이 없습니다 — 최고관리자에게 권한을 요청하세요';
           $('gate').style.display='flex';
         }
       }).catch(function(){
@@ -650,9 +650,17 @@ function waitAuth(n){
     }
     else { $('gate').style.display='flex'; }
   });
-  function enter(label){
+  function enter(label, pm, isSuper){
     $('gate').style.display='none'; $('adm').textContent=label;
-    if(!started){ started=true; mapInit(); startFS(); }
+    var canCtrl = isSuper || (pm&&pm.control===true);
+    var canOps  = isSuper || !!(pm&&(pm.cars||pm.pricing||pm.notices||pm.resv));
+    /* 팀별 탭 노출 */
+    $('nt-live').style.display = canCtrl?'':'none';
+    $('nt-ops').style.display  = canOps?'':'none';
+    /* 라이브 모니터링(지도·구독)은 관제 권한자에게만 시작 → 운영팀 로그인 시 자원 낭비/노출 없음 */
+    if(canCtrl && !started){ started=true; mapInit(); startFS(); }
+    /* 기본 탭: 관제 권한 있으면 실시간 관제, 없으면(운영팀) 운영 관리 */
+    switchView(canCtrl?'live':'ops');
   }
   $('g-btn').addEventListener('click',doLogin);
   $('g-pw').addEventListener('keydown',function(e){ if(e.key==='Enter')doLogin(); });
