@@ -22,9 +22,10 @@
     {key:'cars',    label:'차량 관리',   sub:'차량 등록·수정·삭제'},
     {key:'pricing', label:'요금 관리',   sub:'시간당·주행·월 요금 수정'},
     {key:'notices', label:'공지·이벤트', sub:'공지/이벤트 등록·수정·삭제'},
-    {key:'resv',    label:'예약 관리',   sub:'예약 조회·처리'}
+    {key:'resv',    label:'예약 관리',   sub:'예약 조회·처리'},
+    {key:'control', label:'통합 관제센터', sub:'실시간 관제·원격 제어 접근'}
   ];
-  var PILL={cars:'차량',pricing:'요금',notices:'공지',resv:'예약'};
+  var PILL={cars:'차량',pricing:'요금',notices:'공지',resv:'예약',control:'관제'};
 
   /* ── 스타일 ── */
   var st=document.createElement('style');
