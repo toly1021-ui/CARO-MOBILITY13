@@ -925,7 +925,23 @@
   // 차량 좌표: 기기 GPS(v.lat/lng) 우선, 없으면 위치 문자열("위도, 경도")에서 파싱
   function carLatLng(v){
     if(!v) return null;
-    if(typeof v.lat==='number' && typeof v.lng==='number') return [v.lat,v.lng];   // 실제 GPS 우선
+    if(typeof v.lat==='number' && typeof v.lng==='number'){
+      // ★ 정차 중 위치 평균화: GPS는 정지 상태에서도 좌표가 ±10~20m 배회함.
+      //   차가 '정지'라고 보고하는 동안 들어오는 좌표를 누적 평균 → 마커가 주차 위치에 딱 고정.
+      //   움직이기 시작하면 즉시 평균을 버리고 원시 좌표로 실시간 추적(지연 없음).
+      if(v.moving===false){
+        if(typeof v._smLat!=='number'){ v._smLat=v.lat; v._smLng=v.lng; v._smN=1; }
+        else if(v.lat!==v._lastRawLat || v.lng!==v._lastRawLng){   // 새 좌표일 때만 표본 추가
+          v._smN=Math.min((v._smN||1)+1, 60);                      // 최근 ~60표본 가중(과거에 눌러붙지 않게)
+          v._smLat += (v.lat-v._smLat)/v._smN;
+          v._smLng += (v.lng-v._smLng)/v._smN;
+        }
+        v._lastRawLat=v.lat; v._lastRawLng=v.lng;
+        return [v._smLat, v._smLng];
+      }
+      v._smLat=undefined; v._smLng=undefined; v._smN=0;            // 주행 시작 → 평균 리셋, 원시 좌표 추적
+      return [v.lat,v.lng];   // 실제 GPS 우선
+    }
     // ★ 기기 연결 차량은 실제 GPS만 신뢰 → GPS 없으면 '위치없음'(엉뚱한 시드좌표에 안 찍힘).
     //   미연결(데모) 차량만 목록의 위치문자열을 파싱해 표시.
     if(!DEV_IDMAP[v.id] && typeof v.place==='string'){ var m=v.place.match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/); if(m) return [parseFloat(m[1]),parseFloat(m[2])]; }
