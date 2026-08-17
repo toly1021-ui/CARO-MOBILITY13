@@ -2300,7 +2300,7 @@
         if(ex){
           var d=snap.data()||{};
           var pm=d.perms||{};
-          var hasAny=['cars','pricing','notices','resv','control'].some(function(k){ return pm[k]; });
+          var hasAny=['control','ops','cars','pricing','notices','resv'].some(function(k){ return pm[k]; });
           if(d.active!==false && hasAny){ perms=pm; isStaff=true; }
           else { perms=null; isStaff=false; }
         } else { perms=null; isStaff=false; }
@@ -2467,13 +2467,10 @@
 (function(){ 'use strict';
   var SUPER='caro.mobility.official@gmail.com';
   var PERMS=[
-    {key:'cars',label:'차량 관리',sub:'등록·수정·삭제'},
-    {key:'pricing',label:'요금 관리',sub:'시간당·주행·월요금'},
-    {key:'notices',label:'공지·이벤트',sub:'등록·수정·삭제'},
-    {key:'resv',label:'예약 관리',sub:'조회·처리'},
-    {key:'control',label:'통합 관제센터',sub:'실시간 관제·원격 제어'}
+    {key:'control',label:'실시간 관제',sub:'실시간 위치·원격 제어·층 보정'},
+    {key:'ops',label:'운영 관리',sub:'요금·예약·월렌트·공지·차량 등록 전체'}
   ];
-  var PILL={cars:'차량',pricing:'요금',notices:'공지',resv:'예약',control:'관제'};
+  var PILL={control:'관제',ops:'운영'};
   var cache=[], snapStarted=false, editingEmail=null;
 
   function isSuper(){
@@ -2608,7 +2605,10 @@
     if(!cache.length){ box.innerHTML='<div style="font-size:.76rem;color:#868b94;padding:6px 2px;">아직 부여된 직원이 없습니다. 위 버튼으로 추가하세요.</div>'; return; }
     box.innerHTML=cache.map(function(a){
       var email=a.id||a.email||''; var on=a.active!==false;
-      var pills=PERMS.filter(function(p){return a.perms&&a.perms[p.key];}).map(function(p){return '<span class="csm-pill">'+PILL[p.key]+'</span>';}).join('') || '<span class="csm-pill none">권한 없음</span>';
+      var pm=a.perms||{}; var pills='';
+      if(pm.control) pills+='<span class="csm-pill">관제</span>';
+      if(pm.ops||pm.cars||pm.pricing||pm.notices||pm.resv) pills+='<span class="csm-pill">운영</span>';
+      if(!pills) pills='<span class="csm-pill none">권한 없음</span>';
       return '<div class="csm-item'+(on?'':' off')+'">'
         +'<div class="csm-top"><div class="csm-nm">'+esc(a.name||email)+'</div><span class="csm-stat '+(on?'on':'no')+'">'+(on?'활성':'정지')+'</span></div>'
         +'<div class="csm-mail">'+esc(email)+'</div>'
