@@ -140,6 +140,17 @@ button{font-family:inherit;cursor:pointer;}
 .gbox input{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);
   border-radius:10px;padding:12px 14px;font-size:14px;margin-bottom:10px;font-family:inherit;}
 .gbox input:focus{outline:none;border-color:var(--gold);}
+/* ★ 크롬 자동완성(아이디)이 흰 배경을 강제로 덮어써서 비밀번호 칸과 색이 달라 보이던 문제 → 자동완성 배경/글자색을 어둡게 고정해 통일 */
+.gbox input:-webkit-autofill,
+.gbox input:-webkit-autofill:hover,
+.gbox input:-webkit-autofill:focus,
+.gbox input:-webkit-autofill:active{
+  -webkit-text-fill-color:var(--txt) !important;
+  -webkit-box-shadow:0 0 0 1000px var(--panel2) inset !important;
+  box-shadow:0 0 0 1000px var(--panel2) inset !important;
+  caret-color:var(--txt);
+  transition:background-color 99999s ease-in-out 0s;
+}
 .gbox button{width:100%;background:var(--gold);color:#15161a;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:900;margin-top:4px;}
 .gerr{color:var(--bad);font-size:12px;min-height:18px;margin-top:8px;text-align:center;}
 
