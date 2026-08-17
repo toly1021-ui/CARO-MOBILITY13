@@ -18,14 +18,14 @@
   function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
   /* ── 권한 정의 (차량/요금/공지·이벤트/예약) ── */
+  /* ★ 권한을 화면(탭) 두 개에 맞춰 딱 둘로 단순화: 실시간 관제 / 운영 관리.
+     - control → 실시간 관제 탭(위치·원격제어·층보정·진단)
+     - ops     → 운영 관리 탭(요금·예약·월렌트·공지·상담·차량 등록 전부) */
   var PERMS=[
-    {key:'cars',    label:'차량 관리',   sub:'차량 등록·수정·삭제'},
-    {key:'pricing', label:'요금 관리',   sub:'시간당·주행·월 요금 수정'},
-    {key:'notices', label:'공지·이벤트', sub:'공지/이벤트 등록·수정·삭제'},
-    {key:'resv',    label:'예약 관리',   sub:'예약 조회·처리'},
-    {key:'control', label:'통합 관제센터', sub:'실시간 관제·원격 제어 접근'}
+    {key:'control', label:'실시간 관제', sub:'실시간 위치·원격 제어·층 보정·기기 진단'},
+    {key:'ops',     label:'운영 관리',   sub:'요금·예약·월렌트·공지·상담·차량 등록 전체'}
   ];
-  var PILL={cars:'차량',pricing:'요금',notices:'공지',resv:'예약',control:'관제'};
+  var PILL={control:'관제',ops:'운영'};
 
   /* ── 스타일 ── */
   var st=document.createElement('style');
@@ -50,6 +50,8 @@
     +'.apill.pricing{color:#d9c24a;border-color:rgba(217,194,74,.4);}'
     +'.apill.notices{color:#c79be0;border-color:rgba(199,155,224,.4);}'
     +'.apill.resv{color:#7bb89a;border-color:rgba(123,184,154,.4);}'
+    +'.apill.control{color:#6aa6db;border-color:rgba(106,166,219,.45);}'
+    +'.apill.ops{color:#d9c24a;border-color:rgba(217,194,74,.45);}'
     +'.apill.all{color:var(--gold-soft);border-color:rgba(200,168,90,.45);}'
     +'.apill.none{color:var(--muted);}'
     +'.acct2-btns{display:flex;flex-direction:column;gap:6px;flex-shrink:0;}'
@@ -212,8 +214,11 @@
   };
 
   function badges(p){
+    if(!p) return '<span class="apill none">권한 없음</span>';
     var out='';
-    PERMS.forEach(function(d){ if(p&&p[d.key]) out+='<span class="apill '+d.key+'">'+PILL[d.key]+'</span>'; });
+    if(p.control) out+='<span class="apill control">관제</span>';
+    /* 예전 세부권한(cars/pricing/notices/resv) 계정도 '운영'으로 표시(하위호환) */
+    if(p.ops||p.cars||p.pricing||p.notices||p.resv) out+='<span class="apill ops">운영</span>';
     return out || '<span class="apill none">권한 없음</span>';
   }
   function superEmail(){
