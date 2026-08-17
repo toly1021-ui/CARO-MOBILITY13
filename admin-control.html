@@ -150,6 +150,8 @@ button{font-family:inherit;cursor:pointer;}
 .ward .lb{display:inline-block;background:#22252b;color:#cfd3da;font-size:10.5px;font-weight:700;
   padding:2px 8px;border-radius:7px;margin-top:-4px;border:1px solid var(--border2);white-space:nowrap;}
 .ward.sel .lb{background:var(--gold);color:#15161a;border-color:var(--gold);}
+.ward.stale{opacity:.45;filter:grayscale(.7);}
+.ward.stale .lb{background:#3a2020;color:#e0705e;border-color:#5a2d2d;}
 .leaflet-container{background:var(--panel2);font-family:'Noto Sans KR';}
 
 @media (max-width:1100px){
@@ -338,7 +340,8 @@ function floorStr(f){ if(f==null) return '—'; return f>=1?f+'F':'B'+(1-f); }
 /* ═══════════ 지도 (카카오 → 실패 시 Leaflet) ═══════════ */
 var mapKind=null,kmap=null,lmap=null,markers=[];
 function wardHtml(v,sel){
-  return '<div class="ward'+(sel?' sel':'')+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg><br><span class="lb">'+(v.name||v.id)+'</span></div>';
+  var stale=(typeof v.lat==='number' && !v.gpsLive);   /* GPS 끊김 → 마커를 흐리게(옛 위치 표시) */
+  return '<div class="ward'+(sel?' sel':'')+(stale?' stale':'')+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg><br><span class="lb">'+(v.name||v.id)+(stale?' · GPS끊김':'')+'</span></div>';
 }
 function mapInit(){
   if(window.kakao&&kakao.maps){ kakao.maps.load(function(){
@@ -365,8 +368,15 @@ function mapDraw(){
     }
   });
   var v=FLEET.find(function(x){return x.id===selId;});
-  var live=v&&typeof v.lat==='number';
-  $('mappill').textContent=v?(v.name+' · '+(live?(v.online?'🛰 실시간 추적':'최근 위치'):'위치 정보 없음')):'차량 선택';
+  var hasPos=v&&typeof v.lat==='number';
+  var live=v&&v.gpsLive;
+  var pill='차량 선택';
+  if(v){
+    if(live) pill=v.name+' · 🛰 실시간 추적';
+    else if(hasPos) pill=v.name+' · ⚠ GPS 끊김 (마지막 위치 · 위성'+(v.sats!=null?v.sats:0)+'개)';
+    else pill=v.name+' · 위치 정보 없음';
+  }
+  $('mappill').textContent=pill;
   if(selPos){
     var chg=(selId!==lastSel); lastSel=selId;
     try{
@@ -414,8 +424,10 @@ function render(){
     $('lv-alt').textContent=(typeof v.alt==='number')?((v.alt>=0?'+':'')+v.alt.toFixed(1)+'m'):'—';
     $('lv-sat').textContent=(v.sats!=null)?v.sats+'개':'—';
     var src=$('lv-src');
-    src.textContent=v.gsrc==='modem'?'모뎀GPS':(v.gsrc==='module'?'GPS모듈':(typeof v.lat==='number'?'GPS':'—'));
-    src.className='v '+(v.gsrc==='modem'?'use':'gold');
+    if(!v.gpsLive && typeof v.lat==='number'){ src.textContent='GPS 끊김'; src.className='v bad'; }
+    else if(v.gsrc==='modem'){ src.textContent='모뎀GPS'; src.className='v use'; }
+    else if(v.sats>=4||v.gsrc==='module'){ src.textContent='GPS모듈'; src.className='v gold'; }
+    else { src.textContent='—'; src.className='v'; }
     /* 층 보정 현재층 하이라이트 */
     var cur=(v.floor>=1)?String(v.floor):('B'+(1-v.floor));
     document.querySelectorAll('#calgrid .fb').forEach(function(b){
@@ -510,6 +522,10 @@ function remap(){
     v.impact=(d.impact===true); v.over=(d.over===true); v.moving=(d.moving===true);
     v.fw=d.fw||''; v.ota=d.ota||''; v.lastSeen=ls;
     v.online=(d.status==='online'&&ls&&(Date.now()-ls.getTime()<60000));
+    /* ★ GPS 실시간 여부: 펌웨어는 '유효 fix(위성4+)' 일 때만 좌표를 새로 보냄.
+       위성이 4개 미만(0~3)이면 좌표는 '마지막으로 잡힌 위치'로 고정(=옛 위치). 이걸 정직하게 구분. */
+    v.gpsLive = !!(v.online && (v.sats>=4 || v.gsrc==='modem'));
+    if(v.gpsLive && (v.lat!==v._fLat || v.lng!==v._fLng)){ v._fLat=v.lat; v._fLng=v.lng; v._fTs=Date.now(); }
   });
   if(!selId){ var first=FLEET.find(function(v){return IDMAP[v.id];}); if(first){ selId=first.id; subLogs(); } }
 }
