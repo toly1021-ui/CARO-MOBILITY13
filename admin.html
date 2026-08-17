@@ -342,7 +342,7 @@
     <div class="brand">
       <span class="logo">CARO MOBILITY</span>
       <span class="div"></span>
-      <span class="ttl"><b>통합 관제 대시보드</b> · Fleet Control</span>
+      <span class="ttl"><b>통합 관제 대시보드</b> · Fleet Control <small id="caroSyncVer" style="color:#7bb89a;font-size:10px;letter-spacing:1px;">SYNC-v40</small></span>
     </div>
     <div class="topright">
       <span class="conn"><span class="dot"></span>실시간 연결</span>
@@ -1434,6 +1434,12 @@
     caroMapUpdate();                           // 지도 마커 갱신
     syncLogsToSelection();                     // 선택 차량의 기기 기록 구독(바뀌었으면 재구독)
     console.log('[CARO 관제] 📡 devices 병합:', Object.keys(DEV_TELE).length, '대');
+    // ★ 화면 상단 배지에 실시간 수신상태 표시(콘솔 없이도 데이터 수신 여부 즉시 확인)
+    try{ var sv=document.getElementById('caroSyncVer'); if(sv){
+      var n=Object.keys(DEV_TELE).length, tm=new Date().toLocaleTimeString('ko-KR',{hour12:false});
+      if(n>0){ sv.textContent='SYNC-v40 · 기기'+n+'대 수신 '+tm; sv.style.color='#7bb89a'; }
+      else   { sv.textContent='SYNC-v40 · 기기수신 0대(차량매칭 확인) '+tm; sv.style.color='#d57a68'; }
+    } }catch(e){}
   }
   function devRecentCell(v){
     if(v.devOnline) return '<span style="color:#7bb89a;font-weight:700;">● 실시간</span>';
