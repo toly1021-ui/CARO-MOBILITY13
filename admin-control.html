@@ -367,25 +367,29 @@ function mapDraw(){
   markers.forEach(function(m){ try{ mapKind==='kakao'?m.setMap(null):lmap.removeLayer(m);}catch(e){} });
   markers=[];
   var selPos=null;
-  FLEET.forEach(function(v){
-    var p=smoothPos(v); if(!p) return;
-    var sel=(v.id===selId); if(sel) selPos=p;
-    if(mapKind==='kakao'){
-      var mk=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p[0],p[1]),content:wardHtml(v,sel),yAnchor:1});
-      mk.setMap(kmap); markers.push(mk);
-    }else{
-      var ic=L.divIcon({className:'',html:wardHtml(v,sel),iconSize:[0,0]});
-      markers.push(L.marker(p,{icon:ic}).addTo(lmap));
-    }
-  });
+  /* ★ 선택된 차량 1대만 지도에 표시 (예전엔 전 차량을 다 그려서, 위치 있는 코나만 계속 남아 있었음).
+     차량을 바꿔 누르면 그 차의 마커/위치로 즉시 전환된다. 기기 미연결 차는 위치가 없어 마커 없음. */
   var v=FLEET.find(function(x){return x.id===selId;});
+  if(v){
+    var p=smoothPos(v);
+    if(p){ selPos=p;
+      if(mapKind==='kakao'){
+        var mk=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p[0],p[1]),content:wardHtml(v,true),yAnchor:1});
+        mk.setMap(kmap); markers.push(mk);
+      }else{
+        var ic=L.divIcon({className:'',html:wardHtml(v,true),iconSize:[0,0]});
+        markers.push(L.marker(p,{icon:ic}).addTo(lmap));
+      }
+    }
+  }
   var hasPos=v&&typeof v.lat==='number';
   var live=v&&v.gpsLive;
   var pill='차량 선택';
   if(v){
     if(live) pill=v.name+' · 🛰 실시간 추적';
     else if(hasPos) pill=v.name+' · ⚠ GPS 끊김 (마지막 위치 · 위성'+(v.sats!=null?v.sats:0)+'개)';
-    else pill=v.name+' · 위치 정보 없음';
+    else if(IDMAP[v.id]) pill=v.name+' · GPS 탐색중 (위치 없음)';
+    else pill=v.name+' · 기기 미연결 (실시간 위치 없음)';
   }
   $('mappill').textContent=pill;
   if(selPos){
