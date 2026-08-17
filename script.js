@@ -1309,30 +1309,33 @@ function handleLogin(){
     try{localStorage.removeItem('caro_auto_id');localStorage.removeItem('caro_auto_pw');}catch(e){}
   }
 
-  /* 개발자(최고관리자) 로그인 — ★ 보안 수정: 비밀번호를 코드에 저장하지 않는다.
-     'CAROMOBILITY' 입력 시, 입력한 비밀번호 그대로 Firebase 관리자 계정에 실제 인증을 시도하고
-     서버가 승인한 경우에만 관리자 모드 진입. (예전엔 비밀번호가 소스에 노출돼 있었음) */
-  if(id==='CAROMOBILITY'){
-      if(!fbReady()){
-        if(err) err.textContent='네트워크 연결 후 다시 시도하세요.';
-        return;
-      }
-      var fn = window.FB_FN;
-      fn.signInWithEmailAndPassword(
-        window.FB_AUTH,
-        'caro.mobility.official@gmail.com',
-        pw
-      ).then(function(cred){
-        userInfo.id = 'CAROMOBILITY';
-        userInfo.name = 'CAROMOBILITY';
-        userInfo.uid = cred.user.uid;
-        userInfo.email = cred.user.email;
-        console.log('✅ 관리자 Firebase Auth 활성화:', cred.user.email);
+  /* 개발자 로그인 */
+  if(id==='CAROMOBILITY'&&pw==='011842hkJ**'){
+      userInfo.id = 'CAROMOBILITY';
+      userInfo.name = 'CAROMOBILITY';
+
+      /* ⭐ Firebase 관리자 계정으로 자동 로그인 */
+      if(fbReady()){
+        var fn = window.FB_FN;
+        fn.signInWithEmailAndPassword(
+          window.FB_AUTH,
+          'caro.mobility.official@gmail.com',
+          '011842hkJ**'
+        ).then(function(cred){
+          userInfo.uid = cred.user.uid;
+          userInfo.email = cred.user.email;
+          console.log('✅ 관리자 Firebase Auth 활성화:', cred.user.email);
+          showDevLoginTransition();
+        }).catch(function(e){
+          console.error('❌ 관리자 Firebase Auth 실패:', e.code, e.message);
+          if(typeof showToast === 'function'){
+            showToast('⚠️ Firebase 연결 실패: ' + e.code);
+          }
+          showDevLoginTransition();
+        });
+      } else {
         showDevLoginTransition();
-      }).catch(function(e){
-        console.warn('관리자 인증 실패:', e.code);
-        if(err) err.textContent='비밀번호가 올바르지 않습니다.';
-      });
+      }
       return;
   }
 
@@ -2403,27 +2406,40 @@ var ctrlResIdx=-1;
 var ctrlPhotoOpen=false;
 /* ─────────────────────────────────────────────
    디바이스 ↔ 차량 매핑 (하드코딩 제거 · 자동 해석)
+   우선순위: devices 컬렉션 carId/carName 매핑
+            → 차량 deviceId 필드 → 이름(코나)=CARO-001 → 레거시(1번차)
 ───────────────────────────────────────────── */
-window.CARO_DEVICE_MAP = window.CARO_DEVICE_MAP || {};
+window.CARO_DEVICE_MAP = window.CARO_DEVICE_MAP || {};   /* {carId: deviceId} */
+
 function caroFindCarById(carId){
   try{
     var all=(typeof CARS_DATA!=='undefined'?CARS_DATA:[]).concat(typeof BL_CARS!=='undefined'?BL_CARS:[]);
     return all.find(function(c){ return String(c.id)===String(carId); }) || null;
   }catch(e){ return null; }
 }
+
 function caroResolveDeviceId(carId){
   try{
     if(carId==null) return null;
     var key=String(carId);
-    if(window.CARO_DEVICE_MAP[key]) return window.CARO_DEVICE_MAP[key];
+    if(window.CARO_DEVICE_MAP[key]) return window.CARO_DEVICE_MAP[key];   /* 1) 관리자 등록 매핑 */
     var car=caroFindCarById(carId);
-    if(car && car.deviceId) return car.deviceId;
-    if(car && /코나/.test(car.name||'')) return 'CARO-001';
-    if(key==='1') return 'CARO-001';
+    if(!car){                                                            /* CARS_DATA에 없으면 예약의 차량 객체에서 */
+      try{
+        var rs=(typeof myReservations!=='undefined')?myReservations:[];
+        for(var i=0;i<rs.length;i++){ if(rs[i] && rs[i].car && String(rs[i].car.id)===key){ car=rs[i].car; break; } }
+      }catch(e){}
+    }
+    if(car && car.deviceId) return car.deviceId;                          /* 2) 차량 deviceId 필드 */
+    if(car && /코나/.test(car.name||'')) return 'CARO-001';               /* 3) 코나 실기기 */
+    if(key==='1') return 'CARO-001';                                      /* 4) 레거시 기본 */
   }catch(e){}
   return null;
 }
 window.caroResolveDeviceId = caroResolveDeviceId;
+
+/* devices 컬렉션 실시간 스캔 → carId→deviceId 매핑 자동 구성
+   (관리자 대시보드에서 기기에 carId 또는 carName을 지정해 두면 자동 반영) */
 function caroLoadDeviceMap(){
   try{
     if(!(typeof fbReady==='function' && fbReady())){ setTimeout(caroLoadDeviceMap,1500); return; }
@@ -2440,10 +2456,11 @@ function caroLoadDeviceMap(){
         }
       });
       window.CARO_DEVICE_MAP=map;
-    }, function(){});
+    }, function(){ /* 권한/네트워크 오류 무시 */ });
   }catch(e){}
 }
 setTimeout(caroLoadDeviceMap, 2000);
+
 /* ─────────────────────────────────────────────
    디바이스 명령 전송 (도어락/언락/시동차단)
 ───────────────────────────────────────────── */
@@ -2457,7 +2474,6 @@ function sendDeviceCommand(carId, cmdType){
     return Promise.resolve(false);
   }
   var fn = window.FB_FN, db = window.FB_DB;
-  /* 임시: carId=1 → CARO-001. 디바이스 늘어나면 devices 컬렉션 동적 조회로 교체 */
   var deviceId = caroResolveDeviceId(carId);
   if(!deviceId){
     console.warn('차량에 연결된 디바이스 없음:', carId);
@@ -2563,6 +2579,23 @@ window.sendDeviceCommand = sendDeviceCommand;
       var lastSeen = (d.lastSeen && d.lastSeen.toDate) ? d.lastSeen.toDate() : null;
       var isOnline = d.status === 'online' && lastSeen && (new Date() - lastSeen) < 60000;
       updateBadge(isOnline ? 'online' : 'offline', lastSeen);
+
+      /* ── 실기기 텔레메트리 반영 ── */
+      try{
+        var cid = (ctrlResIdx>=0 && myReservations[ctrlResIdx]) ? myReservations[ctrlResIdx].car.id : null;
+        /* 연료/배터리 잔량 (fuel · fuelLevel · battery 중 존재하는 값) */
+        var fuelVal = (d.fuel!=null?d.fuel:(d.fuelLevel!=null?d.fuelLevel:(d.battery!=null?d.battery:null)));
+        if(cid!=null && fuelVal!=null && isFinite(fuelVal)){
+          window.fuelLevels = window.fuelLevels || {};
+          window.fuelLevels[cid] = Math.max(0,Math.min(100,Math.round(fuelVal)));
+          if(typeof window.caroRefreshFuel==='function') window.caroRefreshFuel();
+        }
+        /* 주행거리(odometer/drivenKm) — 예약에 누적, 반납 정산에 자동 합산 */
+        var km = (d.drivenKm!=null?d.drivenKm:(d.odometer!=null?d.odometer:null));
+        if(cid!=null && km!=null && isFinite(km) && myReservations[ctrlResIdx]){
+          myReservations[ctrlResIdx].deviceKm = Math.round(km);
+        }
+      }catch(e){}
     });
   }
 
@@ -2637,15 +2670,14 @@ function ctrlActionHome(type){
       }
       return;
     }
-  /* ★ 비상등 — 실제 기기로 명령 전송 (문열림/잠금과 동일 방식) */
+  /* 비상등 — 연결된 실기기가 있으면 실제 명령 전송, 없으면 안내 토스트 */
   if(type==='hazard'){
-      var bH=document.getElementById('ctrl-btn-hazard');
-      if(bH){ bH.classList.add('ctrl-sq-btn-active'); setTimeout(function(){ bH.classList.remove('ctrl-sq-btn-active'); },2000); }
-      var carIdH = (ctrlResIdx>=0 && myReservations[ctrlResIdx]) ? myReservations[ctrlResIdx].car.id : null;
-      if(carIdH){
-        sendDeviceCommand(carIdH, 'hazard').then(function(ok){
-          if(ok) showCtrlToast('⚠️ 비상등 3회 점멸 명령 전송됨');
-        });
+      var b3=document.getElementById('ctrl-btn-hazard');
+      if(b3){ b3.classList.add('ctrl-sq-btn-active'); setTimeout(function(){ b3.classList.remove('ctrl-sq-btn-active'); },2000); }
+      var carIdH=(ctrlResIdx>=0 && myReservations[ctrlResIdx]) ? myReservations[ctrlResIdx].car.id : null;
+      var devH=(carIdH!=null && window.caroResolveDeviceId) ? caroResolveDeviceId(carIdH) : null;
+      if(devH){
+        sendDeviceCommand(carIdH,'hazard').then(function(ok){ if(ok) showCtrlToast('⚠️ 비상등 점멸 명령 전송됨'); });
       } else {
         showCtrlToast('⚠️ 비상등이 3회 점멸되었습니다.');
       }
@@ -5265,7 +5297,7 @@ var _backMap = {
   'bl-detail-screen': 'black-label-screen',
   'reservation-screen': selectedCar&&selectedCar.isBlackLabel?'black-label-screen':'rental-screen',
   'payment-screen': 'reservation-screen',
-  'payment-info-screen': 'payment-screen',
+  'payment-info-screen': 'home-screen',
   'done-screen': 'home-screen',
 };
 
@@ -5762,6 +5794,7 @@ function startReservationsListener(){
   try{
     var q=fn.query(fn.collection(db,FS_RES_COL),fn.where('userId','==',userInfo.uid));
     fsResUnsub=fn.onSnapshot(q,function(snap){
+      window._caroResLoaded=true;   /* 예약 데이터 최초 응답 도착 — 홈 스켈레톤 해제 신호 */
       if(Date.now()-fsResLastWrite<1500) return;
       var act=[],can=[];
       snap.forEach(function(doc){
@@ -10699,4 +10732,96 @@ window.devUploadAllCars=function(){
   }catch(e){}
 
   console.log('[CARO] ✅ 점검중(주황) 표시 패치 v1 적용 완료');
+})();
+
+/* ═══════════════════════════════════════════
+   카드·면허 영구저장 보강 v2
+   ※ 결제·면허 화면에서 등록한 '면허'도 Firestore에 저장(기존엔 회원가입 때만 저장됨)
+   ※ 로그인/재설치 후 카드·면허를 복원해 userInfo.license / savedCards / caro_apd_cards 모두 채움
+   ※ 앱 업데이트(재설치)로 localStorage가 지워져도 서버(users/{uid})에 남아 복원됨
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+  function db(){ try{ return window.FB_DB||null; }catch(e){ return null; } }
+  function uid(){ try{ return (window.userInfo&&window.userInfo.uid)
+      || (window.FB_AUTH&&window.FB_AUTH.currentUser&&window.FB_AUTH.currentUser.uid) || ''; }catch(e){ return ''; } }
+  function ready(){ return !!(db()&&uid()&&window.FB_FN&&window.FB_FN.doc); }
+
+  function fsSet(obj){
+    if(!ready()||typeof window.FB_FN.setDoc!=='function') return Promise.resolve(false);
+    try{ return window.FB_FN.setDoc(window.FB_FN.doc(db(),'users',uid()),obj,{merge:true})
+      .then(function(){return true;}).catch(function(){return false;}); }
+    catch(e){ return Promise.resolve(false); }
+  }
+  function fsGet(){
+    if(!ready()||typeof window.FB_FN.getDoc!=='function') return Promise.resolve(null);
+    try{ return window.FB_FN.getDoc(window.FB_FN.doc(db(),'users',uid()))
+      .then(function(s){ return (s&&s.exists&&s.exists())?s.data():null; }).catch(function(){return null;}); }
+    catch(e){ return Promise.resolve(null); }
+  }
+
+  function curCards(){
+    try{ if(window.savedCards&&window.savedCards.length) return window.savedCards; }catch(e){}
+    try{ var a=JSON.parse(localStorage.getItem('caro_apd_cards')||'[]'); if(a&&a.length) return a; }catch(e){}
+    return [];
+  }
+  function syncCards(){ try{ var c=curCards(); fsSet({ savedCards:c }); }catch(e){} }
+  function syncLicense(){ try{ var lic=(window.userInfo&&window.userInfo.license)||''; if(lic) fsSet({ licenseText:lic }); }catch(e){} }
+
+  /* 저장 함수 후킹 (다른 모듈이 나중에 덮어써도 잡도록 재시도) */
+  function installHooks(){
+    if(typeof window.saveLicenseFromPI==='function' && !window.saveLicenseFromPI.__fsv2){
+      var oL=window.saveLicenseFromPI;
+      window.saveLicenseFromPI=function(){ var r=oL.apply(this,arguments); setTimeout(syncLicense,50); return r; };
+      window.saveLicenseFromPI.__fsv2=true;
+    }
+    if(typeof window.saveCardFromPI==='function' && !window.saveCardFromPI.__fsv2){
+      var oC=window.saveCardFromPI;
+      window.saveCardFromPI=function(){ var r=oC.apply(this,arguments); setTimeout(syncCards,120); return r; };
+      window.saveCardFromPI.__fsv2=true;
+    }
+  }
+  var _ht=0, _hiv=setInterval(function(){ _ht++; installHooks(); if(_ht>40) clearInterval(_hiv); }, 500);
+
+  /* 로그인/재설치 후 복원 — 세션당 1회 */
+  var _restored=false;
+  function restore(){
+    if(_restored||!ready()) return;
+    fsGet().then(function(d){
+      _restored=true;
+      window._caroProfileLoaded=true;   /* ★ 서버 조회 완료(데이터 유무 무관) → 홈 '이용 준비' 카드 판단 시작 허용 */
+      if(!d) return;
+      try{
+        /* 면허 복원 → userInfo.license (있으면 덮지 않음: 로컬 최신 우선) */
+        var lic = d.licenseText
+               || (typeof d.license==='string' && d.license.indexOf('*')===-1 ? d.license : '')
+               || (d.license && typeof d.license==='object' && d.license.number ? d.license.number : '')
+               || (typeof d.license==='string' ? d.license : '');
+        if(lic && window.userInfo && !String(window.userInfo.license||'').trim()){
+          window.userInfo.license=lic;
+          try{ localStorage.setItem('caro_license', JSON.stringify(lic)); localStorage.setItem('caro_license_registered','true'); }catch(e){}
+          var mpLic=document.getElementById('mp-license'); if(mpLic) mpLic.textContent=lic;
+        }
+        /* 카드 복원 → savedCards + caro_apd_cards (로컬이 비어있을 때만) */
+        var cards = (Array.isArray(d.savedCards)&&d.savedCards.length)?d.savedCards
+                  : (Array.isArray(d.cards)&&d.cards.length)?d.cards : null;
+        if(cards && !curCards().length){
+          try{ window.savedCards=cards.slice(); }catch(e){}
+          try{ localStorage.setItem('caro_apd_cards', JSON.stringify(cards)); }catch(e){}
+        }
+        try{ if(window.renderPaymentInfoScreen) renderPaymentInfoScreen(); }catch(e){}
+        try{ if(window.renderPICardList) renderPICardList(); }catch(e){}
+        try{ if(window.saveUserData) saveUserData(); }catch(e){}
+        console.log('[CARO] ✅ 카드·면허 복원 완료 (면허:'+(lic?'O':'-')+' 카드:'+(cards?cards.length:0)+'개)');
+      }catch(e){}
+    });
+  }
+
+  /* uid 준비되면 복원(자동로그인/수동로그인 모두 대응) + 백업 */
+  var _rt=0, _riv=setInterval(function(){ _rt++; if(uid()){ restore(); if(_restored){ clearInterval(_riv); } } if(_rt>60) clearInterval(_riv); }, 800);
+  try{ if(window.FB_AUTH && typeof window.FB_AUTH.onAuthStateChanged==='function'){
+    window.FB_AUTH.onAuthStateChanged(function(u){ if(u){ _restored=false; setTimeout(restore,800); } });
+  } }catch(e){}
+
+  console.log('[CARO] 카드·면허 영구저장 보강 v2 로드');
 })();

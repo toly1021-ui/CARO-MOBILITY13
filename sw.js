@@ -1,11 +1,11 @@
 /* ══════════════════════════════════════════
-   CARO MOBILITY — Service Worker (caro-v30)
+   CARO MOBILITY — Service Worker (caro-v31)
    - 앱 파일: 네트워크 우선 (항상 최신, 오프라인 시 캐시)
    - Firebase/Firestore: 서비스워커 개입 안 함(브라우저 직접 처리)
    - chrome-extension 등 비-HTTP 요청: 완전 무시
    - 캐시 번호 안 올려도 수정이 바로 반영됨
 ══════════════════════════════════════════ */
-const CACHE_NAME = 'caro-v30';
+const CACHE_NAME = 'caro-v31';
 
 /* ★ 백업 서버 주소 (boot.html / index.html 의 BACKUP 과 동일하게) ★
    캐시도 없고 호스트도 죽었을 때, 첫 페이지를 백업으로 리다이렉트. */
