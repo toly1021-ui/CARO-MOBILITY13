@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CARO MOBILITY · 관제센터</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Saira:wght@500;600;700&display=swap" rel="stylesheet">
+<script type="module" src="firebase-config.js?v=2"></script>
+<style>
+/* ═══════════ CARO 관제센터 — 다크 럭셔리 테마 (v1.0 재설계) ═══════════ */
+:root{
+  --bg:#101114; --panel:#181a1e; --panel2:#1e2126; --row:#22252b;
+  --border:#2a2d34; --border2:#353941;
+  --gold:#c8a96e; --gold-soft:#dcc28f; --gold-dim:#8a744d;
+  --txt:#e8eaee; --muted:#8b919c; --muted2:#5d636e;
+  --ok:#4db183; --use:#5b96e0; --warn:#e0a260; --bad:#e0705e;
+  --shadow:0 8px 28px -14px rgba(0,0,0,.55);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:var(--bg);color:var(--txt);font-family:'Noto Sans KR',sans-serif;font-size:14px;}
+::-webkit-scrollbar{width:8px;height:8px;} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+button{font-family:inherit;cursor:pointer;}
+
+/* ── 상단바 ── */
+.topbar{display:flex;align-items:center;gap:16px;padding:14px 22px;background:var(--panel);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;}
+.logo{font-family:'Saira';font-weight:700;font-size:19px;letter-spacing:2px;color:var(--gold);}
+.logo small{color:var(--muted);font-weight:500;letter-spacing:4px;font-size:10px;display:block;margin-top:-2px;}
+.sync{font-size:11px;letter-spacing:1px;color:var(--ok);background:rgba(77,177,131,.09);
+  border:1px solid rgba(77,177,131,.25);padding:4px 10px;border-radius:20px;font-family:'Saira';}
+.sync.off{color:var(--bad);background:rgba(224,112,94,.09);border-color:rgba(224,112,94,.3);}
+.clock{margin-left:auto;font-family:'Saira';font-size:15px;color:var(--gold-soft);letter-spacing:1px;}
+.adm{font-size:12px;color:var(--muted);}
+.lgout{background:none;border:1px solid var(--border2);color:var(--muted);border-radius:8px;padding:6px 14px;font-size:12px;}
+.lgout:hover{border-color:var(--bad);color:var(--bad);}
+
+/* ── KPI ── */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:18px 22px 0;}
+.kpi{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 20px;box-shadow:var(--shadow);}
+.kpi .lb{font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.kpi .vl{font-family:'Saira';font-size:28px;font-weight:600;margin-top:4px;color:var(--txt);}
+.kpi .vl small{font-size:13px;color:var(--muted);font-weight:500;margin-left:2px;}
+.kpi.gold .vl{color:var(--gold-soft);} .kpi.bad .vl{color:var(--bad);}
+
+/* ── 메인 그리드 ── */
+.main{display:grid;grid-template-columns:290px 1fr 320px;gap:14px;padding:14px 22px;align-items:start;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;}
+.card h3{font-size:12px;letter-spacing:2px;color:var(--muted);padding:13px 16px 10px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;}
+.card h3 .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);}
+
+/* ── 차량 리스트 ── */
+.flist{max-height:calc(100vh - 250px);overflow-y:auto;}
+.vcard{padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.vcard:hover{background:var(--row);}
+.vcard.sel{background:rgba(200,169,110,.07);border-left:3px solid var(--gold);padding-left:13px;}
+.vcard .nm{font-weight:700;font-size:14px;display:flex;align-items:center;gap:7px;}
+.vcard .nm .on{width:7px;height:7px;border-radius:50%;background:var(--muted2);flex:0 0 auto;}
+.vcard .nm .on.live{background:var(--ok);box-shadow:0 0 6px var(--ok);}
+.vcard .nm .bell{margin-left:auto;background:none;border:none;font-size:13px;opacity:.4;}
+.vcard .nm .bell.on{opacity:1;}
+.vcard .sub{font-size:11.5px;color:var(--muted);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap;}
+.vcard .sub b{color:var(--gold-soft);font-weight:500;}
+.vcard .alerttag{font-size:10.5px;color:var(--bad);border:1px solid rgba(224,112,94,.4);border-radius:6px;padding:1px 6px;}
+
+/* ── 지도 + 라이브 ── */
+.mapbox{position:relative;height:56vh;min-height:420px;background:var(--panel2);}
+#map{width:100%;height:100%;}
+.mappill{position:absolute;left:12px;top:12px;z-index:20;font-size:12px;background:rgba(24,26,30,.88);
+  border:1px solid var(--border2);padding:6px 12px;border-radius:9px;color:var(--gold-soft);backdrop-filter:blur(4px);}
+.livebar{display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--border);}
+.lv{padding:12px 8px;text-align:center;border-right:1px solid var(--border);}
+.lv:last-child{border-right:none;}
+.lv .k{font-size:10px;letter-spacing:1.5px;color:var(--muted);}
+.lv .v{font-family:'Saira';font-size:17px;font-weight:600;margin-top:3px;color:var(--txt);}
+.lv .v.gold{color:var(--gold-soft);} .lv .v.ok{color:var(--ok);} .lv .v.bad{color:var(--bad);} .lv .v.use{color:var(--use);}
+
+/* ── 우측 패널 ── */
+.rcol{display:flex;flex-direction:column;gap:14px;}
+.ctrl{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:14px 16px;}
+.cbtn{background:var(--panel2);border:1px solid var(--border2);color:var(--txt);border-radius:10px;
+  padding:12px 6px;font-size:13px;font-weight:700;transition:all .15s;}
+.cbtn:hover{border-color:var(--gold);color:var(--gold-soft);}
+.cbtn.warn:hover{border-color:var(--warn);color:var(--warn);}
+.cbtn.wide{grid-column:1/3;}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:12px 16px 6px;}
+.fb{background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:8px;
+  padding:7px 0;font-size:11.5px;font-weight:700;}
+.fb:hover{border-color:var(--gold);color:var(--gold-soft);}
+.fb.cur{background:var(--gold);color:#15161a;border-color:var(--gold);}
+.calfoot{display:flex;justify-content:center;padding:6px 16px 14px;}
+.creset{background:none;border:1px solid var(--bad);color:var(--bad);border-radius:8px;padding:6px 22px;font-size:12px;opacity:.85;}
+.creset:hover{opacity:1;}
+.diagt{width:100%;border-collapse:collapse;}
+.diagt td{padding:8px 16px;font-size:12.5px;border-bottom:1px solid var(--border);}
+.diagt td:first-child{color:var(--muted);width:45%;}
+.diagt td:last-child{text-align:right;font-weight:700;}
+.g{color:var(--ok);} .r{color:var(--bad);} .y{color:var(--warn);} .b{color:var(--use);} .gd{color:var(--gold-soft);}
+.fwrow{display:flex;gap:8px;padding:12px 16px;}
+.fwbtn{flex:1;background:var(--panel2);border:1px solid var(--use);color:var(--use);border-radius:9px;padding:9px;font-size:12.5px;font-weight:700;}
+.fwbtn:hover{background:rgba(91,150,224,.1);}
+
+/* ── 하단 로그 ── */
+.bottom{display:grid;grid-template-columns:1fr 1.4fr;gap:14px;padding:0 22px 22px;}
+.loglist{max-height:300px;overflow-y:auto;}
+.ev{display:flex;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);font-size:12.5px;align-items:center;}
+.ev .tag{flex:0 0 auto;font-size:10.5px;font-weight:900;padding:3px 8px;border-radius:6px;letter-spacing:1px;}
+.ev .tag.imp{background:rgba(224,112,94,.13);color:var(--bad);border:1px solid rgba(224,112,94,.35);}
+.ev .tag.spd{background:rgba(224,162,96,.13);color:var(--warn);border:1px solid rgba(224,162,96,.35);}
+.ev .tag.flr{background:rgba(91,150,224,.13);color:var(--use);border:1px solid rgba(91,150,224,.35);}
+.ev .ts{margin-left:auto;color:var(--muted2);font-size:11px;font-family:'Saira';}
+.tlog{width:100%;border-collapse:collapse;font-size:12px;}
+.tlog th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-size:10.5px;letter-spacing:1px;
+  padding:9px 10px;text-align:left;border-bottom:1px solid var(--border2);}
+.tlog td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--txt);font-family:'Saira';font-weight:500;}
+.tlog td:first-child{font-family:'Noto Sans KR';color:var(--muted);}
+.tscroll{max-height:300px;overflow-y:auto;}
+.csvbtn{margin-left:auto;background:none;border:1px solid var(--border2);color:var(--muted);
+  border-radius:7px;padding:4px 12px;font-size:11px;}
+.csvbtn:hover{border-color:var(--gold);color:var(--gold-soft);}
+.sndbtn{background:none;border:1px solid var(--border2);color:var(--muted);border-radius:7px;padding:4px 12px;font-size:11px;}
+.sndbtn.on{color:var(--gold-soft);border-color:var(--gold);}
+
+/* ── 토스트 ── */
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--panel);
+  border:1px solid var(--gold);color:var(--gold-soft);padding:11px 26px;border-radius:12px;font-size:13px;
+  box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;}
+#toast.show{opacity:1;}
+
+/* ── 로그인 게이트 ── */
+#gate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;}
+.gbox{width:340px;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:34px 30px;box-shadow:var(--shadow);}
+.gbox .logo{text-align:center;margin-bottom:24px;font-size:22px;}
+.gbox input{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);
+  border-radius:10px;padding:12px 14px;font-size:14px;margin-bottom:10px;font-family:inherit;}
+.gbox input:focus{outline:none;border-color:var(--gold);}
+.gbox button{width:100%;background:var(--gold);color:#15161a;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:900;margin-top:4px;}
+.gerr{color:var(--bad);font-size:12px;min-height:18px;margin-top:8px;text-align:center;}
+
+/* ── 카카오/Leaflet 마커 ── */
+.ward{position:relative;transform:translate(-50%,-100%);text-align:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));}
+.ward svg{color:#6f7684;width:34px;height:34px;}
+.ward.sel svg{color:var(--gold);}
+.ward .lb{display:inline-block;background:#22252b;color:#cfd3da;font-size:10.5px;font-weight:700;
+  padding:2px 8px;border-radius:7px;margin-top:-4px;border:1px solid var(--border2);white-space:nowrap;}
+.ward.sel .lb{background:var(--gold);color:#15161a;border-color:var(--gold);}
+.leaflet-container{background:var(--panel2);font-family:'Noto Sans KR';}
+
+@media (max-width:1100px){
+  .main{grid-template-columns:1fr;}
+  .bottom{grid-template-columns:1fr;}
+  .kpis{grid-template-columns:repeat(2,1fr);}
+  .mapbox{height:45vh;}
+}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="logo">CARO MOBILITY<small>CONTROL CENTER</small></div>
+    <input id="g-em" type="email" placeholder="관리자 이메일" autocomplete="username">
+    <input id="g-pw" type="password" placeholder="비밀번호" autocomplete="current-password">
+    <button id="g-btn">로그인</button>
+    <div class="gerr" id="g-err"></div>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="logo">CARO MOBILITY<small>CONTROL CENTER</small></div>
+  <span class="sync off" id="sync">CONNECTING…</span>
+  <span class="clock" id="clock">--:--:--</span>
+  <span class="adm" id="adm">—</span>
+  <button class="lgout" id="lgout">로그아웃</button>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="lb">운영 차량</div><div class="vl" id="k-total">0<small>대</small></div></div>
+  <div class="kpi gold"><div class="lb">기기 온라인</div><div class="vl" id="k-online">0<small>대</small></div></div>
+  <div class="kpi"><div class="lb">주행 중</div><div class="vl" id="k-moving">0<small>대</small></div></div>
+  <div class="kpi bad"><div class="lb">금일 경보</div><div class="vl" id="k-alerts">0<small>건</small></div></div>
+</div>
+
+<div class="main">
+  <!-- 좌: 차량 -->
+  <div class="card">
+    <h3><span class="dot"></span>차량 목록</h3>
+    <div class="flist" id="flist"></div>
+  </div>
+
+  <!-- 중앙: 지도 + 라이브 -->
+  <div class="card">
+    <div class="mapbox"><div id="map"></div><div class="mappill" id="mappill">차량 선택</div></div>
+    <div class="livebar">
+      <div class="lv"><div class="k">상태</div><div class="v" id="lv-move">—</div></div>
+      <div class="lv"><div class="k">속도</div><div class="v gold" id="lv-spd">—</div></div>
+      <div class="lv"><div class="k">층</div><div class="v use" id="lv-flr">—</div></div>
+      <div class="lv"><div class="k">고도</div><div class="v" id="lv-alt">—</div></div>
+      <div class="lv"><div class="k">위성</div><div class="v" id="lv-sat">—</div></div>
+      <div class="lv"><div class="k">위치출처</div><div class="v" id="lv-src">—</div></div>
+    </div>
+  </div>
+
+  <!-- 우: 제어 -->
+  <div class="rcol">
+    <div class="card">
+      <h3><span class="dot"></span>원격 제어</h3>
+      <div class="ctrl">
+        <button class="cbtn" onclick="sendCmd('unlock')">🔓 문 열기</button>
+        <button class="cbtn" onclick="sendCmd('lock')">🔒 문 잠금</button>
+        <button class="cbtn warn wide" onclick="sendCmd('hazard')">⚠ 비상등 (원격 실행)</button>
+      </div>
+      <div class="fwrow"><button class="fwbtn" onclick="fwUpdate()">⬆ 펌웨어 원격 업데이트 (OTA)</button></div>
+    </div>
+    <div class="card">
+      <h3><span class="dot"></span>층 보정 — 차량 위치 조정</h3>
+      <div class="calgrid" id="calgrid"></div>
+      <div class="calfoot"><button class="creset" onclick="calReset()">기준 초기화 (GPS 재학습)</button></div>
+    </div>
+    <div class="card">
+      <h3><span class="dot"></span>기기 진단</h3>
+      <table class="diagt" id="diagt"></table>
+    </div>
+  </div>
+</div>
+
+<div class="bottom">
+  <div class="card">
+    <h3><span class="dot"></span>이벤트 알림 <button class="sndbtn" id="sndbtn">🔔 소리 꺼짐</button></h3>
+    <div class="loglist" id="evlist"></div>
+  </div>
+  <div class="card">
+    <h3><span class="dot"></span>주행 기록 <button class="csvbtn" onclick="csvExport()">CSV 내보내기</button></h3>
+    <div class="tscroll"><table class="tlog" id="tlog">
+      <thead><tr><th>시각</th><th>층</th><th>고도</th><th>속도</th><th>방향</th><th>충격</th><th>위치</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=905e7fbf530218a38e0b0871fa7d1471&autoload=false"></script>
+<script>
+/* ═══════════ CARO 관제센터 v1.0 — 데이터 도착 시에만 렌더(상시 루프 없음) ═══════════ */
+var ADMIN_EMAIL='caro.mobility.official@gmail.com';
+var FLEET=[], DEV={}, IDMAP={}, selId=null;
+var soundOn=false, alertsToday=0, evPrev={};
+var TELE=[], EVTS=[];
+var $=function(id){return document.getElementById(id);};
+
+/* ── 시계 (텍스트만 갱신: 부하 0) ── */
+setInterval(function(){ $('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false}); },1000);
+
+/* ── 토스트 ── */
+var _tt=null;
+function toast(m){ var t=$('toast'); t.textContent=m; t.classList.add('show');
+  clearTimeout(_tt); _tt=setTimeout(function(){t.classList.remove('show');},2600); }
+
+/* ── 경보음 (WebAudio 비프 — 파일 불필요) ── */
+function beep(){ if(!soundOn) return;
+  try{ var ac=new (window.AudioContext||window.webkitAudioContext)();
+    var o=ac.createOscillator(), g=ac.createGain();
+    o.connect(g); g.connect(ac.destination); o.frequency.value=880; g.gain.value=0.12;
+    o.start(); o.frequency.setValueAtTime(660,ac.currentTime+0.15);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.45); o.stop(ac.currentTime+0.5);
+  }catch(e){} }
+$('sndbtn').onclick=function(){ soundOn=!soundOn;
+  this.classList.toggle('on',soundOn); this.textContent=soundOn?'🔔 소리 켜짐':'🔔 소리 꺼짐';
+  if(soundOn) beep(); };
+
+/* ── 층 보정 버튼 (B10~10F) ── */
+(function(){ var g=$('calgrid'), h='';
+  for(var b=10;b>=1;b--) h+='<button class="fb" data-f="B'+b+'">B'+b+'</button>';
+  for(var f=1;f<=10;f++) h+='<button class="fb" data-f="'+f+'">'+f+'F</button>';
+  g.innerHTML=h;
+  g.onclick=function(e){ var f=e.target.getAttribute('data-f'); if(f) calSet(f); };
+})();
+
+/* ── 차량↔기기 매칭 (기기번호=차량번호 자동, carId/carName 우선) ── */
+function matchCar(dev,devId){
+  if(dev.carId!=null){ var a=FLEET.find(function(v){return String(v.docId)===String(dev.carId);}); if(a) return a.id; }
+  if(dev.carName){ var b=FLEET.find(function(v){return (v.name||'')===dev.carName;}); if(b) return b.id; }
+  var m=String(devId).match(/(\d+)/);
+  if(m){ var n=parseInt(m[1],10);
+    var c=FLEET.find(function(v){
+      var pn=parseInt(String(v.plate||'').replace(/\D/g,''),10);
+      var dn=parseInt(String(v.docId||'').replace(/\D/g,''),10);
+      return pn===n||dn===n; });
+    if(c) return c.id; }
+  return null;
+}
+
+/* ── 정차 평균화 (주차 시 GPS 배회 제거: 오차 8m→2m) ── */
+function smoothPos(v){
+  if(typeof v.lat!=='number') return null;
+  if(v.moving===false){
+    if(typeof v._sLat!=='number'){ v._sLat=v.lat; v._sLng=v.lng; v._sN=1; }
+    else if(v.lat!==v._rLat||v.lng!==v._rLng){
+      v._sN=Math.min((v._sN||1)+1,60);
+      v._sLat+=(v.lat-v._sLat)/v._sN; v._sLng+=(v.lng-v._sLng)/v._sN; }
+    v._rLat=v.lat; v._rLng=v.lng;
+    return [v._sLat,v._sLng];
+  }
+  v._sLat=undefined; v._sN=0;
+  return [v.lat,v.lng];
+}
+function floorStr(f){ if(f==null) return '—'; return f>=1?f+'F':'B'+(1-f); }
+
+/* ═══════════ 지도 (카카오 → 실패 시 Leaflet) ═══════════ */
+var mapKind=null,kmap=null,lmap=null,markers=[];
+function wardHtml(v,sel){
+  return '<div class="ward'+(sel?' sel':'')+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg><br><span class="lb">'+(v.name||v.id)+'</span></div>';
+}
+function mapInit(){
+  if(window.kakao&&kakao.maps){ kakao.maps.load(function(){
+    kmap=new kakao.maps.Map($('map'),{center:new kakao.maps.LatLng(37.4663,126.678),level:4}); mapKind='kakao'; mapDraw(); });
+  } else { lmap=L.map('map').setView([37.4663,126.678],15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(lmap);
+    mapKind='leaflet'; mapDraw(); }
+}
+var lastSel=null;
+function mapDraw(){
+  if(!mapKind) return;
+  markers.forEach(function(m){ try{ mapKind==='kakao'?m.setMap(null):lmap.removeLayer(m);}catch(e){} });
+  markers=[];
+  var selPos=null;
+  FLEET.forEach(function(v){
+    var p=smoothPos(v); if(!p) return;
+    var sel=(v.id===selId); if(sel) selPos=p;
+    if(mapKind==='kakao'){
+      var mk=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p[0],p[1]),content:wardHtml(v,sel),yAnchor:1});
+      mk.setMap(kmap); markers.push(mk);
+    }else{
+      var ic=L.divIcon({className:'',html:wardHtml(v,sel),iconSize:[0,0]});
+      markers.push(L.marker(p,{icon:ic}).addTo(lmap));
+    }
+  });
+  var v=FLEET.find(function(x){return x.id===selId;});
+  var live=v&&typeof v.lat==='number';
+  $('mappill').textContent=v?(v.name+' · '+(live?(v.online?'🛰 실시간 추적':'최근 위치'):'위치 정보 없음')):'차량 선택';
+  if(selPos){
+    var chg=(selId!==lastSel); lastSel=selId;
+    try{
+      if(mapKind==='kakao'){ var kp=new kakao.maps.LatLng(selPos[0],selPos[1]);
+        if(chg){ kmap.setCenter(kp); kmap.setLevel(3);} else if(live){ kmap.setCenter(kp);} }
+      else{ if(chg){ lmap.setView(selPos,16);} else if(live){ lmap.panTo(selPos);} }
+    }catch(e){}
+  }
+}
+
+/* ═══════════ 렌더 (스냅샷 도착 시에만) ═══════════ */
+function render(){
+  /* KPI */
+  var onl=0,mov=0;
+  FLEET.forEach(function(v){ if(v.online)onl++; if(v.moving)mov++; });
+  $('k-total').innerHTML=FLEET.length+'<small>대</small>';
+  $('k-online').innerHTML=onl+'<small>대</small>';
+  $('k-moving').innerHTML=mov+'<small>대</small>';
+  $('k-alerts').innerHTML=alertsToday+'<small>건</small>';
+
+  /* 차량 리스트 */
+  var h='';
+  FLEET.forEach(function(v){
+    var dev=IDMAP[v.id];
+    h+='<div class="vcard'+(v.id===selId?' sel':'')+'" data-id="'+v.id+'">'
+      +'<div class="nm"><span class="on'+(v.online?' live':'')+'"></span>'+(v.name||v.id)
+      +(v.impact?'<span class="alerttag">⚠ 충격</span>':'')+(v.over?'<span class="alerttag">과속</span>':'')
+      +'</div><div class="sub">'
+      +(dev?('<b>'+dev+'</b>'):'<span>기기 미연결</span>')
+      +(v.floor!=null?('<span>'+floorStr(v.floor)+'</span>'):'')
+      +(typeof v.speed==='number'?('<span>'+Math.round(v.speed)+'km/h</span>'):'')
+      +(v.fw?('<span>'+v.fw+'</span>'):'')
+      +'</div></div>';
+  });
+  $('flist').innerHTML=h||'<div style="padding:20px;color:var(--muted);font-size:12px;">차량 데이터 대기 중…</div>';
+
+  /* 라이브 바 */
+  var v=FLEET.find(function(x){return x.id===selId;});
+  if(v){
+    var mv=$('lv-move');
+    mv.textContent = v.online?(v.moving?'주행중':'정지'):'오프라인';
+    mv.className='v '+(v.online?(v.moving?'ok':''):'bad');
+    $('lv-spd').textContent=(typeof v.speed==='number')?Math.round(v.speed)+'㎞/h':'—';
+    $('lv-flr').textContent=floorStr(v.floor)+(v.env?(' '+v.env):'');
+    $('lv-alt').textContent=(typeof v.alt==='number')?((v.alt>=0?'+':'')+v.alt.toFixed(1)+'m'):'—';
+    $('lv-sat').textContent=(v.sats!=null)?v.sats+'개':'—';
+    var src=$('lv-src');
+    src.textContent=v.gsrc==='modem'?'모뎀GPS':(v.gsrc==='module'?'GPS모듈':(typeof v.lat==='number'?'GPS':'—'));
+    src.className='v '+(v.gsrc==='modem'?'use':'gold');
+    /* 층 보정 현재층 하이라이트 */
+    var cur=(v.floor>=1)?String(v.floor):('B'+(1-v.floor));
+    document.querySelectorAll('#calgrid .fb').forEach(function(b){
+      b.classList.toggle('cur', b.getAttribute('data-f')===cur && v.floor!=null); });
+    /* 진단 */
+    renderDiag(v);
+  }
+  mapDraw();
+}
+function ago(t){ if(!t)return '—'; var s=Math.floor((Date.now()-t.getTime())/1000);
+  if(s<5)return '방금'; if(s<60)return s+'초 전'; if(s<3600)return Math.floor(s/60)+'분 전'; return Math.floor(s/3600)+'시간 전'; }
+function renderDiag(v){
+  var rows=[
+    ['통신 상태', v.online?'<span class="g">● 온라인</span>':'<span class="r">● 오프라인</span>'],
+    ['마지막 수신', '<span class="gd">'+ago(v.lastSeen)+'</span>'],
+    ['GPS', (typeof v.lat==='number')?('<span class="g">정상 · 위성'+(v.sats||0)+'</span>'):'<span class="y">탐색중</span>'],
+    ['위치 출처', v.gsrc==='modem'?'<span class="b">모뎀 GNSS</span>':(v.gsrc==='module'?'<span class="g">GPS 모듈</span>':'<span class="y">—</span>')],
+    ['기압계(층)', (typeof v.alt==='number')?'<span class="g">정상</span>':'<span class="r">응답없음</span>'],
+    ['지상기준 학습', v.groundSet?'<span class="g">완료</span>':'<span class="y">대기</span>'],
+    ['자이로(충격)', (typeof v.heading==='number')?'<span class="g">정상</span>':'<span class="r">응답없음</span>'],
+    ['펌웨어', '<span class="gd">'+(v.fw||'—')+'</span>'],
+  ];
+  if(v.ota) rows.push(['OTA 상태','<span class="b">'+v.ota+'</span>']);
+  $('diagt').innerHTML=rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>';}).join('');
+}
+
+/* 차량 선택 */
+$('flist').onclick=function(e){
+  var c=e.target.closest('.vcard'); if(!c) return;
+  selId=c.getAttribute('data-id'); subLogs(); render();
+};
+
+/* ═══════════ 원격 명령 ═══════════ */
+function devOf(){ return selId?IDMAP[selId]:null; }
+function sendCmd(type,extra){
+  var db=window.FB_DB, FN=window.FB_FN, dev=devOf();
+  if(!dev){ toast('이 차량은 IoT 기기 미연결'); return; }
+  var id='cmd-'+Date.now();
+  var pl=Object.assign({type:type,status:'pending'},extra||{});
+  FN.setDoc(FN.doc(db,'devices',dev,'commands',id),pl).then(function(){
+    toast('명령 전송: '+type+' — 기기 응답 대기…');
+    var ref=FN.doc(db,'devices',dev,'commands',id), un=null, to=null;
+    un=FN.onSnapshot(ref,function(s){ if(!s.exists())return; var d=s.data()||{};
+      if(d.status==='done'){ toast('✅ 기기 실행 완료: '+type); if(un)un(); clearTimeout(to); } });
+    to=setTimeout(function(){ if(un)un(); },20000);
+  }).catch(function(e){ toast('전송 실패: '+e.message); });
+}
+function calSet(f){ sendCmd('setfloor',{value:String(f)}); }
+function calReset(){ sendCmd('resetfloor'); }
+function fwUpdate(){
+  var url=prompt('펌웨어 .bin 주소','https://toly1021-ui.github.io/CARO-MOBILITY13/caro_fw.bin');
+  if(!url) return;
+  if(!/^https:\/\/.+\.bin(\?|$)/i.test(url)&&!/firebasestorage\.googleapis\.com/i.test(url)){ toast('올바른 .bin 주소가 아닙니다'); return; }
+  sendCmd('update',{url:url});
+}
+
+/* ═══════════ Firestore 실시간 구독 ═══════════ */
+function startFS(){
+  var db=window.FB_DB, FN=window.FB_FN;
+  function applyCars(s,grade){
+    s.forEach(function(doc){
+      var d=doc.data()||{}, id=grade+'-'+doc.id;
+      var v=FLEET.find(function(x){return x.id===id;});
+      if(!v){ v={id:id,col:grade==='B'?'bl_cars':'cars',docId:doc.id}; FLEET.push(v); }
+      v.name=d.name||d.model||doc.id; v.plate=d.plate||d.number||'';
+    });
+    remap(); render();
+  }
+  FN.onSnapshot(FN.collection(db,'cars'),function(s){applyCars(s,'N');},function(e){console.warn(e);});
+  FN.onSnapshot(FN.collection(db,'bl_cars'),function(s){applyCars(s,'B');},function(e){console.warn(e);});
+  FN.onSnapshot(FN.collection(db,'devices'),function(s){
+    DEV={};
+    s.forEach(function(doc){ DEV[doc.id]=doc.data()||{}; });
+    remap(); checkAlerts(); render();
+    var n=Object.keys(IDMAP).length;
+    var sy=$('sync');
+    sy.textContent='SYNC · 기기 '+n+'대 · '+new Date().toLocaleTimeString('ko-KR',{hour12:false});
+    sy.classList.toggle('off',n===0);
+  },function(e){ console.warn('devices',e); $('sync').textContent='구독 오류'; $('sync').classList.add('off'); });
+}
+function num(x){ var n=Number(x); return isFinite(n)?n:null; }
+function remap(){
+  IDMAP={};
+  Object.keys(DEV).forEach(function(devId){
+    var d=DEV[devId], fid=matchCar(d,devId); if(!fid) return;
+    IDMAP[fid]=devId;
+    var v=FLEET.find(function(x){return x.id===fid;}); if(!v) return;
+    var ls=(d.lastSeen&&d.lastSeen.toDate)?d.lastSeen.toDate():null;
+    v.lat=num(d.lat); v.lng=num(d.lng); v.sats=num(d.sats); v.gsrc=d.gsrc||'';
+    v.alt=num(d.alt); v.floor=num(d.floor); v.env=d.env||''; v.groundSet=(d.groundSet===true);
+    v.heading=num(d.heading); v.speed=num(d.speed); v.shock=num(d.shock);
+    v.impact=(d.impact===true); v.over=(d.over===true); v.moving=(d.moving===true);
+    v.fw=d.fw||''; v.ota=d.ota||''; v.lastSeen=ls;
+    v.online=(d.status==='online'&&ls&&(Date.now()-ls.getTime()<60000));
+  });
+  if(!selId){ var first=FLEET.find(function(v){return IDMAP[v.id];}); if(first){ selId=first.id; subLogs(); } }
+}
+/* 충격·과속 상승엣지 → 경보 */
+function checkAlerts(){
+  FLEET.forEach(function(v){
+    var p=evPrev[v.id]||{};
+    if(v.impact&&!p.impact){ alertsToday++; beep(); toast('⚠ '+v.name+' 충격 감지!'); notify(v.name+' 충격 감지'); }
+    if(v.over&&!p.over){ alertsToday++; beep(); toast('🚨 '+v.name+' 과속!'); notify(v.name+' 과속 감지'); }
+    evPrev[v.id]={impact:v.impact,over:v.over};
+  });
+}
+function notify(msg){
+  if(!('Notification' in window)) return;
+  if(Notification.permission==='granted') new Notification('CARO 관제',{body:msg});
+  else if(Notification.permission!=='denied') Notification.requestPermission();
+}
+
+/* ── 선택 차량 기록 구독 (telemetry + events) ── */
+var unT=null,unE=null;
+function subLogs(){
+  var db=window.FB_DB, FN=window.FB_FN, dev=devOf();
+  if(unT){unT();unT=null;} if(unE){unE();unE=null;}
+  TELE=[]; EVTS=[]; drawLogs();
+  if(!dev||!FN.query) return;
+  try{
+    unT=FN.onSnapshot(FN.query(FN.collection(db,'devices',dev,'telemetry'),FN.orderBy('ts','desc'),FN.limit(150)),
+      function(s){ TELE=[]; s.forEach(function(d){ TELE.push(d.data()||{}); }); drawLogs(); });
+    unE=FN.onSnapshot(FN.query(FN.collection(db,'devices',dev,'events'),FN.orderBy('ts','desc'),FN.limit(60)),
+      function(s){ EVTS=[]; s.forEach(function(d){ EVTS.push(d.data()||{}); }); drawLogs(); });
+  }catch(e){ console.warn('logs',e); }
+}
+function fmtTs(t){ try{ var d=t&&t.toDate?t.toDate():null; if(!d)return '—';
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+d.toLocaleTimeString('ko-KR',{hour12:false}); }catch(e){ return '—'; } }
+function drawLogs(){
+  var eh='';
+  EVTS.forEach(function(e){
+    var tag=e.event==='impact'?'<span class="tag imp">충격</span>':
+            e.event==='overspeed'?'<span class="tag spd">과속</span>':'<span class="tag flr">층</span>';
+    var tx=e.event==='impact'?((e.shock!=null?e.shock.toFixed(2):'?')+'g 충격'):
+           e.event==='overspeed'?(Math.round(e.speed||0)+'km/h 과속'):
+           (floorStr(num(e.floor))+' 이동');
+    eh+='<div class="ev">'+tag+'<span>'+tx+'</span><span class="ts">'+fmtTs(e.ts)+'</span></div>';
+  });
+  $('evlist').innerHTML=eh||'<div style="padding:18px;color:var(--muted);font-size:12px;">이벤트 없음</div>';
+  var th='';
+  TELE.forEach(function(t){
+    th+='<tr><td>'+fmtTs(t.ts)+'</td><td>'+floorStr(num(t.floor))+'</td>'
+      +'<td>'+(t.alt!=null?Number(t.alt).toFixed(1)+'m':'—')+'</td>'
+      +'<td>'+(t.speed!=null?Math.round(t.speed)+'km/h':'—')+'</td>'
+      +'<td>'+(t.heading!=null?Math.round(t.heading)+'°':'—')+'</td>'
+      +'<td>'+(t.shock!=null?Number(t.shock).toFixed(2)+'g':'—')+'</td>'
+      +'<td>'+(t.lat!=null?(Number(t.lat).toFixed(5)+', '+Number(t.lng).toFixed(5)):'—')+'</td></tr>';
+  });
+  $('tbody').innerHTML=th||'<tr><td colspan="7" style="color:var(--muted);">기록 없음</td></tr>';
+}
+function csvExport(){
+  var rows=[['시각','종류','층','고도(m)','방향(deg)','속도(km/h)','충격(g)','위도','경도']];
+  EVTS.forEach(function(e){ rows.push([fmtTs(e.ts),e.event||'',floorStr(num(e.floor)),e.alt!=null?e.alt:'',e.heading!=null?Math.round(e.heading):'',e.speed!=null?e.speed:'',e.shock!=null?e.shock:'',e.lat!=null?e.lat:'',e.lng!=null?e.lng:'']); });
+  TELE.forEach(function(t){ rows.push([fmtTs(t.ts),'주기',floorStr(num(t.floor)),t.alt!=null?t.alt:'',t.heading!=null?Math.round(t.heading):'',t.speed!=null?t.speed:'',t.shock!=null?t.shock:'',t.lat!=null?t.lat:'',t.lng!=null?t.lng:'']); });
+  var csv='﻿'+rows.map(function(r){return r.join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(devOf()||'CARO')+'_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.csv';
+  a.click();
+}
+
+/* ═══════════ 로그인 게이트 ═══════════ */
+function doLogin(){
+  var A=window.FB_AUTH, FN=window.FB_FN;
+  var em=$('g-em').value.trim(), pw=$('g-pw').value;
+  if(!em||!pw){ $('g-err').textContent='이메일과 비밀번호를 입력하세요'; return; }
+  $('g-btn').textContent='로그인 중…';
+  FN.signInWithEmailAndPassword(A,em,pw).catch(function(e){
+    $('g-btn').textContent='로그인';
+    var m=(e&&e.code)||'';
+    $('g-err').textContent=(m.indexOf('wrong-password')>=0||m.indexOf('invalid-cred')>=0)?'비밀번호가 올바르지 않습니다':
+      (m.indexOf('user-not-found')>=0)?'존재하지 않는 계정입니다':'로그인 실패';
+  });
+}
+var started=false;
+function waitAuth(n){
+  n=n||0; var A=window.FB_AUTH, FN=window.FB_FN;
+  if(!window.FB_READY||!A||!FN){ if(n>60){ $('g-err').textContent='Firebase 미연결'; return; }
+    return setTimeout(function(){waitAuth(n+1);},200); }
+  FN.onAuthStateChanged(A,function(u){
+    if(u&&u.email===ADMIN_EMAIL){                       /* 최고관리자: 무조건 통과 */
+      enter(u.email+' · 최고관리자');
+    } else if(u){
+      /* ★ 기존 권한 체계 그대로: 최고관리자가 admin_accounts에 '관제(control)' 권한을
+         부여한 활성 계정만 입장. (앱 관리자 모드와 동일한 판정 — 부여/회수 즉시 반영) */
+      var db=window.FB_DB;
+      FN.getDoc(FN.doc(db,'admin_accounts',String(u.email).toLowerCase())).then(function(s){
+        var ex=s&&(typeof s.exists==='function'?s.exists():s.exists);
+        var d=ex?(s.data()||{}):{};
+        if(ex && d.active!==false && d.perms && d.perms.control===true){
+          enter(u.email+(d.name?(' · '+d.name):''));
+        } else {
+          FN.signOut(A); $('g-err').textContent='관제센터 권한이 없습니다 — 최고관리자에게 권한을 요청하세요';
+          $('gate').style.display='flex';
+        }
+      }).catch(function(){
+        FN.signOut(A); $('g-err').textContent='권한 확인 실패 — 다시 시도하세요';
+        $('gate').style.display='flex';
+      });
+    }
+    else { $('gate').style.display='flex'; }
+  });
+  function enter(label){
+    $('gate').style.display='none'; $('adm').textContent=label;
+    if(!started){ started=true; mapInit(); startFS(); }
+  }
+  $('g-btn').addEventListener('click',doLogin);
+  $('g-pw').addEventListener('keydown',function(e){ if(e.key==='Enter')doLogin(); });
+  $('lgout').addEventListener('click',function(){ FN.signOut(A); location.reload(); });
+}
+waitAuth();
+</script>
+</body>
+</html>
