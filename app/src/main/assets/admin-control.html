@@ -396,8 +396,11 @@ function mapDraw(){
     var chg=(selId!==lastSel); lastSel=selId;
     try{
       if(mapKind==='kakao'){ var kp=new kakao.maps.LatLng(selPos[0],selPos[1]);
-        if(chg){ kmap.setCenter(kp); kmap.setLevel(3);} else if(live){ kmap.setCenter(kp);} }
-      else{ if(chg){ lmap.setView(selPos,16);} else if(live){ lmap.panTo(selPos);} }
+        if(chg){ kmap.setCenter(kp); kmap.setLevel(3); }              // 차량 선택 시에만 중앙+줌
+        else if(live){ var b=kmap.getBounds(); if(b && !b.contain(kp)) kmap.setCenter(kp); }  // ★ 화면 밖으로 나갔을 때만 따라감(줌·이동 자유)
+      }
+      else{ if(chg){ lmap.setView(selPos,16); }
+        else if(live){ if(!lmap.getBounds().contains(selPos)) lmap.panTo(selPos); } }        // ★ 화면 밖일 때만
     }catch(e){}
   }
 }
