@@ -140,15 +140,30 @@ button{font-family:inherit;cursor:pointer;}
 .gbox input{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--txt);
   border-radius:10px;padding:12px 14px;font-size:14px;margin-bottom:10px;font-family:inherit;}
 .gbox input:focus{outline:none;border-color:var(--gold);}
+/* ★ 크롬 자동완성(아이디)이 흰 배경을 강제로 덮어써서 비밀번호 칸과 색이 달라 보이던 문제 → 자동완성 배경/글자색을 어둡게 고정해 통일 */
+.gbox input:-webkit-autofill,
+.gbox input:-webkit-autofill:hover,
+.gbox input:-webkit-autofill:focus,
+.gbox input:-webkit-autofill:active{
+  -webkit-text-fill-color:var(--txt) !important;
+  -webkit-box-shadow:0 0 0 1000px var(--panel2) inset !important;
+  box-shadow:0 0 0 1000px var(--panel2) inset !important;
+  caret-color:var(--txt);
+  transition:background-color 99999s ease-in-out 0s;
+}
 .gbox button{width:100%;background:var(--gold);color:#15161a;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:900;margin-top:4px;}
 .gerr{color:var(--bad);font-size:12px;min-height:18px;margin-top:8px;text-align:center;}
 
 /* ── 카카오/Leaflet 마커 ── */
-.ward{position:relative;transform:translate(-50%,-100%);text-align:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));}
-.ward svg{color:#6f7684;width:34px;height:34px;}
+/* ★ 마커 앵커 고정: .ward 박스를 핀(svg) 크기에 딱 맞추고, 라벨은 absolute로 띄워
+   박스 높이에 영향을 주지 않게 한다. 이러면 박스 하단중앙=핀 끝=좌표에 정확히 고정되어
+   지도를 아무리 축소해도 와드가 밀리지 않는다. (예전엔 translate+yAnchor 이중 오프셋으로 축소 시 이탈) */
+.ward{position:relative;width:34px;height:34px;text-align:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));}
+.ward svg{display:block;color:#6f7684;width:34px;height:34px;}
 .ward.sel svg{color:var(--gold);}
-.ward .lb{display:inline-block;background:#22252b;color:#cfd3da;font-size:10.5px;font-weight:700;
-  padding:2px 8px;border-radius:7px;margin-top:-4px;border:1px solid var(--border2);white-space:nowrap;}
+.ward .lb{position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  background:#22252b;color:#cfd3da;font-size:10.5px;font-weight:700;
+  padding:2px 8px;border-radius:7px;margin-top:1px;border:1px solid var(--border2);white-space:nowrap;}
 .ward.sel .lb{background:var(--gold);color:#15161a;border-color:var(--gold);}
 .ward.stale{opacity:.45;filter:grayscale(.7);}
 .ward.stale .lb{background:#3a2020;color:#e0705e;border-color:#5a2d2d;}
@@ -352,7 +367,7 @@ function floorStr(f){ if(f==null) return '—'; return f>=1?f+'F':'B'+(1-f); }
 var mapKind=null,kmap=null,lmap=null,markers=[];
 function wardHtml(v,sel){
   var stale=(typeof v.lat==='number' && !v.gpsLive);   /* GPS 끊김 → 마커를 흐리게(옛 위치 표시) */
-  return '<div class="ward'+(sel?' sel':'')+(stale?' stale':'')+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg><br><span class="lb">'+(v.name||v.id)+(stale?' · GPS끊김':'')+'</span></div>';
+  return '<div class="ward'+(sel?' sel':'')+(stale?' stale':'')+'"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg><span class="lb">'+(v.name||v.id)+(stale?' · GPS끊김':'')+'</span></div>';
 }
 function mapInit(){
   if(window.kakao&&kakao.maps){ kakao.maps.load(function(){
@@ -377,7 +392,7 @@ function mapDraw(){
         var mk=new kakao.maps.CustomOverlay({position:new kakao.maps.LatLng(p[0],p[1]),content:wardHtml(v,true),yAnchor:1});
         mk.setMap(kmap); markers.push(mk);
       }else{
-        var ic=L.divIcon({className:'',html:wardHtml(v,true),iconSize:[0,0]});
+        var ic=L.divIcon({className:'',html:wardHtml(v,true),iconSize:[34,34],iconAnchor:[17,34]});
         markers.push(L.marker(p,{icon:ic}).addTo(lmap));
       }
     }
