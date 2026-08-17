@@ -163,6 +163,7 @@ button{font-family:inherit;cursor:pointer;}
     <input id="g-em" type="text" placeholder="관리자 아이디 (CAROMOBILITY 또는 이메일)" autocomplete="username">
     <input id="g-pw" type="password" placeholder="비밀번호" autocomplete="current-password">
     <button id="g-btn">로그인</button>
+    <button id="g-reset" style="width:100%;background:none;border:none;color:#8b919c;font-size:12px;margin-top:12px;text-decoration:underline;cursor:pointer;">비밀번호 재설정 메일 받기</button>
     <div class="gerr" id="g-err"></div>
   </div>
 </div>
@@ -601,6 +602,19 @@ function waitAuth(n){
   $('g-btn').addEventListener('click',doLogin);
   $('g-pw').addEventListener('keydown',function(e){ if(e.key==='Enter')doLogin(); });
   $('lgout').addEventListener('click',function(){ FN.signOut(A); location.reload(); });
+  /* 비밀번호 재설정: 아이디 칸의 계정(별명이면 최고관리자 이메일)으로 재설정 메일 발송 */
+  $('g-reset').addEventListener('click',function(){
+    var em=$('g-em').value.trim();
+    if(em.toUpperCase()==='CAROMOBILITY'||!em) em=ADMIN_EMAIL;
+    if(em.indexOf('@')<0){ $('g-err').textContent='이메일 형식이 아닙니다'; return; }
+    FN.sendPasswordResetEmail(A,em).then(function(){
+      $('g-err').style.color='#4db183';
+      $('g-err').textContent='✅ '+em+' 으로 재설정 메일을 보냈습니다. 메일함(스팸함 포함)을 확인하세요.';
+    }).catch(function(e){
+      $('g-err').style.color='';
+      $('g-err').textContent='메일 발송 실패: '+((e&&e.code)||'다시 시도하세요');
+    });
+  });
 }
 waitAuth();
 </script>
