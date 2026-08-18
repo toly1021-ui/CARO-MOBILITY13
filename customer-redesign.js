@@ -7462,6 +7462,10 @@
   }
   function apply(){
     if(!document.getElementById('dev-screen')) return;
+    /* ★ 진단용 버전 도장: 이 최신 파일이 실제로 로딩되면 관리자 콘솔 부제에 'BUILD 168'이 찍힘.
+       안 찍히면 = 앱이 아직 옛 파일 캐시 사용 중(코드 문제 아님·캐시 문제). */
+    try{ var _sub=document.querySelector('#dev-screen .dev-sub');
+      if(_sub && _sub.textContent.indexOf('BUILD 168')<0){ _sub.textContent='관리자 콘솔 · FLEET CONTROL · BUILD 168'; } }catch(e){}
     var canOps=can('ops'), canControl=can('control');
     var secs=document.querySelectorAll('#dev-screen .dev-body > .dev-section');
     for(var i=0;i<secs.length;i++){
