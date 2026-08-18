@@ -1309,31 +1309,34 @@ function handleLogin(){
     try{localStorage.removeItem('caro_auto_id');localStorage.removeItem('caro_auto_pw');}catch(e){}
   }
 
-  /* 개발자 로그인 */
-  if(id==='CAROMOBILITY'&&pw==='011842hkJ**'){
-      userInfo.id = 'CAROMOBILITY';
-      userInfo.name = 'CAROMOBILITY';
-
-      /* ⭐ Firebase 관리자 계정으로 자동 로그인 */
+  /* 개발자(최고관리자) 로그인
+     ★ 예전엔 비밀번호가 코드에 하드코딩돼서, 실제 Firebase 비번을 바꾸면
+        인증이 실패 → 관리자 모드는 뜨지만 Firestore가 안 붙던(=연동 안됨) 문제가 있었음.
+     ★ 이제 '입력한 비밀번호(pw)'를 그대로 Firebase 인증에 사용 → 지금 계정 비번으로 로그인됨.
+     ★ 인증이 '성공했을 때만' 관리자 모드로 진입(가짜 super·데이터 없음 상태 방지). */
+  if(id==='CAROMOBILITY'){
       if(fbReady()){
         var fn = window.FB_FN;
         fn.signInWithEmailAndPassword(
           window.FB_AUTH,
           'caro.mobility.official@gmail.com',
-          '011842hkJ**'
+          pw
         ).then(function(cred){
+          userInfo.id = 'CAROMOBILITY';
+          userInfo.name = 'CAROMOBILITY';
           userInfo.uid = cred.user.uid;
           userInfo.email = cred.user.email;
           console.log('✅ 관리자 Firebase Auth 활성화:', cred.user.email);
           showDevLoginTransition();
         }).catch(function(e){
           console.error('❌ 관리자 Firebase Auth 실패:', e.code, e.message);
-          if(typeof showToast === 'function'){
-            showToast('⚠️ Firebase 연결 실패: ' + e.code);
-          }
-          showDevLoginTransition();
+          if(err) err.textContent='비밀번호가 올바르지 않습니다';
+          else if(typeof showToast === 'function'){ showToast('비밀번호가 올바르지 않습니다'); }
         });
       } else {
+        /* Firebase 미연결(오프라인) — 예전처럼 로컬 관리자 진입만 허용 */
+        userInfo.id = 'CAROMOBILITY';
+        userInfo.name = 'CAROMOBILITY';
         showDevLoginTransition();
       }
       return;
