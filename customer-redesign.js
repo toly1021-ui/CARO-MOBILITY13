@@ -2450,7 +2450,7 @@
         if(ex){
           var d=snap.data()||{};
           var pm=d.perms||{};
-          var hasAny=['cars','pricing','notices','resv'].some(function(k){ return pm[k]; });
+          var hasAny=['control','ops','cars','pricing','notices','resv'].some(function(k){ return pm[k]; });  /* ★ 권한 단순화(control/ops) 반영 — 옛 키만 보던 탓에 control/ops 부여해도 앱에서 '권한없음'으로 뜨던 버그 수정 */
           if(d.active!==false && hasAny){ perms=pm; isStaff=true; }
           else { perms=null; isStaff=false; }
         } else { perms=null; isStaff=false; }
