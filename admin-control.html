@@ -471,7 +471,8 @@ function mapDraw(){
   var live=v&&v.gpsLive;
   var pill='차량 선택';
   if(v){
-    if(live) pill=v.name+' · 🛰 실시간 추적';
+    if(v.gsrc==='dr') pill=v.name+' · 🧭 지하/터널 추정 이동중 (GPS 없음 · 추측항법)';
+    else if(live) pill=v.name+' · 🛰 실시간 추적';
     else if(hasPos) pill=v.name+' · ⚠ GPS 끊김 (마지막 위치 · 위성'+(v.sats!=null?v.sats:0)+'개)';
     else if(IDMAP[v.id]) pill=v.name+' · GPS 탐색중 (위치 없음)';
     else pill=v.name+' · 기기 미연결 (실시간 위치 없음)';
@@ -545,7 +546,8 @@ function render(){
     $('lv-alt').textContent=(typeof v.alt==='number')?((v.alt>=0?'+':'')+v.alt.toFixed(1)+'m'):'—';
     $('lv-sat').textContent=(v.sats!=null)?v.sats+'개':'—';
     var src=$('lv-src');
-    if(!v.gpsLive && typeof v.lat==='number'){ src.textContent='GPS 끊김'; src.className='v bad'; }
+    if(v.gsrc==='dr'){ src.textContent='추측항법(터널)'; src.className='v use'; }
+    else if(!v.gpsLive && typeof v.lat==='number'){ src.textContent='GPS 끊김'; src.className='v bad'; }
     else if(v.gsrc==='modem'){ src.textContent='모뎀GPS'; src.className='v use'; }
     else if(v.sats>=4||v.gsrc==='module'){ src.textContent='GPS모듈'; src.className='v gold'; }
     else { src.textContent='—'; src.className='v'; }
@@ -645,7 +647,7 @@ function remap(){
     v.online=(d.status==='online'&&ls&&(Date.now()-ls.getTime()<60000));
     /* ★ GPS 실시간 여부: 펌웨어는 '유효 fix(위성4+)' 일 때만 좌표를 새로 보냄.
        위성이 4개 미만(0~3)이면 좌표는 '마지막으로 잡힌 위치'로 고정(=옛 위치). 이걸 정직하게 구분. */
-    v.gpsLive = !!(v.online && (v.sats>=4 || v.gsrc==='modem'));
+    v.gpsLive = !!(v.online && (v.sats>=4 || v.gsrc==='modem' || v.gsrc==='dr'));   /* dr=추측항법도 이동 중으로 취급(와드가 계속 움직임) */
     if(v.gpsLive && (v.lat!==v._fLat || v.lng!==v._fLng)){ v._fLat=v.lat; v._fLng=v.lng; v._fTs=Date.now(); }
   });
   if(!selId){ var first=FLEET.find(function(v){return IDMAP[v.id];}); if(first){ selId=first.id; subLogs(); } }
