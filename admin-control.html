@@ -195,6 +195,34 @@ button{font-family:inherit;cursor:pointer;}
   .kpis{grid-template-columns:repeat(2,1fr);}
   .mapbox{height:45vh;}
 }
+/* ★ 카로 앱(모바일) 전용 최적화 — 헤더 세로쌓임/가로넘침 제거, 카드·지도 폰 화면에 맞춤 */
+html,body{max-width:100%;overflow-x:hidden;}
+@media (max-width:640px){
+  .topbar{flex-wrap:wrap;gap:8px 10px;padding:10px 12px;}
+  .logo{font-size:15px;letter-spacing:1px;}
+  .logo small{letter-spacing:2px;font-size:8px;margin-top:0;}
+  .clock{margin-left:auto;font-size:12px;}
+  .sync{font-size:9px;padding:3px 7px;letter-spacing:.3px;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .adm{display:none;}                                   /* 폭 부족 → 관리자 라벨 숨김 */
+  .lgout{padding:5px 10px;font-size:11px;}
+  .navtabs{order:9;width:100%;margin-left:0;gap:8px;}    /* 탭을 아랫줄 전체폭으로 */
+  .ntab{flex:1;text-align:center;padding:9px 0;font-size:13px;}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:9px;padding:12px 12px 0;}
+  .kpi{padding:12px 13px;border-radius:12px;}
+  .kpi .vl{font-size:22px;}
+  .kpi .lb{font-size:10px;letter-spacing:1px;}
+  .main{padding:10px 12px;gap:10px;}
+  .bottom{padding:0 12px 16px;gap:10px;}
+  .mapbox{height:52vh;min-height:300px;}
+  .livebar{grid-template-columns:repeat(3,1fr);}         /* 6칸 → 3칸 2줄 */
+  .lv{padding:10px 6px;}
+  .ctrl{grid-template-columns:1fr 1fr;}
+  .logdate{gap:6px;flex-wrap:wrap;}
+  .dsum{margin-left:0;width:100%;}
+  .followbtn{font-size:11px;padding:5px 9px;top:8px;right:8px;}
+  .mappill{font-size:11px;left:8px;top:8px;padding:5px 9px;max-width:60vw;}
+  .loglist,.tscroll{max-height:340px;}
+}
 </style>
 </head>
 <body>
@@ -324,11 +352,16 @@ var $=function(id){return document.getElementById(id);};
 /* ── 시계 (텍스트만 갱신: 부하 0) ── */
 setInterval(function(){ $('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false}); },1000);
 
+/* ── 운영관리 오버레이 top을 헤더 실제 높이에 자동 정렬(모바일에서 헤더가 2줄로 커져도 안 겹침) ── */
+function syncOpsTop(){ try{ var tb=document.querySelector('.topbar'), ov=$('opsview');
+  if(tb&&ov) ov.style.top=tb.offsetHeight+'px'; }catch(e){} }
+window.addEventListener('resize', syncOpsTop);
 /* ── 탭 전환: 실시간 관제 ↔ 운영 관리(기존 시스템 내장) ── */
 function switchView(v){
   var ops=(v==='ops');
   $('nt-live').classList.toggle('on',!ops);
   $('nt-ops').classList.toggle('on',ops);
+  syncOpsTop();
   $('opsview').style.display=ops?'block':'none';
   var fr=$('opsframe');
   if(ops && !fr.src){ fr.src='admin-ops.html'; }   /* 첫 진입 때만 로드(관제 성능에 영향 없음) */
