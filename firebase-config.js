@@ -54,12 +54,13 @@ const firebaseConfig = {
    ─ admin.html(주소에 'admin' 포함)은 'caroAdmin'이라는 별도 앱으로 시작
      → 로그인 저장 자리가 고객 앱과 분리됨 (서로 로그아웃 안 됨).
    ─ 고객 앱(index.html)은 기존과 100% 동일하게 기본 앱 사용. */
-const __isAdminPage = (typeof location !== 'undefined') &&
-  location.pathname.indexOf('admin') !== -1;
+/* ★ 세션 공유: 앱(운영자)이 로그인한 상태로 관제센터(admin-control.html)를 열면
+   재로그인 없이 '같은 계정·권한'이 그대로 넘어가야 한다(2중 로그인 제거 + 권한대로 탭 분리).
+   그래서 관리자 페이지도 고객 앱과 '동일한 기본 세션'을 쓴다(예전엔 caroAdmin으로 분리해서
+   앱에서 열 때마다 다시 로그인 → 최고관리자로 들어가 두 탭 다 뜨던 문제의 근본 원인). */
+const __isAdminPage = false;   // 세션 분리 해제 → 앱↔관제센터 동일 세션
 
-const app = __isAdminPage
-  ? initializeApp(firebaseConfig, 'caroAdmin')
-  : initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
 const db = getFirestore(app);
