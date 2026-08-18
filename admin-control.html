@@ -100,6 +100,9 @@ button{font-family:inherit;cursor:pointer;}
   padding:7px 0;font-size:11.5px;font-weight:700;}
 .fb:hover{border-color:var(--gold);color:var(--gold-soft);}
 .fb.cur{background:var(--gold);color:#15161a;border-color:var(--gold);}
+.fb.half{font-size:10px;font-weight:600;border-style:dashed;opacity:.8;}
+.fb.half:hover{opacity:1;border-color:var(--gold);color:var(--gold-soft);}
+.fb.half.cur{opacity:1;border-style:solid;}
 .calfoot{display:flex;justify-content:center;padding:6px 16px 14px;}
 .creset{background:none;border:1px solid var(--bad);color:var(--bad);border-radius:8px;padding:6px 22px;font-size:12px;opacity:.85;}
 .creset:hover{opacity:1;}
@@ -384,12 +387,18 @@ $('sndbtn').onclick=function(){ soundOn=!soundOn;
   this.classList.toggle('on',soundOn); this.textContent=soundOn?'🔔 소리 켜짐':'🔔 소리 꺼짐';
   if(soundOn) beep(); };
 
-/* ── 층 보정 버튼 (B10~10F) ── */
+/* ── 층 보정 버튼 (B10~10F, 반층 0.5단위 포함) ── */
 (function(){ var g=$('calgrid'), h='';
-  for(var b=10;b>=1;b--) h+='<button class="fb" data-f="B'+b+'">B'+b+'</button>';
-  for(var f=1;f<=10;f++) h+='<button class="fb" data-f="'+f+'">'+f+'F</button>';
+  /* 지하10층(-9)부터 지상10층(10)까지 0.5단위로 = 정규층 + 반층 */
+  for(var f=-9; f<=10.0001; f+=0.5){
+    var ff=Math.round(f*2)/2;                     /* 부동소수 오차 방지(0.5 단위 정규화) */
+    var dataf=(ff>=1)?String(ff):('B'+(1-ff));    /* floorStr과 동일 규칙: 1.5→"1.5", 반지하 -0.5→"B1.5" */
+    var label=(ff>=1)?(ff+'F'):('B'+(1-ff));      /* 1.5→"1.5F", -0.5→"B1.5", 0.5→"B0.5" */
+    var isHalf=(ff%1!==0);                         /* 반층이면 작게 구분 표시 */
+    h+='<button class="fb'+(isHalf?' half':'')+'" data-f="'+dataf+'">'+label+'</button>';
+  }
   g.innerHTML=h;
-  g.onclick=function(e){ var f=e.target.getAttribute('data-f'); if(f) calSet(f); };
+  g.onclick=function(e){ var b=e.target.closest('.fb'); if(b){ var f=b.getAttribute('data-f'); if(f) calSet(f); } };
 })();
 
 /* ── 차량↔기기 매칭 (기기번호=차량번호 자동, carId/carName 우선) ── */
