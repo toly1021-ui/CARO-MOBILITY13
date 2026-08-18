@@ -319,6 +319,23 @@
   #em-noimg{color:var(--muted2);font-size:13px;}
   .efoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border);}
 
+  /* ★ 카로 앱(모바일) 전용 최적화 — 가로 넘침 제거, 고정 380px 컬럼/6칸 KPI를 폰에 맞춤 */
+  html,body{max-width:100%;overflow-x:hidden;}
+  @media (max-width:640px){
+    .topbar{flex-wrap:wrap;gap:8px;padding:10px 12px;}
+    .brand{gap:8px;}
+    .topright{gap:8px;flex-wrap:wrap;}
+    .conn{font-size:10px;}
+    .admin{padding:5px 9px;}
+    .tabs{gap:5px;margin:12px 0;overflow-x:auto;flex-wrap:wrap;}
+    .tab{padding:8px 12px;font-size:12.5px;}
+    .kpis{grid-template-columns:repeat(2,1fr);gap:9px;}
+    .ratebar{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .ratebar .ri:nth-child(2n){border-right:none;}
+    .grid{grid-template-columns:1fr;gap:12px;}
+    .diag-grid{grid-template-columns:1fr 1fr;}
+    .wrap,.container,.page{padding-left:12px;padding-right:12px;}
+  }
 </style>
 <script type="module" src="firebase-config.js?v=2"></script>
 </head>
