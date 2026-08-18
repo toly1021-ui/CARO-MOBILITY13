@@ -119,11 +119,18 @@
           }
         })();
 
-        /* 3. 서비스 워커 등록 (file:// 에서는 스킵) */
-        if('serviceWorker' in navigator && location.protocol !== 'file:'){
-          window.addEventListener('load',function(){
-            navigator.serviceWorker.register('./sw.js').catch(function(){});
-          });
+        /* 3. ★ 서비스워커 제거(캐시 문제 해결): 예전 sw.js가 옛 파일을 붙잡고 안 놔주던 문제 때문에,
+              서비스워커를 등록하지 않고, 이미 등록된 워커·캐시는 모두 지운다.
+              앱 WebView는 LOAD_NO_CACHE라 서비스워커 없이도 항상 최신 파일을 네트워크에서 받는다. */
+        if('serviceWorker' in navigator){
+          try{
+            navigator.serviceWorker.getRegistrations().then(function(rs){
+              var had=rs && rs.length;
+              rs.forEach(function(r){ r.unregister(); });
+              if(window.caches && caches.keys){ caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); }
+              if(had){ setTimeout(function(){ location.reload(); }, 400); }   /* 옛 워커 제거 직후 1회 새로고침 → 최신 로드 */
+            }).catch(function(){});
+          }catch(e){}
         }
 
         /* 4. iOS standalone 감지 */
