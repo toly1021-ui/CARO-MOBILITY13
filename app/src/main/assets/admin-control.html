@@ -74,6 +74,12 @@ button{font-family:inherit;cursor:pointer;}
 #map{width:100%;height:100%;}
 .mappill{position:absolute;left:12px;top:12px;z-index:20;font-size:12px;background:rgba(24,26,30,.88);
   border:1px solid var(--border2);padding:6px 12px;border-radius:9px;color:var(--gold-soft);backdrop-filter:blur(4px);}
+/* ★ 차량 따라가기(추적) 토글 버튼 */
+.followbtn{position:absolute;right:12px;top:12px;z-index:20;font-size:12px;font-weight:800;cursor:pointer;
+  background:rgba(24,26,30,.88);border:1px solid var(--border2);padding:6px 12px;border-radius:9px;
+  color:var(--txt);backdrop-filter:blur(4px);font-family:inherit;transition:.15s;}
+.followbtn.on{background:var(--gold);border-color:var(--gold);color:#15161a;}
+.followbtn:hover{border-color:var(--gold);}
 .livebar{display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--border);}
 .lv{padding:12px 8px;text-align:center;border-right:1px solid var(--border);}
 .lv:last-child{border-right:none;}
@@ -114,7 +120,21 @@ button{font-family:inherit;cursor:pointer;}
 .ev .tag.imp{background:rgba(224,112,94,.13);color:var(--bad);border:1px solid rgba(224,112,94,.35);}
 .ev .tag.spd{background:rgba(224,162,96,.13);color:var(--warn);border:1px solid rgba(224,162,96,.35);}
 .ev .tag.flr{background:rgba(91,150,224,.13);color:var(--use);border:1px solid rgba(91,150,224,.35);}
+/* ★ 충격 구분: 주행중(호박색) vs 주차중(강한 적색·뺑소니 의심) */
+.ev .tag.drive{background:rgba(224,162,96,.15);color:var(--warn);border:1px solid rgba(224,162,96,.45);}
+.ev .tag.park{background:rgba(224,64,64,.18);color:#ff7a68;border:1px solid rgba(224,64,64,.55);}
+.ev.danger{background:rgba(224,64,64,.06);border-left:3px solid #e04040;}
 .ev .ts{margin-left:auto;color:var(--muted2);font-size:11px;font-family:'Saira';}
+/* ★ 일자 선택 바 (이벤트/주행기록 공통) */
+.logdate{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px;}
+.logdate input[type=date]{background:var(--panel2);border:1px solid var(--border2);color:var(--txt);
+  border-radius:8px;padding:6px 10px;font-size:12.5px;font-family:inherit;color-scheme:dark;}
+.logdate input[type=date]:focus{outline:none;border-color:var(--gold);}
+.dnav{background:none;border:1px solid var(--border2);color:var(--muted);border-radius:7px;padding:6px 11px;
+  font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;transition:.15s;}
+.dnav:hover{border-color:var(--gold);color:var(--gold-soft);}
+.dnav.today{border-color:var(--gold);color:var(--gold-soft);}
+.dsum{margin-left:auto;font-size:12px;color:var(--muted2);font-family:'Noto Sans KR';}
 .tlog{width:100%;border-collapse:collapse;font-size:12px;}
 .tlog th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-size:10.5px;letter-spacing:1px;
   padding:9px 10px;text-align:left;border-bottom:1px solid var(--border2);}
@@ -175,6 +195,34 @@ button{font-family:inherit;cursor:pointer;}
   .kpis{grid-template-columns:repeat(2,1fr);}
   .mapbox{height:45vh;}
 }
+/* ★ 카로 앱(모바일) 전용 최적화 — 헤더 세로쌓임/가로넘침 제거, 카드·지도 폰 화면에 맞춤 */
+html,body{max-width:100%;overflow-x:hidden;}
+@media (max-width:640px){
+  .topbar{flex-wrap:wrap;gap:8px 10px;padding:10px 12px;}
+  .logo{font-size:15px;letter-spacing:1px;}
+  .logo small{letter-spacing:2px;font-size:8px;margin-top:0;}
+  .clock{margin-left:auto;font-size:12px;}
+  .sync{font-size:9px;padding:3px 7px;letter-spacing:.3px;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .adm{display:none;}                                   /* 폭 부족 → 관리자 라벨 숨김 */
+  .lgout{padding:5px 10px;font-size:11px;}
+  .navtabs{order:9;width:100%;margin-left:0;gap:8px;}    /* 탭을 아랫줄 전체폭으로 */
+  .ntab{flex:1;text-align:center;padding:9px 0;font-size:13px;}
+  .kpis{grid-template-columns:repeat(2,1fr);gap:9px;padding:12px 12px 0;}
+  .kpi{padding:12px 13px;border-radius:12px;}
+  .kpi .vl{font-size:22px;}
+  .kpi .lb{font-size:10px;letter-spacing:1px;}
+  .main{padding:10px 12px;gap:10px;}
+  .bottom{padding:0 12px 16px;gap:10px;}
+  .mapbox{height:52vh;min-height:300px;}
+  .livebar{grid-template-columns:repeat(3,1fr);}         /* 6칸 → 3칸 2줄 */
+  .lv{padding:10px 6px;}
+  .ctrl{grid-template-columns:1fr 1fr;}
+  .logdate{gap:6px;flex-wrap:wrap;}
+  .dsum{margin-left:0;width:100%;}
+  .followbtn{font-size:11px;padding:5px 9px;top:8px;right:8px;}
+  .mappill{font-size:11px;left:8px;top:8px;padding:5px 9px;max-width:60vw;}
+  .loglist,.tscroll{max-height:340px;}
+}
 </style>
 </head>
 <body>
@@ -223,7 +271,7 @@ button{font-family:inherit;cursor:pointer;}
 
   <!-- 중앙: 지도 + 라이브 -->
   <div class="card">
-    <div class="mapbox"><div id="map"></div><div class="mappill" id="mappill">차량 선택</div></div>
+    <div class="mapbox"><div id="map"></div><div class="mappill" id="mappill">차량 선택</div><button class="followbtn on" id="followBtn" onclick="toggleFollow()">🎯 따라가기 ON</button></div>
     <div class="livebar">
       <div class="lv"><div class="k">상태</div><div class="v" id="lv-move">—</div></div>
       <div class="lv"><div class="k">속도</div><div class="v gold" id="lv-spd">—</div></div>
@@ -258,6 +306,13 @@ button{font-family:inherit;cursor:pointer;}
 </div>
 
 <div class="bottom">
+  <div class="logdate">
+    <button class="dnav" onclick="shiftDate(-1)">◀ 어제</button>
+    <input type="date" id="logDate" onchange="onDateChange()">
+    <button class="dnav" onclick="shiftDate(1)">내일 ▶</button>
+    <button class="dnav today" onclick="goToday()">오늘</button>
+    <span class="dsum" id="dsum"></span>
+  </div>
   <div class="card">
     <h3><span class="dot"></span>이벤트 알림 <button class="sndbtn" id="sndbtn">🔔 소리 꺼짐</button></h3>
     <div class="loglist" id="evlist"></div>
@@ -282,16 +337,31 @@ var ADMIN_EMAIL='caro.mobility.official@gmail.com';
 var FLEET=[], DEV={}, IDMAP={}, selId=null;
 var soundOn=false, alertsToday=0, evPrev={};
 var TELE=[], EVTS=[];
+var selDate=null;   /* 조회 중인 날짜 'YYYY-MM-DD' (기본=오늘) */
+function _pad(n){ return (n<10?'0':'')+n; }
+function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+_pad(d.getMonth()+1)+'-'+_pad(d.getDate()); }
+function dayBounds(dstr){ var p=(dstr||todayStr()).split('-'); var y=+p[0],m=+p[1]-1,d=+p[2];
+  return [new Date(y,m,d,0,0,0,0), new Date(y,m,d+1,0,0,0,0)]; }   /* 로컬 자정~다음날 자정 */
+function syncDateInput(){ var di=$('logDate'); if(di) di.value=selDate; }
+function onDateChange(){ var di=$('logDate'); if(di&&di.value){ selDate=di.value; subLogs(); } }
+function shiftDate(delta){ var b=dayBounds(selDate); var d=new Date(b[0]); d.setDate(d.getDate()+delta);
+  selDate=d.getFullYear()+'-'+_pad(d.getMonth()+1)+'-'+_pad(d.getDate()); syncDateInput(); subLogs(); }
+function goToday(){ selDate=todayStr(); syncDateInput(); subLogs(); }
 var $=function(id){return document.getElementById(id);};
 
 /* ── 시계 (텍스트만 갱신: 부하 0) ── */
 setInterval(function(){ $('clock').textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false}); },1000);
 
+/* ── 운영관리 오버레이 top을 헤더 실제 높이에 자동 정렬(모바일에서 헤더가 2줄로 커져도 안 겹침) ── */
+function syncOpsTop(){ try{ var tb=document.querySelector('.topbar'), ov=$('opsview');
+  if(tb&&ov) ov.style.top=tb.offsetHeight+'px'; }catch(e){} }
+window.addEventListener('resize', syncOpsTop);
 /* ── 탭 전환: 실시간 관제 ↔ 운영 관리(기존 시스템 내장) ── */
 function switchView(v){
   var ops=(v==='ops');
   $('nt-live').classList.toggle('on',!ops);
   $('nt-ops').classList.toggle('on',ops);
+  syncOpsTop();
   $('opsview').style.display=ops?'block':'none';
   var fr=$('opsframe');
   if(ops && !fr.src){ fr.src='admin-ops.html'; }   /* 첫 진입 때만 로드(관제 성능에 영향 없음) */
@@ -371,10 +441,10 @@ function wardHtml(v,sel){
 }
 function mapInit(){
   if(window.kakao&&kakao.maps){ kakao.maps.load(function(){
-    kmap=new kakao.maps.Map($('map'),{center:new kakao.maps.LatLng(37.4663,126.678),level:4}); mapKind='kakao'; mapDraw(); });
+    kmap=new kakao.maps.Map($('map'),{center:new kakao.maps.LatLng(37.4663,126.678),level:4}); mapKind='kakao'; mapDraw(); bindMapDrag(); });
   } else { lmap=L.map('map').setView([37.4663,126.678],15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(lmap);
-    mapKind='leaflet'; mapDraw(); }
+    mapKind='leaflet'; mapDraw(); bindMapDrag(); }
 }
 var lastSel=null;
 function mapDraw(){
@@ -411,13 +481,31 @@ function mapDraw(){
     var chg=(selId!==lastSel); lastSel=selId;
     try{
       if(mapKind==='kakao'){ var kp=new kakao.maps.LatLng(selPos[0],selPos[1]);
-        if(chg){ kmap.setCenter(kp); kmap.setLevel(3); }              // 차량 선택 시에만 중앙+줌
-        else if(live){ var b=kmap.getBounds(); if(b && !b.contain(kp)) kmap.setCenter(kp); }  // ★ 화면 밖으로 나갔을 때만 따라감(줌·이동 자유)
+        if(chg){ kmap.setCenter(kp); kmap.setLevel(3); }              // 차량 선택 시엔 중앙+줌
+        else if(followMode && live){ kmap.panTo(kp); }               // ★ 따라가기 ON → 이동할 때마다 차량을 중앙으로 부드럽게 추적
+        else if(live){ var b=kmap.getBounds(); if(b && !b.contain(kp)) kmap.setCenter(kp); }  // 따라가기 OFF → 화면 밖 나갔을 때만
       }
       else{ if(chg){ lmap.setView(selPos,16); }
-        else if(live){ if(!lmap.getBounds().contains(selPos)) lmap.panTo(selPos); } }        // ★ 화면 밖일 때만
+        else if(followMode && live){ lmap.panTo(selPos); }           // ★ 따라가기 ON
+        else if(live){ if(!lmap.getBounds().contains(selPos)) lmap.panTo(selPos); } }   // OFF → 화면 밖일 때만
     }catch(e){}
   }
+}
+/* ═══════════ 차량 따라가기(추적) 토글 ═══════════
+   ON  : 차량이 이동하면 지도가 계속 중앙에 두고 부드럽게 따라감(운행 감시용)
+   OFF : 자유롭게 확대/이동해서 주변을 살펴볼 수 있음(화면 밖으로 나가면 그때만 복귀)
+   사용자가 지도를 직접 드래그하면 자동으로 OFF로 전환 → 마음대로 보다가 다시 켜면 됨. */
+var followMode=true;
+function toggleFollow(){ setFollow(!followMode); if(followMode) mapDraw(); }
+function setFollow(on){
+  followMode=on;
+  var b=$('followBtn'); if(b){ b.textContent=on?'🎯 따라가기 ON':'🎯 따라가기 OFF'; b.classList.toggle('on',on); }
+}
+function bindMapDrag(){
+  try{
+    if(mapKind==='kakao'&&kmap){ kakao.maps.event.addListener(kmap,'dragstart',function(){ if(followMode) setFollow(false); }); }
+    else if(mapKind==='leaflet'&&lmap){ lmap.on('dragstart',function(){ if(followMode) setFollow(false); }); }
+  }catch(e){}
 }
 
 /* ═══════════ 렌더 (스냅샷 도착 시에만) ═══════════ */
@@ -584,26 +672,50 @@ function subLogs(){
   if(unT){unT();unT=null;} if(unE){unE();unE=null;}
   TELE=[]; EVTS=[]; drawLogs();
   if(!dev||!FN.query) return;
+  if(!selDate) selDate=todayStr();
+  syncDateInput();
+  var b=dayBounds(selDate);                       /* 선택 날짜 하루치만 서버에서 조회 */
   try{
-    unT=FN.onSnapshot(FN.query(FN.collection(db,'devices',dev,'telemetry'),FN.orderBy('ts','desc'),FN.limit(150)),
-      function(s){ TELE=[]; s.forEach(function(d){ TELE.push(d.data()||{}); }); drawLogs(); });
-    unE=FN.onSnapshot(FN.query(FN.collection(db,'devices',dev,'events'),FN.orderBy('ts','desc'),FN.limit(60)),
-      function(s){ EVTS=[]; s.forEach(function(d){ EVTS.push(d.data()||{}); }); drawLogs(); });
+    unT=FN.onSnapshot(FN.query(FN.collection(db,'devices',dev,'telemetry'),
+        FN.where('ts','>=',b[0]),FN.where('ts','<',b[1]),FN.orderBy('ts','desc'),FN.limit(2000)),
+      function(s){ TELE=[]; s.forEach(function(d){ TELE.push(d.data()||{}); }); drawLogs(); },
+      function(err){ console.warn('tele',err); });
+    unE=FN.onSnapshot(FN.query(FN.collection(db,'devices',dev,'events'),
+        FN.where('ts','>=',b[0]),FN.where('ts','<',b[1]),FN.orderBy('ts','desc'),FN.limit(500)),
+      function(s){ EVTS=[]; s.forEach(function(d){ EVTS.push(d.data()||{}); }); drawLogs(); },
+      function(err){ console.warn('evts',err); });
   }catch(e){ console.warn('logs',e); }
 }
 function fmtTs(t){ try{ var d=t&&t.toDate?t.toDate():null; if(!d)return '—';
   return (d.getMonth()+1)+'/'+d.getDate()+' '+d.toLocaleTimeString('ko-KR',{hour12:false}); }catch(e){ return '—'; } }
+/* 충격이 주행중이었는지 주차중이었는지 판별.
+   1순위: 펌웨어가 기록한 moving 플래그(v41+). 2순위(구버전 폴백): 속도>2km/h면 주행, 아니면 주차 추정. */
+function impactMode(e){
+  if(e.moving===true) return 'drive';
+  if(e.moving===false) return 'park';
+  if(e.speed!=null && Number(e.speed)>2) return 'drive';
+  return 'park';   /* 속도 0이거나 없음(실내 주차 등) → 주차중으로 추정 */
+}
 function drawLogs(){
-  var eh='';
+  var eh='', parkHits=0;
   EVTS.forEach(function(e){
-    var tag=e.event==='impact'?'<span class="tag imp">충격</span>':
-            e.event==='overspeed'?'<span class="tag spd">과속</span>':'<span class="tag flr">층</span>';
-    var tx=e.event==='impact'?((e.shock!=null?e.shock.toFixed(2):'?')+'g 충격'):
-           e.event==='overspeed'?(Math.round(e.speed||0)+'km/h 과속'):
-           (floorStr(num(e.floor))+' 이동');
-    eh+='<div class="ev">'+tag+'<span>'+tx+'</span><span class="ts">'+fmtTs(e.ts)+'</span></div>';
+    var row;
+    if(e.event==='impact'){
+      var mode=impactMode(e), park=(mode==='park'); if(park) parkHits++;
+      var g=(e.shock!=null?Number(e.shock).toFixed(2):'?');
+      var tag='<span class="tag imp '+(park?'park':'drive')+'">'+(park?'주차중충격':'주행중충격')+'</span>';
+      var tx=park?('🅿️ 주차중 '+g+'g 충격 · 뺑소니 의심'):('🚗 주행중 '+g+'g 충격');
+      row='<div class="ev'+(park?' danger':'')+'">'+tag+'<span>'+tx+'</span><span class="ts">'+fmtTs(e.ts)+'</span></div>';
+    } else if(e.event==='overspeed'){
+      row='<div class="ev"><span class="tag spd">과속</span><span>'+(Math.round(e.speed||0)+'km/h 과속')+'</span><span class="ts">'+fmtTs(e.ts)+'</span></div>';
+    } else {
+      row='<div class="ev"><span class="tag flr">층</span><span>'+(floorStr(num(e.floor))+' 이동')+'</span><span class="ts">'+fmtTs(e.ts)+'</span></div>';
+    }
+    eh+=row;
   });
-  $('evlist').innerHTML=eh||'<div style="padding:18px;color:var(--muted);font-size:12px;">이벤트 없음</div>';
+  $('evlist').innerHTML=eh||'<div style="padding:18px;color:var(--muted);font-size:12px;">이 날짜엔 이벤트가 없습니다</div>';
+  var ds=$('dsum'); if(ds){ ds.innerHTML=(selDate||'')+' · 이벤트 '+EVTS.length+'건 · 주행 '+TELE.length+'건'
+    +(parkHits>0?' · <b style="color:#ff7a68;">🅿️ 주차중 충격 '+parkHits+'건 확인요망</b>':''); }
   var th='';
   TELE.forEach(function(t){
     th+='<tr><td>'+fmtTs(t.ts)+'</td><td>'+floorStr(num(t.floor))+'</td>'
@@ -613,16 +725,17 @@ function drawLogs(){
       +'<td>'+(t.shock!=null?Number(t.shock).toFixed(2)+'g':'—')+'</td>'
       +'<td>'+(t.lat!=null?(Number(t.lat).toFixed(5)+', '+Number(t.lng).toFixed(5)):'—')+'</td></tr>';
   });
-  $('tbody').innerHTML=th||'<tr><td colspan="7" style="color:var(--muted);">기록 없음</td></tr>';
+  $('tbody').innerHTML=th||'<tr><td colspan="7" style="color:var(--muted);">이 날짜엔 주행 기록이 없습니다</td></tr>';
 }
 function csvExport(){
-  var rows=[['시각','종류','층','고도(m)','방향(deg)','속도(km/h)','충격(g)','위도','경도']];
-  EVTS.forEach(function(e){ rows.push([fmtTs(e.ts),e.event||'',floorStr(num(e.floor)),e.alt!=null?e.alt:'',e.heading!=null?Math.round(e.heading):'',e.speed!=null?e.speed:'',e.shock!=null?e.shock:'',e.lat!=null?e.lat:'',e.lng!=null?e.lng:'']); });
-  TELE.forEach(function(t){ rows.push([fmtTs(t.ts),'주기',floorStr(num(t.floor)),t.alt!=null?t.alt:'',t.heading!=null?Math.round(t.heading):'',t.speed!=null?t.speed:'',t.shock!=null?t.shock:'',t.lat!=null?t.lat:'',t.lng!=null?t.lng:'']); });
+  var rows=[['시각','종류','충격구분','층','고도(m)','방향(deg)','속도(km/h)','충격(g)','위도','경도']];
+  EVTS.forEach(function(e){ var cls=e.event==='impact'?(impactMode(e)==='park'?'주차중':'주행중'):'';
+    rows.push([fmtTs(e.ts),e.event||'',cls,floorStr(num(e.floor)),e.alt!=null?e.alt:'',e.heading!=null?Math.round(e.heading):'',e.speed!=null?e.speed:'',e.shock!=null?e.shock:'',e.lat!=null?e.lat:'',e.lng!=null?e.lng:'']); });
+  TELE.forEach(function(t){ rows.push([fmtTs(t.ts),'주기','',floorStr(num(t.floor)),t.alt!=null?t.alt:'',t.heading!=null?Math.round(t.heading):'',t.speed!=null?t.speed:'',t.shock!=null?t.shock:'',t.lat!=null?t.lat:'',t.lng!=null?t.lng:'']); });
   var csv='﻿'+rows.map(function(r){return r.join(',');}).join('\n');
   var a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
-  a.download=(devOf()||'CARO')+'_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.csv';
+  a.download=(devOf()||'CARO')+'_'+(selDate||todayStr()).replace(/-/g,'')+'.csv';
   a.click();
 }
 

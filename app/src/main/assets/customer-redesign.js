@@ -2450,7 +2450,7 @@
         if(ex){
           var d=snap.data()||{};
           var pm=d.perms||{};
-          var hasAny=['cars','pricing','notices','resv'].some(function(k){ return pm[k]; });
+          var hasAny=['control','ops','cars','pricing','notices','resv'].some(function(k){ return pm[k]; });  /* ★ 권한 단순화(control/ops) 반영 — 옛 키만 보던 탓에 control/ops 부여해도 앱에서 '권한없음'으로 뜨던 버그 수정 */
           if(d.active!==false && hasAny){ perms=pm; isStaff=true; }
           else { perms=null; isStaff=false; }
         } else { perms=null; isStaff=false; }
@@ -7429,4 +7429,56 @@
   [600,1500,3000].forEach(function(t){ setTimeout(installReserveGuards,t); });
 
   console.log('[프로] ✅ 완성도 패치 v1 (네트워크·빈화면 CTA·이용 준비 카드·예약 차단)');
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   [권한분리] 앱 관리자 모드 = 운영 관리. 실시간 관제(지도)는 웹 대시보드.
+   · 운영(ops) 권한  → 운영 섹션(차량·요금·예약·공지 등) 표시
+   · 관제(control)   → 상단에 '🛰 실시간 관제센터 열기' 버튼 표시 → admin-control.html 로 이동
+   · 최고관리자      → 둘 다
+   caroCan()이 지금까지 어디에도 안 쓰여서 모두에게 전부 보이던 문제를 여기서 실제로 적용.
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  function can(p){ try{ return !!(window.caroCan && window.caroCan(p)); }catch(e){ return false; } }
+  function ensureCtrlEntry(show){
+    var body=document.querySelector('#dev-screen .dev-body');
+    var sec=document.getElementById('caro-ctrl-entry');
+    if(!show){ if(sec) sec.style.display='none'; return; }
+    if(!body) return;
+    if(!sec){
+      sec=document.createElement('div'); sec.className='dev-section'; sec.id='caro-ctrl-entry';
+      sec.innerHTML='<div class="dev-section-title">실시간 관제</div>'
+        +'<div class="dev-card">'
+        +'<button class="dev-btn dev-full-btn" id="caro-ctrl-open" '
+        +'style="background:rgba(200,169,110,.14);border:1px solid rgba(200,169,110,.42);color:#dcc28f;font-weight:800;">'
+        +'🛰 실시간 관제센터 열기 (지도·원격제어)</button>'
+        +'<div style="font-size:.7rem;color:#8a8f98;margin-top:8px;line-height:1.5;">'
+        +'차량 실시간 위치·경로 추적, 원격 잠금/해제, 층·기기 진단</div></div>';
+      body.insertBefore(sec, body.firstChild);   // 맨 위에
+      var ob=document.getElementById('caro-ctrl-open');
+      if(ob) ob.onclick=function(){ try{ location.href='admin-control.html'; }catch(e){} };
+    }
+    sec.style.display='';
+  }
+  function apply(){
+    if(!document.getElementById('dev-screen')) return;
+    var canOps=can('ops'), canControl=can('control');
+    var secs=document.querySelectorAll('#dev-screen .dev-body > .dev-section');
+    for(var i=0;i<secs.length;i++){
+      var s=secs[i];
+      if(s.id==='caro-ctrl-entry') continue;               // 내가 만든 관제 버튼은 별도 처리
+      var t=((s.querySelector('.dev-section-title')||{}).textContent)||'';
+      if(/권한|버전/.test(t)) continue;                    // 버전·권한 섹션은 유지(직원관리는 내부에서 최고관리자만)
+      s.style.display = canOps ? '' : 'none';               // 운영 섹션: ops 권한 있을 때만
+    }
+    ensureCtrlEntry(canControl);                            // 관제 버튼: control 권한 있을 때만
+  }
+  window.__caroApplyDevPerms=apply;
+  var _r=window.renderDevScreen;
+  window.renderDevScreen=function(){ try{ if(_r) _r.apply(this,arguments); }catch(e){} setTimeout(apply,60); };
+  /* dev-screen 진입·권한 로드 지연 대비 재적용 */
+  [400,1200,2500,4000].forEach(function(t){ setTimeout(apply,t); });
+  var _tries=0, _iv=setInterval(function(){ _tries++; if(_tries>30){ clearInterval(_iv); return; }
+    if(document.getElementById('dev-screen')) apply(); }, 900);
+  console.log('[앱권한] ✅ 관리자 모드 관제/운영 분리 적용 (ops=운영섹션 / control=관제버튼)');
 })();
