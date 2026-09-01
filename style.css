@@ -1999,24 +1999,18 @@ video::-webkit-media-controls-panel{display:none !important;}
 .csd-step-list li {
   counter-increment: csd-step;
   position: relative;
-  padding: 10px 0 10px 36px;
+  padding: 10px 0 10px 20px;
   border-bottom: 1px dashed var(--border);
 }
 .csd-step-list li:last-child { border-bottom: none; }
 .csd-step-list li::before {
-  content: counter(csd-step);
+  /* ★ FIX: 큰 검은 원 → 작은 불릿 점(8px)으로 축소 */
+  content: '';
   position: absolute;
-  left: 0; top: 12px;
-  width: 24px; height: 24px;
+  left: 2px; top: 17px;
+  width: 8px; height: 8px;
   background: var(--accent);
-  color: #18191c;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Oswald', sans-serif;
-  font-size: .72rem;
-  font-weight: 600;
 }
 .csd-step-title {
   font-weight: 600;
@@ -4589,3 +4583,5 @@ select:focus{
 .apd-card-default-badge{ background:rgba(103,112,124,.14); }
 .apd-credit-label{ color:var(--p1-accent-d); }
 .apd-credit-amount small{ color:var(--p1-accent-d); }
+/* ★ FIX: 고객센터 도움말 목록 마지막 줄 하단 선 제거 */
+.csx-faq .it:last-child{border-bottom:0 !important;}

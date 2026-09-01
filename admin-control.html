@@ -251,7 +251,7 @@ html,body{max-width:100%;overflow-x:hidden;}
   <span class="sync off" id="sync">CONNECTING…</span>
   <span class="clock" id="clock">--:--:--</span>
   <span class="adm" id="adm">—</span>
-  <button class="lgout" id="lgout">로그아웃</button>
+  <button class="lgout" id="lgout">나가기</button>
 </div>
 
 <!-- 운영 관리 (요금·예약·회원·공지·정산 — 기존 시스템 전체 내장) -->
@@ -807,7 +807,8 @@ function waitAuth(n){
   }
   $('g-btn').addEventListener('click',doLogin);
   $('g-pw').addEventListener('keydown',function(e){ if(e.key==='Enter')doLogin(); });
-  $('lgout').addEventListener('click',function(){ FN.signOut(A); location.reload(); });
+  /* ★ FIX: '나가기' — signOut 금지(공유 세션 보호). 앱 대기화면으로 복귀. iframe이면 부모가 처리. */
+  $('lgout').addEventListener('click',function(){ try{ if(window.top!==window.self){ window.parent.postMessage('caro-admin-exit','*'); return; } }catch(e){} location.href='index.html'; });
   /* 비밀번호 재설정: 아이디 칸의 계정(별명이면 최고관리자 이메일)으로 재설정 메일 발송 */
   $('g-reset').addEventListener('click',function(){
     var em=$('g-em').value.trim();
@@ -824,5 +825,6 @@ function waitAuth(n){
 }
 waitAuth();
 </script>
+<script src="caro-icons.js?v=1"></script>
 </body>
 </html>

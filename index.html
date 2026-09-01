@@ -91,7 +91,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
     <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
 
-    <link rel="stylesheet" href="style.css?v=7"/>
+    <link rel="stylesheet" href="style.css?v=8"/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -741,6 +741,10 @@
                     <span class="mpn-item-label">계정 연동 설정</span>
                     <span class="mpn-item-arrow">›</span>
                 </div>
+                <div class="mpn-item" onclick="openMpDetail('면허증')">
+                    <span class="mpn-item-label">운전면허증</span>
+                    <span class="mpn-item-arrow">›</span>
+                </div>
                 <div class="mpn-item mpn-item-last" onclick="openMpDetail('요금제 해지/변경')">
                     <span class="mpn-item-label">요금제 해지/변경</span>
                     <span class="mpn-item-arrow">›</span>
@@ -989,7 +993,7 @@
                 </div>
                 <div class="input-group flex1">
                     <label class="input-label">CVC</label>
-                    <input type="tel" id="pi-card-cvc" class="form-input" placeholder="000" maxlength="3" oninput="fmtCardCvc(this)"/>
+                    <input type="tel" id="pi-card-cvc" class="form-input" placeholder="000(0)" maxlength="4" oninput="fmtCardCvc(this)"/>
                 </div>
             </div>
             <div class="input-group">
@@ -1420,7 +1424,7 @@
                 </div>
                 <div class="input-group flex1">
                     <label class="input-label">CVC</label>
-                    <input type="text" id="ac-cvc" class="form-input" placeholder="000" maxlength="3"/>
+                    <input type="text" id="ac-cvc" class="form-input" placeholder="000(0)" maxlength="4"/>
                 </div>
             </div>
             <div class="input-group">
@@ -1747,10 +1751,7 @@
                     <span class="dev-label">현재 버전</span>
                     <span id="dev-version" style="color:rgba(91,200,255,.8);font-size:.82rem;">v3.0.0</span>
                 </div>
-                <div class="dev-row">
-                    <input class="dev-input" id="dev-new-version" placeholder="새 버전 (예: v3.1.0)"/>
-                    <button class="dev-btn" onclick="devUpdateVersion()">업데이트</button>
-                </div>
+                <!-- ★ FIX: '버전 업데이트' 수동 기능 제거 (최고관리자·권한부여만 유지) -->
             </div>
         </div>
 
@@ -1980,10 +1981,12 @@
 
 <!-- ══ Firebase SDK ══ -->
 <script type="module" src="firebase-config.js?v=4"></script>
-<script src="script.js?v=11"></script>
+<script src="script.js?v=12"></script>
 <script src="script-photo-upload.js?v=5"></script>
 <script src="customer-notices.js?v=8"></script>
-<script src="customer-redesign.js?v=168"></script>
+<script src="customer-redesign.js?v=169"></script>
+<script src="caro-sync-fix.js?v=1"></script>
+<script src="caro-icons.js?v=1"></script>
 <!-- ══ 드럼롤 날짜/시간 피커 ══ -->
 <div class="drum-overlay" id="drum-overlay" onclick="closeDrumPicker()">
     <div class="drum-sheet" id="drum-sheet">

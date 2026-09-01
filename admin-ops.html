@@ -285,6 +285,15 @@
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);padding:11px 20px;border-radius:11px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   @media (max-width:1200px){ .kpis{grid-template-columns:repeat(3,1fr);} }
+  /* ★ 가로회전(landscape) 모드 — 낮은 높이 화면 최적화 */
+  @media (orientation:landscape) and (max-height:560px){
+    .wrap{padding:10px;}
+    .kpis{grid-template-columns:repeat(6,1fr);gap:8px;}
+    .grid{grid-template-columns:1fr 320px;gap:10px;}
+  }
+  @media (orientation:portrait) and (max-width:820px){
+    .grid{grid-template-columns:1fr;}
+  }
   @media (max-width:720px){ .grid{grid-template-columns:1fr;} .kpis{grid-template-columns:repeat(2,1fr);} }
   #loginGate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:radial-gradient(1000px 600px at 50% -10%, var(--halo), transparent 60%), var(--bg);}
   .login-card{width:340px;max-width:90vw;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:30px 28px;box-shadow:0 24px 60px rgba(40,48,58,.18);}
@@ -393,7 +402,7 @@
         <span class="av">C</span>
         <span class="nm" id="adminNm">관리자<small id="adminEmail">—</small></span>
       </div>
-      <button class="logout-btn" id="logoutBtn">로그아웃</button>
+      <button class="logout-btn" id="logoutBtn">나가기</button>
     </div>
   </div>
   <!-- TABS -->
@@ -1867,7 +1876,8 @@
     });
     document.getElementById('lg-btn').addEventListener('click', doLogin);
     document.getElementById('lg-pw').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-    document.getElementById('logoutBtn').addEventListener('click', function(){ FN.signOut(A); location.reload(); });
+    /* ★ FIX: 관리자 '나가기' — signOut 금지(고객 앱과 세션 공유라 로그아웃하면 앱 데이터까지 끊김). 대기화면으로 복귀만. */
+    document.getElementById('logoutBtn').addEventListener('click', function(){ location.href='index.html'; });
   }
   // ── init ──
   renderKPIs(); renderFleet(); resizeChart(); renderLive();
@@ -1891,5 +1901,6 @@
 <script src="admin-force-return.js?v=1"></script>
 <script src="admin-debt.js?v=2"></script>
 <script src="admin-pricing.js?v=9"></script>
+<script src="caro-icons.js?v=1"></script>
 </body>
 </html>
