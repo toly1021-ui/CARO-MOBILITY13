@@ -91,7 +91,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
     <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
 
-    <link rel="stylesheet" href="style.css?v=16"/>
+    <link rel="stylesheet" href="style.css?v=17"/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -601,13 +601,13 @@
     <div class="myres-title-row">
         <span class="myres-main-title" data-i18n="menu_my_reserve">예약 확인</span>
     </div>
-    <div class="myres-body" id="my-reservation-list" style="padding-bottom:128px;">
+    <div class="myres-body" id="my-reservation-list" style="padding-bottom:12px;">
         <div class="empty-reservation">
             <div class="empty-icon">📋</div>
             <div class="empty-text" data-i18n="no_reservation">예약 내역이 없습니다</div>
         </div>
     </div>
-    <button onclick="goTo('home-screen')" style="position:fixed;left:16px;right:16px;bottom:calc(16px + var(--sab,0px));height:52px;background:var(--accent,#18191c);color:#fff;border:0;border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;z-index:901;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);cursor:pointer;">← 뒤로</button>
+    <button onclick="goTo('home-screen')" style="position:relative;z-index:2;display:block;flex:none;width:calc(100% - 36px);max-width:444px;margin:0 auto calc(24px + var(--sab,0px));height:52px;background:var(--accent,#18191c);color:#fff;border:0;border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);cursor:pointer;">← 뒤로</button>
 </div>
 
 <!-- ══ USAGE DETAIL MODAL ══ -->
@@ -1985,7 +1985,7 @@
 <script src="script-photo-upload.js?v=5"></script>
 <script src="customer-notices.js?v=8"></script>
 <script src="customer-redesign.js?v=170"></script>
-<script src="caro-sync-fix.js?v=7"></script>
+<script src="caro-sync-fix.js?v=8"></script>
 <script src="caro-icons.js?v=1"></script>
 <!-- ══ 드럼롤 날짜/시간 피커 ══ -->
 <div class="drum-overlay" id="drum-overlay" onclick="closeDrumPicker()">
@@ -2145,7 +2145,7 @@
                 <div class="it" onclick="window.__csBack='cs-screen';goToCsDetail(4)"><div class="fic"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8"/><path d="M20 4v4h-4"/><path d="M20 12a8 8 0 0 1-13.7 5.6L4 16"/><path d="M4 20v-4h4"/></svg></div><div class="fl">반납 및 연장</div><div class="fc">›</div></div>
             </div>
         </div>
-        <button onclick="goTo('home-screen')" style="position:fixed;left:16px;right:16px;bottom:calc(74px + var(--sab,0px));height:52px;background:var(--accent,#18191c);color:#fff;border:0;border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;z-index:901;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);cursor:pointer;">← 뒤로</button>
+        <button onclick="goTo('home-screen')" style="position:relative;z-index:2;display:block;flex:none;margin:14px 16px calc(18px + var(--sab,0px));height:52px;background:var(--accent,#18191c);color:#fff;border:0;border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);cursor:pointer;">← 뒤로</button>
     </div>
 </div>
 

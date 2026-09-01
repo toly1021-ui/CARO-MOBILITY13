@@ -182,27 +182,6 @@ window.caroOpenExtraDriver=function(){
   };
 };
 
-/* ═══ 3.5 '뒤로' 글씨 버튼 — 화면 맨 아래 고정 ═══ */
-(function(){
-  var RE=/^(←\s*)?(뒤로(가기)?|back)$/i;
-  function dock(){
-    try{
-      document.querySelectorAll('button').forEach(function(b){
-        if(b.classList.contains('caro-back-dock')) return;
-        if(b.closest('#caro-mr-ov,#caro-mrd-ov')) return; /* 월렌트는 이미 정상 */
-        var t=(b.textContent||'').replace(/\s+/g,' ').trim();
-        if(!RE.test(t)) return;
-        b.classList.add('caro-back-dock');
-        var scr=b.closest('.screen');
-        if(scr && !scr.dataset.caroBackPad){ scr.dataset.caroBackPad='1'; scr.style.paddingBottom='72px'; }
-      });
-    }catch(e){}
-  }
-  dock();
-  document.addEventListener('DOMContentLoaded',dock);
-  setInterval(dock,1200);
-})();
-
 /* ═══ 4. 운전면허 진위확인 프레임 ═══
    지금은 '형식 검증'만 수행. 기관(도로교통공단 등) API 사용 허가가 나면
    아래 CARO_LICENSE_API 세 값만 채우면 실제 진위확인이 자동 활성화됨. */
