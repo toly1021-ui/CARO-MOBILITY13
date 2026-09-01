@@ -4586,10 +4586,8 @@ select:focus{
 /* ★ FIX: 고객센터 도움말 목록 마지막 줄 하단 선 제거 */
 .csx-faq .it:last-child{border-bottom:0 !important;}
 
-
-
-/* ★ FIX: '뒤로' 글씨 버튼 전부 — 스크롤과 무관하게 항상 화면 맨 아래 고정.
-   좌우는 원래대로(양쪽 16px), 상하 간격만 최소화. */
+/* ★ '뒤로' 글씨 버튼 — 스크롤과 무관하게 항상 화면 맨 아래 고정.
+   좌우는 원래대로(양쪽 16px). */
 .caro-back-dock{
   position:fixed !important;
   left:16px !important;

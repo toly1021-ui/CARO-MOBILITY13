@@ -182,9 +182,7 @@ window.caroOpenExtraDriver=function(){
   };
 };
 
-/* ═══ 3.5 '뒤로' 글씨 버튼 최하단 고정 ═══
-   글자가 '뒤로'/'← 뒤로'/'뒤로가기'인 버튼을 자동으로 찾아
-   해당 화면 최하단에 고정(caro-back-dock)한다. */
+/* ═══ 3.5 '뒤로' 글씨 버튼 — 화면 맨 아래 고정 ═══ */
 (function(){
   var RE=/^(←\s*)?(뒤로(가기)?|back)$/i;
   function dock(){
@@ -195,7 +193,6 @@ window.caroOpenExtraDriver=function(){
         var t=(b.textContent||'').replace(/\s+/g,' ').trim();
         if(!RE.test(t)) return;
         b.classList.add('caro-back-dock');
-        /* 버튼이 마지막 내용을 가리지 않을 만큼만 여백 (최소화) */
         var scr=b.closest('.screen');
         if(scr && !scr.dataset.caroBackPad){ scr.dataset.caroBackPad='1'; scr.style.paddingBottom='72px'; }
       });
