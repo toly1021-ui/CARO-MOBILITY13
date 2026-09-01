@@ -91,7 +91,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
     <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
 
-    <link rel="stylesheet" href="style.css?v=7"/>
+    <link rel="stylesheet" href="style.css?v=8"/>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -119,11 +119,18 @@
           }
         })();
 
-        /* 3. 서비스 워커 등록 (file:// 에서는 스킵) */
-        if('serviceWorker' in navigator && location.protocol !== 'file:'){
-          window.addEventListener('load',function(){
-            navigator.serviceWorker.register('./sw.js').catch(function(){});
-          });
+        /* 3. ★ 서비스워커 제거(캐시 문제 해결): 예전 sw.js가 옛 파일을 붙잡고 안 놔주던 문제 때문에,
+              서비스워커를 등록하지 않고, 이미 등록된 워커·캐시는 모두 지운다.
+              앱 WebView는 LOAD_NO_CACHE라 서비스워커 없이도 항상 최신 파일을 네트워크에서 받는다. */
+        if('serviceWorker' in navigator){
+          try{
+            navigator.serviceWorker.getRegistrations().then(function(rs){
+              var had=rs && rs.length;
+              rs.forEach(function(r){ r.unregister(); });
+              if(window.caches && caches.keys){ caches.keys().then(function(ks){ ks.forEach(function(k){ caches.delete(k); }); }); }
+              if(had){ setTimeout(function(){ location.reload(); }, 400); }   /* 옛 워커 제거 직후 1회 새로고침 → 최신 로드 */
+            }).catch(function(){});
+          }catch(e){}
         }
 
         /* 4. iOS standalone 감지 */
@@ -1740,10 +1747,7 @@
                     <span class="dev-label">현재 버전</span>
                     <span id="dev-version" style="color:rgba(91,200,255,.8);font-size:.82rem;">v3.0.0</span>
                 </div>
-                <div class="dev-row">
-                    <input class="dev-input" id="dev-new-version" placeholder="새 버전 (예: v3.1.0)"/>
-                    <button class="dev-btn" onclick="devUpdateVersion()">업데이트</button>
-                </div>
+                <!-- ★ FIX: '버전 업데이트' 수동 기능 제거 (최고관리자·권한부여만 유지) -->
             </div>
         </div>
 
@@ -1972,11 +1976,13 @@
 </div>
 
 <!-- ══ Firebase SDK ══ -->
-<script type="module" src="firebase-config.js?v=3"></script>
-<script src="script.js?v=10"></script>
+<script type="module" src="firebase-config.js?v=4"></script>
+<script src="script.js?v=12"></script>
 <script src="script-photo-upload.js?v=5"></script>
 <script src="customer-notices.js?v=8"></script>
-<script src="customer-redesign.js?v=166"></script>
+<script src="customer-redesign.js?v=169"></script>
+<script src="caro-sync-fix.js?v=1"></script>
+<script src="caro-icons.js?v=1"></script>
 <!-- ══ 드럼롤 날짜/시간 피커 ══ -->
 <div class="drum-overlay" id="drum-overlay" onclick="closeDrumPicker()">
     <div class="drum-sheet" id="drum-sheet">

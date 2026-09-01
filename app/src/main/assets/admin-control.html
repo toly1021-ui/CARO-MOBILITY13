@@ -95,11 +95,15 @@ button{font-family:inherit;cursor:pointer;}
 .cbtn:hover{border-color:var(--gold);color:var(--gold-soft);}
 .cbtn.warn:hover{border-color:var(--warn);color:var(--warn);}
 .cbtn.wide{grid-column:1/3;}
-.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:12px 16px 6px;}
+.calgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px 4px;padding:12px 16px 6px;align-items:center;}
 .fb{background:var(--panel2);border:1px solid var(--border);color:var(--muted);border-radius:8px;
   padding:7px 0;font-size:11.5px;font-weight:700;}
 .fb:hover{border-color:var(--gold);color:var(--gold-soft);}
 .fb.cur{background:var(--gold);color:#15161a;border-color:var(--gold);}
+/* 반층: 정규층 사이의 보조 스텝 — 배경·테두리 없이 작게(번잡함 최소화) */
+.fb.half{background:transparent;border:none;color:var(--muted);opacity:.4;font-size:9.5px;font-weight:500;}
+.fb.half:hover{opacity:1;color:var(--gold-soft);background:transparent;}
+.fb.half.cur{background:var(--gold);color:#15161a;opacity:1;font-weight:700;}
 .calfoot{display:flex;justify-content:center;padding:6px 16px 14px;}
 .creset{background:none;border:1px solid var(--bad);color:var(--bad);border-radius:8px;padding:6px 22px;font-size:12px;opacity:.85;}
 .creset:hover{opacity:1;}
@@ -247,7 +251,7 @@ html,body{max-width:100%;overflow-x:hidden;}
   <span class="sync off" id="sync">CONNECTING…</span>
   <span class="clock" id="clock">--:--:--</span>
   <span class="adm" id="adm">—</span>
-  <button class="lgout" id="lgout">로그아웃</button>
+  <button class="lgout" id="lgout">나가기</button>
 </div>
 
 <!-- 운영 관리 (요금·예약·회원·공지·정산 — 기존 시스템 전체 내장) -->
@@ -384,12 +388,18 @@ $('sndbtn').onclick=function(){ soundOn=!soundOn;
   this.classList.toggle('on',soundOn); this.textContent=soundOn?'🔔 소리 켜짐':'🔔 소리 꺼짐';
   if(soundOn) beep(); };
 
-/* ── 층 보정 버튼 (B10~10F) ── */
+/* ── 층 보정 버튼 (B10~10F, 반층 0.5단위 포함) ── */
 (function(){ var g=$('calgrid'), h='';
-  for(var b=10;b>=1;b--) h+='<button class="fb" data-f="B'+b+'">B'+b+'</button>';
-  for(var f=1;f<=10;f++) h+='<button class="fb" data-f="'+f+'">'+f+'F</button>';
+  /* 지하10층(-9)부터 지상10층(10)까지 0.5단위로 = 정규층 + 반층 */
+  for(var f=-9; f<=10.0001; f+=0.5){
+    var ff=Math.round(f*2)/2;                     /* 부동소수 오차 방지(0.5 단위 정규화) */
+    var dataf=(ff>=1)?String(ff):('B'+(1-ff));    /* floorStr과 동일 규칙: 1.5→"1.5", 반지하 -0.5→"B1.5" */
+    var label=(ff>=1)?(ff+'F'):('B'+(1-ff));      /* 1.5→"1.5F", -0.5→"B1.5", 0.5→"B0.5" */
+    var isHalf=(ff%1!==0);                         /* 반층이면 작게 구분 표시 */
+    h+='<button class="fb'+(isHalf?' half':'')+'" data-f="'+dataf+'">'+label+'</button>';
+  }
   g.innerHTML=h;
-  g.onclick=function(e){ var f=e.target.getAttribute('data-f'); if(f) calSet(f); };
+  g.onclick=function(e){ var b=e.target.closest('.fb'); if(b){ var f=b.getAttribute('data-f'); if(f) calSet(f); } };
 })();
 
 /* ── 차량↔기기 매칭 (기기번호=차량번호 자동, carId/carName 우선) ── */
@@ -471,7 +481,8 @@ function mapDraw(){
   var live=v&&v.gpsLive;
   var pill='차량 선택';
   if(v){
-    if(live) pill=v.name+' · 🛰 실시간 추적';
+    if(v.gsrc==='dr') pill=v.name+' · 🧭 지하/터널 추정 이동중 (GPS 없음 · 추측항법)';
+    else if(live) pill=v.name+' · 🛰 실시간 추적';
     else if(hasPos) pill=v.name+' · ⚠ GPS 끊김 (마지막 위치 · 위성'+(v.sats!=null?v.sats:0)+'개)';
     else if(IDMAP[v.id]) pill=v.name+' · GPS 탐색중 (위치 없음)';
     else pill=v.name+' · 기기 미연결 (실시간 위치 없음)';
@@ -545,7 +556,8 @@ function render(){
     $('lv-alt').textContent=(typeof v.alt==='number')?((v.alt>=0?'+':'')+v.alt.toFixed(1)+'m'):'—';
     $('lv-sat').textContent=(v.sats!=null)?v.sats+'개':'—';
     var src=$('lv-src');
-    if(!v.gpsLive && typeof v.lat==='number'){ src.textContent='GPS 끊김'; src.className='v bad'; }
+    if(v.gsrc==='dr'){ src.textContent='추측항법(터널)'; src.className='v use'; }
+    else if(!v.gpsLive && typeof v.lat==='number'){ src.textContent='GPS 끊김'; src.className='v bad'; }
     else if(v.gsrc==='modem'){ src.textContent='모뎀GPS'; src.className='v use'; }
     else if(v.sats>=4||v.gsrc==='module'){ src.textContent='GPS모듈'; src.className='v gold'; }
     else { src.textContent='—'; src.className='v'; }
@@ -645,7 +657,7 @@ function remap(){
     v.online=(d.status==='online'&&ls&&(Date.now()-ls.getTime()<60000));
     /* ★ GPS 실시간 여부: 펌웨어는 '유효 fix(위성4+)' 일 때만 좌표를 새로 보냄.
        위성이 4개 미만(0~3)이면 좌표는 '마지막으로 잡힌 위치'로 고정(=옛 위치). 이걸 정직하게 구분. */
-    v.gpsLive = !!(v.online && (v.sats>=4 || v.gsrc==='modem'));
+    v.gpsLive = !!(v.online && (v.sats>=4 || v.gsrc==='modem' || v.gsrc==='dr'));   /* dr=추측항법도 이동 중으로 취급(와드가 계속 움직임) */
     if(v.gpsLive && (v.lat!==v._fLat || v.lng!==v._fLng)){ v._fLat=v.lat; v._fLng=v.lng; v._fTs=Date.now(); }
   });
   if(!selId){ var first=FLEET.find(function(v){return IDMAP[v.id];}); if(first){ selId=first.id; subLogs(); } }
@@ -795,7 +807,8 @@ function waitAuth(n){
   }
   $('g-btn').addEventListener('click',doLogin);
   $('g-pw').addEventListener('keydown',function(e){ if(e.key==='Enter')doLogin(); });
-  $('lgout').addEventListener('click',function(){ FN.signOut(A); location.reload(); });
+  /* ★ FIX: '나가기' — signOut 금지(공유 세션 보호). 앱 대기화면으로 복귀. iframe이면 부모가 처리. */
+  $('lgout').addEventListener('click',function(){ try{ if(window.top!==window.self){ window.parent.postMessage('caro-admin-exit','*'); return; } }catch(e){} location.href='index.html'; });
   /* 비밀번호 재설정: 아이디 칸의 계정(별명이면 최고관리자 이메일)으로 재설정 메일 발송 */
   $('g-reset').addEventListener('click',function(){
     var em=$('g-em').value.trim();
@@ -812,5 +825,6 @@ function waitAuth(n){
 }
 waitAuth();
 </script>
+<script src="caro-icons.js?v=1"></script>
 </body>
 </html>

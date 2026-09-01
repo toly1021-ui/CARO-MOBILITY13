@@ -188,7 +188,7 @@
     .nh-mi.prem .nh-box .nh-tbmk{ display:block; font-size:9.5px; font-weight:800; letter-spacing:.4px; line-height:1.36; color:#f3d38a !important; text-align:center; text-shadow:0 1px 2px rgba(0,0,0,.55); }
 
     /* CARO THE BLACK 배너 (프리미엄 — 독립 배치) */
-    .nh-black{ display:flex; align-items:center; justify-content:space-between; gap:14px; cursor:pointer; border-radius:18px; padding:16px 18px; height:104px; box-sizing:border-box; background:linear-gradient(135deg,#23262e 0%,#141519 100%); border:1px solid rgba(200,169,110,.30); box-shadow:0 8px 20px -10px rgba(0,0,0,.5); -webkit-user-select:none; user-select:none; }
+    .nh-black{ display:flex; align-items:center; justify-content:space-between; gap:14px; cursor:pointer; border-radius:18px; padding:16px 18px; height:104px; box-sizing:border-box; background:linear-gradient(135deg,#23262e 0%,#141519 100%); border:1px solid rgba(174,182,194,.30); box-shadow:0 8px 20px -10px rgba(0,0,0,.5); -webkit-user-select:none; user-select:none; }
     .nh-black-l{ flex:1 1 auto; min-width:0; }
     .nh-black-t{ font-family:var(--font-brand,'Oswald',sans-serif); font-size:16px; font-weight:700; letter-spacing:.12em; color:#f3d38a; }
     .nh-black-s{ font-size:11.5px; font-weight:600; color:#9a958c; margin-top:6px; }
@@ -2503,7 +2503,7 @@
    [2c] 관리자 모드(dev-screen) 재디자인 — 청록 → 대시보드 다크+골드(Fleet Control)
    ─────────────────────────────────────────────────────────── */
 (function(){ 'use strict';
-  var G='#c8a96e', GS='#dcc28f';            /* gold / gold-soft */
+  var G='#aeb6c2', GS='#e2e6ec';            /* ★ silver / silver-soft (골드 제거) */
   var BG='#141518', PANEL='#1b1d21', PANEL2='#1f2228';
   var BD='#2b2e34', BD2='#34383f', TXT='#e9eaed', MUTED='#868b94', MUTED2='#5e636b';
 
@@ -2512,10 +2512,10 @@
     '#dev-screen{background:'+BG+';}'
    +'#dev-screen .dev-bg{background:'+BG+' !important;}'
    /* 헤더 */
-   +'#dev-screen .dev-logo{color:'+G+' !important;text-shadow:0 0 18px rgba(200,169,110,.2) !important;}'
+   +'#dev-screen .dev-logo{color:'+G+' !important;text-shadow:0 0 18px rgba(174,182,194,.2) !important;}'
    +'#dev-screen .dev-sub{color:rgba(220,194,143,.5) !important;}'
-   +'#dev-screen .dev-logout-btn{background:rgba(200,169,110,.08) !important;border-color:rgba(200,169,110,.28) !important;color:'+GS+' !important;}'
-   +'#dev-screen .dev-logout-btn:hover{background:rgba(200,169,110,.16) !important;}'
+   +'#dev-screen .dev-logout-btn{background:rgba(174,182,194,.08) !important;border-color:rgba(174,182,194,.28) !important;color:'+GS+' !important;}'
+   +'#dev-screen .dev-logout-btn:hover{background:rgba(174,182,194,.16) !important;}'
    /* 섹션/카드 */
    +'#dev-screen .dev-section-title{color:rgba(220,194,143,.62) !important;}'
    +'#dev-screen .dev-card{background:'+PANEL+' !important;border-color:'+BD+' !important;}'
@@ -2525,10 +2525,10 @@
    +'#dev-screen .dev-stat-card{background:'+PANEL+' !important;border-color:'+BD+' !important;}'
    +'#dev-screen .dev-stat-num{color:'+G+' !important;}'
    +'#dev-screen .dev-stat-label{color:'+MUTED+' !important;}'
-   +'#dev-screen .dev-stat-highlight{border-color:rgba(200,169,110,.32) !important;background:rgba(200,169,110,.06) !important;}'
+   +'#dev-screen .dev-stat-highlight{border-color:rgba(174,182,194,.32) !important;background:rgba(174,182,194,.06) !important;}'
    /* 버튼 */
-   +'#dev-screen .dev-btn{background:rgba(200,169,110,.1) !important;border-color:rgba(200,169,110,.25) !important;color:'+GS+' !important;}'
-   +'#dev-screen .dev-btn:hover{background:rgba(200,169,110,.2) !important;border-color:rgba(200,169,110,.42) !important;}'
+   +'#dev-screen .dev-btn{background:rgba(174,182,194,.1) !important;border-color:rgba(174,182,194,.25) !important;color:'+GS+' !important;}'
+   +'#dev-screen .dev-btn:hover{background:rgba(174,182,194,.2) !important;border-color:rgba(174,182,194,.42) !important;}'
    /* 입력 */
    +'#dev-screen .dev-input,#dev-screen .dev-select,#dev-screen .dev-textarea{background:'+PANEL2+' !important;border-color:'+BD2+' !important;color:'+TXT+' !important;}'
    +'#dev-screen .dev-input::placeholder{color:'+MUTED2+' !important;}'
@@ -2539,7 +2539,7 @@
    +'#dev-screen .dev-tab-btn:hover{color:'+GS+' !important;}'
    +'#dev-screen .dev-tab-active{color:'+G+' !important;border-bottom-color:'+G+' !important;}'
    /* 삭제 체크박스 */
-   +'#dev-screen .dev-del-chk-box{border-color:rgba(200,169,110,.35) !important;background:rgba(200,169,110,.06) !important;}'
+   +'#dev-screen .dev-del-chk-box{border-color:rgba(174,182,194,.35) !important;background:rgba(174,182,194,.06) !important;}'
    +'#dev-screen .dev-del-chk input:checked ~ .dev-del-chk-box{background:'+G+' !important;border-color:'+G+' !important;}'
    /* 탭 구분선 등 인라인 청록 보더 잔재 톤다운 */
    +'#dev-screen [style*="91,200,255"]{border-color:'+BD+' !important;}';
@@ -2567,10 +2567,10 @@
     overlay.id='dev-login-overlay';
     overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:#141518;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity .5s ease;pointer-events:none;';
     overlay.innerHTML=
-      '<div style="font-family:\'Oswald\',sans-serif;font-size:.7rem;letter-spacing:.5em;color:rgba(200,169,110,.5);margin-bottom:20px;text-transform:uppercase;">ADMINISTRATOR</div>'+
-      '<div style="font-family:\'Oswald\',sans-serif;font-size:2rem;font-weight:500;letter-spacing:.2em;color:rgba(200,169,110,.95);">CARO ADMIN</div>'+
-      '<div style="width:200px;height:1px;background:linear-gradient(90deg,transparent,rgba(200,169,110,.5),transparent);margin:16px 0;"></div>'+
-      '<div style="font-size:.72rem;color:rgba(200,169,110,.45);letter-spacing:.15em;">FLEET CONTROL</div>';
+      '<div style="font-family:\'Oswald\',sans-serif;font-size:.7rem;letter-spacing:.5em;color:rgba(174,182,194,.5);margin-bottom:20px;text-transform:uppercase;">ADMINISTRATOR</div>'+
+      '<div style="font-family:\'Oswald\',sans-serif;font-size:2rem;font-weight:500;letter-spacing:.2em;color:rgba(174,182,194,.95);">CARO ADMIN</div>'+
+      '<div style="width:200px;height:1px;background:linear-gradient(90deg,transparent,rgba(174,182,194,.5),transparent);margin:16px 0;"></div>'+
+      '<div style="font-size:.72rem;color:rgba(174,182,194,.45);letter-spacing:.15em;">FLEET CONTROL</div>';
     document.body.appendChild(overlay);
     overlay.style.pointerEvents='all';
     requestAnimationFrame(function(){ requestAnimationFrame(function(){
@@ -2590,7 +2590,7 @@
 (function(){ 'use strict';
   /* 인라인 rgba(91,200,255) 글씨도 골드로 */
   var s=document.createElement('style');
-  s.textContent='#dev-screen [style*="91,200,255"]{color:#dcc28f !important;}';
+  s.textContent='#dev-screen [style*="91,200,255"]{color:#cfd5dd !important;}';
   (document.head||document.documentElement).appendChild(s);
 
   /* 데모 권한부여 버튼 무력화 → 대시보드로 안내 */
@@ -2639,7 +2639,7 @@
   /* ── 스타일 ── */
   var st=document.createElement('style');
   st.textContent=
-    '#caro-staff-mgmt .csm-hd{font-size:.82rem;color:#dcc28f;font-weight:700;padding:6px 2px 10px;}'
+    '#caro-staff-mgmt .csm-hd{font-size:.82rem;color:#cfd5dd;font-weight:700;padding:6px 2px 10px;}'
    +'#caro-staff-mgmt .csm-locked{font-size:.8rem;color:#9aa0aa;padding:8px 2px;line-height:1.5;}'
    +'#caro-staff-list{display:flex;flex-direction:column;gap:7px;margin:8px 0 4px;}'
    +'.csm-item{border:1px solid #2b2e34;border-radius:11px;background:#1f2228;padding:10px 11px;}'
@@ -2655,7 +2655,7 @@
    +'.csm-acts{display:flex;gap:6px;margin-top:9px;}'
    +'.csm-act{flex:1;padding:6px;border-radius:8px;border:1px solid #34383f;background:transparent;color:#9aa0aa;font-size:.72rem;cursor:pointer;font-family:inherit;}'
    +'.csm-act.del{color:#d57a68;border-color:rgba(213,122,104,.35);}'
-   +'.csm-act.edit{color:#dcc28f;border-color:rgba(200,169,110,.35);}'
+   +'.csm-act.edit{color:#cfd5dd;border-color:rgba(174,182,194,.35);}'
    /* 모달 */
    +'#csmModal{position:fixed;inset:0;background:rgba(0,0,0,.66);display:none;align-items:center;justify-content:center;z-index:100000;padding:16px;}'
    +'#csmModal.show{display:flex;}'
@@ -2798,12 +2798,12 @@
     block.dataset.mode=mode;
     if(sup){
       block.innerHTML='<div class="csm-hd">직원 권한 관리</div>'
-        +'<button class="dev-btn dev-full-btn" id="caro-staff-add" style="background:rgba(200,169,110,.12);border:1px solid rgba(200,169,110,.3);color:#dcc28f;">+ 직원 권한 부여</button>'
+        +'<button class="dev-btn dev-full-btn" id="caro-staff-add" style="background:rgba(174,182,194,.12);border:1px solid rgba(174,182,194,.3);color:#cfd5dd;">+ 직원 권한 부여</button>'
         +'<div id="caro-staff-list"></div>';
       var ab=document.getElementById('caro-staff-add'); if(ab) ab.onclick=function(){ openModal(null); };
       startSnap(); renderList();
     } else {
-      block.innerHTML='<div class="csm-locked">직원 권한 부여는 <b style="color:#dcc28f;">최고관리자</b>만 가능합니다.</div>';
+      block.innerHTML='<div class="csm-locked">직원 권한 부여는 <b style="color:#cfd5dd;">최고관리자</b>만 가능합니다.</div>';
     }
   }
 
@@ -4272,9 +4272,9 @@
 
   var st=document.createElement('style'); st.id='caro-loc-css';
   st.textContent=
-    '.crt-loc-btn{pointer-events:auto;width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid var(--p1-line2,#d5dae1);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 16px -6px rgba(40,48,58,.34);}'
+    '.crt-loc-btn{pointer-events:auto;width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid var(--p1-line2,#d5dae1);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 16px -6px rgba(40,48,58,.34);}'
    +'.crt-loc-btn:active{transform:scale(.94);}'
-   +'.caro-myloc{width:22px;height:22px;border-radius:50%;background:rgba(90,100,112,.22);display:flex;align-items:center;justify-content:center;}'
+   +'.caro-myloc{width:19px;height:19px;border-radius:50%;background:rgba(90,100,112,.22);display:flex;align-items:center;justify-content:center;}'
    +'.caro-myloc-core{width:12px;height:12px;border-radius:50%;background:var(--accent,#18191c);border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(90,100,112,.5);}'
    +'.caro-loc-loading{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:600;display:none;align-items:center;gap:8px;background:rgba(255,255,255,.96);border:1px solid var(--p1-line2,#d5dae1);border-radius:20px;padding:7px 14px;font-size:12.5px;font-weight:700;color:#18191c;box-shadow:0 4px 14px -6px rgba(40,48,58,.3);pointer-events:none;white-space:nowrap;}'
    +'.caro-loc-loading .cll-spin{width:14px;height:14px;border:2px solid #ccd2da;border-top-color:#18191c;border-radius:50%;animation:cllSpin .7s linear infinite;}'
@@ -5198,7 +5198,7 @@
     /* 리스트 */
     h+='<div class="cm-list">'
       +'<button class="cm-row" data-act="extend"><span class="cm-ic">'+I.ext+'</span><span class="cm-lb">시간 연장</span><span class="cm-chev">\u203A</span></button>'
-      +'<button class="cm-row" data-act="codriver"><span class="cm-ic">'+I.user+'</span><span class="cm-lb">동승운전자</span><span class="cm-val go">등록하기</span><span class="cm-chev">\u203A</span></button>'
+      +'<button class="cm-row" data-act="codriver"><span class="cm-ic">'+I.user+'</span><span class="cm-lb">추가운전자 <span style="font-size:.68rem;color:#999;font-weight:400;">대여자 외 1명</span></span><span class="cm-val go">등록하기</span><span class="cm-chev">\u203A</span></button>'
       +'<button class="cm-row" data-act="photo"><span class="cm-ic">'+I.cam+'</span><span class="cm-lb">차량 확인 (주행전 사진)</span><span class="cm-val go">사진 등록하기</span><span class="cm-chev">\u203A</span></button>'
       +'<button class="cm-row" data-act="penalty"><span class="cm-ic">'+I.warn+'</span><span class="cm-lb">취소수수료 및 페널티 안내</span><span class="cm-chev">\u203A</span></button>'
       +'<button class="cm-row" data-act="cs"><span class="cm-ic">'+I.head+'</span><span class="cm-lb">고객센터</span><span class="cm-chev">\u203A</span></button>'
@@ -5215,7 +5215,7 @@
     else if(act==='penalty') goScreen('cs-screen');
     else if(act==='cs') goScreen('cs-screen');
     else if(act==='accident') goScreen('accident-screen');
-    else if(act==='codriver') toast('동승운전자 등록은 준비 중입니다.');
+    else if(act==='codriver'){ if(window.caroOpenExtraDriver) caroOpenExtraDriver(); else toast('추가운전자 등록 기능을 불러오지 못했습니다.'); }
     else if(act==='cancel'){
       try{ if(window.closeHomeCtrlDirect) closeHomeCtrlDirect(); }catch(e){}
       setTimeout(function(){ call('cancelReservation'); },180);
@@ -5276,8 +5276,24 @@
    · 결제/요금계산 백엔드는 추후 — 가입은 데모(localStorage) 저장
 ═══════════════════════════════════════════════════════════ */
 (function(){ 'use strict';
-  var GOLD='#c8a96e';
+  var GOLD='#aeb6c2'; /* ★ 멤버십 리디자인: 골드→실버(카로 대기화면 톤) */
   var css=document.createElement('style'); css.id='caro-membership-css';
+  /* ★ 기업전용(비즈) 별도 색상: 딥 네이비 */
+  var bizCss=document.createElement('style'); bizCss.id='caro-membership-biz-css';
+  bizCss.textContent=[
+    '.mplan.biz{background:linear-gradient(165deg,#141e30,#0b1220)!important;}',
+    '.biz .mp-glow{background:radial-gradient(circle,rgba(143,179,232,.35),transparent 68%)!important;}',
+    '.biz .mp-reco{background:rgba(143,179,232,.22)!important;color:#8fb3e8!important;}',
+    '.biz .mp-price .w{color:#8fb3e8!important;}',
+    '.biz .mp-benefits b{color:#8fb3e8!important;}',
+    '.biz .mp-join{background:#8fb3e8!important;color:#0b1220!important;}',
+    '.mm-card.biz{background:linear-gradient(160deg,#141e30,#0b1220)!important;}',
+    '.plan-slide.ps-biz{background:linear-gradient(120deg,#141e30,#1d2b45)!important;}',
+    '.ps-biz .ps-badge{background:rgba(143,179,232,.22)!important;color:#8fb3e8!important;}',
+    '.ps-biz .ps-w{color:#8fb3e8!important;}',
+    '.ps-biz .ps-go{background:#8fb3e8!important;color:#0b1220!important;}'
+  ].join('\n');
+  document.head.appendChild(bizCss);
   css.textContent=[
     /* ── 홈 회전 배너 (이벤트 배너와 동일 사이즈) ── */
     '.plan-slide-wrap{position:relative;margin-bottom:18px;overflow:hidden;border-radius:var(--r2);box-shadow:0 4px 16px rgba(0,0,0,.14);cursor:pointer;}',
@@ -5288,7 +5304,7 @@
     '.plan-slide.ps-biz{background:linear-gradient(120deg,#101216,#20242b);color:#f2f4f7;}',
     '.ps-badge{display:inline-block;font-size:.6rem;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:12px;margin-bottom:7px;}',
     '.ps-lite .ps-badge{background:rgba(24,25,28,.08);color:#5a5e66;}',
-    '.ps-plus .ps-badge,.ps-biz .ps-badge{background:rgba(200,169,110,.2);color:'+GOLD+';}',
+    '.ps-plus .ps-badge,.ps-biz .ps-badge{background:rgba(174,182,194,.2);color:'+GOLD+';}',
     '.ps-title{font-size:1.02rem;font-weight:800;letter-spacing:-.01em;}',
     '.ps-desc{font-size:.74rem;opacity:.82;margin-top:2px;}',
     '.ps-price{text-align:right;flex:0 0 auto;padding-left:12px;}',
@@ -5320,9 +5336,9 @@
     '.mplan.lite{background:#fff;border-color:rgba(200,208,218,.7);color:#18191c;}',
     '.mplan.plus{background:linear-gradient(165deg,#2f333a,#1f2229);color:#f2f4f7;}',
     '.mplan.biz{background:linear-gradient(165deg,#16181d,#0b0c0f);color:#f2f4f7;}',
-    '.mp-glow{position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,110,.4),transparent 68%);filter:blur(6px);}',
+    '.mp-glow{position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(174,182,194,.4),transparent 68%);filter:blur(6px);}',
     '.mp-reco{align-self:flex-start;font-size:.64rem;font-weight:800;letter-spacing:.04em;padding:4px 10px;border-radius:20px;margin-bottom:12px;position:relative;}',
-    '.lite .mp-reco{background:#eef1f5;color:#5a5e66;} .plus .mp-reco,.biz .mp-reco{background:rgba(200,169,110,.22);color:'+GOLD+';}',
+    '.lite .mp-reco{background:#eef1f5;color:#5a5e66;} .plus .mp-reco,.biz .mp-reco{background:rgba(174,182,194,.22);color:'+GOLD+';}',
     '.mp-name{font-weight:800;font-size:1.3rem;position:relative;} .plus .mp-name,.biz .mp-name{color:#fff;}',
     '.mp-tag{font-size:.76rem;opacity:.72;margin:3px 0 16px;position:relative;}',
     '.mp-price{display:flex;align-items:baseline;gap:4px;margin-bottom:18px;position:relative;}',
@@ -5343,11 +5359,11 @@
     '.mm-wrap{padding:18px 16px 26px;display:flex;flex-direction:column;gap:14px;}',
     '.mm-card{border-radius:22px;padding:20px 18px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(160deg,#2f333a,#1a1c22);box-shadow:0 14px 30px -16px rgba(20,25,35,.7);}',
     '.mm-card.biz{background:linear-gradient(160deg,#16181d,#0b0c0f);}',
-    '.mm-card .glow{position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,110,.35),transparent 70%);}',
+    '.mm-card .glow{position:absolute;right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(174,182,194,.35),transparent 70%);}',
     '.mm-card .pl{font-size:.74rem;opacity:.8;letter-spacing:.04em;position:relative;}',
     '.mm-card .nm{font-family:var(--font);font-weight:800;font-size:1.7rem;margin:2px 0 12px;color:'+GOLD+';position:relative;}',
     '.mm-card .bill{font-size:.8rem;opacity:.9;position:relative;}',
-    '.mm-card .st{position:absolute;top:18px;right:18px;background:rgba(200,169,110,.22);color:'+GOLD+';font-size:.68rem;font-weight:800;padding:4px 10px;border-radius:20px;}',
+    '.mm-card .st{position:absolute;top:18px;right:18px;background:rgba(174,182,194,.22);color:'+GOLD+';font-size:.68rem;font-weight:800;padding:4px 10px;border-radius:20px;}',
     '.mm-lbl{font-size:.74rem;font-weight:800;color:#888d98;letter-spacing:.04em;margin:6px 2px 0;}',
     '.mm-quota{display:flex;gap:10px;}',
     '.mm-qbox{flex:1;background:#fff;border:1px solid rgba(200,208,218,.7);border-radius:16px;padding:14px 12px;text-align:center;}',
@@ -5517,7 +5533,7 @@
     '.pc-ribbon{position:absolute;top:15px;right:-34px;transform:rotate(38deg);background:'+GOLD+';color:#18191c;font-size:.62rem;font-weight:800;padding:4px 38px;letter-spacing:.08em;}',
     '.pc-top{display:flex;align-items:center;gap:12px;margin-bottom:4px;}',
     '.pc-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}',
-    '.lite .pc-ic{background:#eef1f5;color:#6a6f79;} .plus .pc-ic,.biz .pc-ic{background:rgba(200,169,110,.16);color:'+GOLD+';} .pc-ic svg{width:22px;height:22px;}',
+    '.lite .pc-ic{background:#eef1f5;color:#6a6f79;} .plus .pc-ic,.biz .pc-ic{background:rgba(174,182,194,.16);color:'+GOLD+';} .pc-ic svg{width:22px;height:22px;}',
     '.pc-name{font-weight:800;font-size:1.15rem;} .plus .pc-name,.biz .pc-name{color:#fff;}',
     '.pc-sub{font-size:.74rem;color:#888d98;} .plus .pc-sub,.biz .pc-sub{color:rgba(255,255,255,.6);}',
     '.pc-price{display:flex;align-items:baseline;gap:4px;margin:12px 0 14px;}',
@@ -5552,7 +5568,7 @@
     '.mj-seclbl{font-size:.76rem;font-weight:800;color:#888d98;letter-spacing:.03em;margin:2px 2px 10px;}',
     '.mj-need{display:flex;flex-direction:column;gap:11px;margin-bottom:18px;}',
     '.mj-need-row{display:flex;gap:11px;align-items:flex-start;}',
-    '.mj-need-ck{flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(200,169,110,.16);color:'+GOLDD+';display:flex;align-items:center;justify-content:center;margin-top:1px;} .mj-need-ck svg{width:14px;height:14px;}',
+    '.mj-need-ck{flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(174,182,194,.16);color:'+GOLDD+';display:flex;align-items:center;justify-content:center;margin-top:1px;} .mj-need-ck svg{width:14px;height:14px;}',
     '.mj-need-t{font-weight:700;font-size:.9rem;color:#18191c;} .mj-need-s{font-size:.78rem;color:#888d98;margin-top:1px;}',
     '.mj-steps{display:flex;flex-direction:column;gap:0;margin-bottom:18px;position:relative;}',
     '.mj-step{display:flex;align-items:center;gap:11px;padding:7px 0;font-size:.88rem;color:#44474f;font-weight:600;}',
@@ -7070,7 +7086,7 @@
   st.textContent=
     '.suh-card,.my-res-card,.csx-qcard,.awz-opt,.mpn-stt,.hcard{border-radius:22px 22px 22px 8px !important;}'
    +'.csx-faq,.grp{border-radius:22px 22px 22px 8px !important;}'
-   +'.csx-hero{border-radius:22px 22px 8px 22px !important;box-shadow:0 10px 24px -12px rgba(0,0,0,.5), inset 0 -2px 0 rgba(200,169,110,.5) !important;}'
+   +'.csx-hero{border-radius:22px 22px 8px 22px !important;box-shadow:0 10px 24px -12px rgba(0,0,0,.5) !important;}'
    +'.nh-inf-card{border-radius:20px 20px 20px 8px !important;}'
    +'.awz-photo{border-radius:20px 20px 20px 8px;}'
    +'.suh-seg{background:none !important;border-radius:0 !important;padding:0 4px !important;gap:22px;justify-content:flex-start;border-bottom:1.5px solid var(--p1-line,#e8eaee);}'
@@ -7082,14 +7098,14 @@
    +'.awz-prog i.on{background:linear-gradient(90deg,var(--accent,#18191c) 70%,#3a3320) !important;}'
    +'.suh-btn.dark,.awz-foot .awz-next,.awz-foot .awz-submit,.caro-mr-backbtm,#event-screen .nh-ev-back,'
    +'#usage-history-screen .detail-btn,#my-reservation-screen .detail-btn,#nh-wallet-screen .nh-wallet-back-btm'
-   +'{box-shadow:inset 0 -2px 0 rgba(200,169,110,.55), 0 8px 20px -8px rgba(24,25,28,.5) !important;}'
+   +'{box-shadow:0 8px 20px -8px rgba(24,25,28,.5) !important;}'
    +'.suh-st,.my-res-status{border-radius:6px !important;letter-spacing:.02em;}'
    +'.myres-main-title{position:relative;padding-bottom:13px;}'
    +'.myres-main-title::after{content:"";position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:36px;height:2.5px;border-radius:2px;background:linear-gradient(90deg,#7a8291,#4a5563);}'
    +'.empty-reservation .empty-icon,.csd-empty-icon{font-size:0 !important;width:64px;height:64px;margin:0 auto;'
    +'background:#fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%27132 92 248 350%27%3E%3Cpath d=%27M256 396C256 396 360 292 360 208A104 104 0 0 0 152 208C152 292 256 396 256 396Z%27 fill=%27%23aab3bd%27/%3E%3Cpath d=%27M293 171A52 52 0 1 0 293 245%27 fill=%27none%27 stroke=%27%23fff%27 stroke-width=%2730%27 stroke-linecap=%27round%27/%3E%3C/svg%3E") center/30px no-repeat;border:1px solid var(--p1-line,#e8eaee);border-radius:20px 20px 20px 8px;box-shadow:0 2px 10px -7px rgba(40,48,58,.2);opacity:1 !important;filter:none !important;}'
    +'.ctrl-sq-btn{border-radius:16px 16px 16px 6px !important;}'
-   +'.cbot-hd{box-shadow:inset 0 -2px 0 rgba(200,169,110,.5);}'
+   +'.cbot-hd{box-shadow:none;}'
    +'.csx-qcard .ic,.awz-opt .awz-oic{border-radius:13px 13px 13px 5px !important;}';
   (document.head||document.documentElement).appendChild(st);
   console.log('[디자인] ✅ CARO 아이덴티티 v1 (고유 시그니처)');
@@ -7253,14 +7269,14 @@
     /* 1) 오프라인 배너 */
     '.caro-off-bar{position:fixed;top:0;left:0;right:0;z-index:99990;display:flex;align-items:center;justify-content:center;gap:8px;'
      +'padding:calc(env(safe-area-inset-top,0px) + 9px) 16px 9px;background:var(--accent,#18191c);color:#fff;'
-     +'font-size:.78rem;font-weight:700;letter-spacing:-.01em;box-shadow:inset 0 -2px 0 rgba(200,169,110,.55),0 6px 18px -8px rgba(24,25,28,.5);'
+     +'font-size:.78rem;font-weight:700;letter-spacing:-.01em;box-shadow:0 6px 18px -8px rgba(24,25,28,.5);'
      +'transform:translateY(-110%);transition:transform .35s cubic-bezier(.2,.8,.25,1);}'
    +'.caro-off-bar.on{transform:translateY(0);}'
    +'.caro-off-bar svg{width:15px;height:15px;stroke:#c8a96e;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;}'
     /* 2) 빈 화면 CTA */
    +'.caro-empty-cta{display:inline-flex;align-items:center;gap:7px;margin-top:18px;height:46px;padding:0 24px;border:0;cursor:pointer;'
      +'background:var(--accent,#18191c);color:#fff;border-radius:14px 14px 14px 6px;font-family:inherit;font-size:.86rem;font-weight:800;'
-     +'box-shadow:0 8px 20px -9px rgba(24,25,28,.5),inset 0 -2px 0 rgba(200,169,110,.45);}'
+     +'box-shadow:0 8px 20px -9px rgba(24,25,28,.5),inset 0 -2px 0 rgba(174,182,194,.45);}'
    +'.caro-empty-cta:active{transform:scale(.96);}'
     /* 3) 이용 준비 카드 */
    +'.hr-ready{margin-top:16px;background:var(--p1-card,#fff);border:1px solid var(--p1-line,#e8eaee);border-radius:20px 20px 20px 8px;'
@@ -7281,7 +7297,7 @@
     /* 4) 예약 화면 취소 수수료 요약 */
    +'.res-cancel-note{margin:12px 0 14px;background:var(--p1-card,#fff);border:1px solid var(--p1-line,#e8eaee);border-radius:16px 16px 16px 7px;overflow:hidden;box-shadow:0 2px 8px -6px rgba(40,48,58,.12);}'
    +'.res-cancel-note .rcn-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;cursor:pointer;font-size:.78rem;font-weight:600;color:var(--text-1,#1b2027);}'
-   +'.res-cancel-note .rcn-head b{font-weight:800;color:var(--text-1,#1b2027);box-shadow:inset 0 -6px 0 rgba(200,169,110,.22);}'
+   +'.res-cancel-note .rcn-head b{font-weight:800;color:var(--text-1,#1b2027);box-shadow:inset 0 -6px 0 rgba(174,182,194,.22);}'
    +'.res-cancel-note .rcn-arrow{flex:0 0 auto;color:#9aa1ab;font-size:.8rem;transition:transform .25s;}'
    +'.res-cancel-note .rcn-body{padding:2px 15px 13px;border-top:1px solid var(--p1-soft,#f2f3f5);}'
    +'.res-cancel-note .rcn-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:.76rem;color:var(--text-2,#4a505a);border-bottom:1px solid var(--p1-soft,#f2f3f5);}'
@@ -7450,7 +7466,7 @@
       sec.innerHTML='<div class="dev-section-title">실시간 관제</div>'
         +'<div class="dev-card">'
         +'<button class="dev-btn dev-full-btn" id="caro-ctrl-open" '
-        +'style="background:rgba(200,169,110,.14);border:1px solid rgba(200,169,110,.42);color:#dcc28f;font-weight:800;">'
+        +'style="background:rgba(174,182,194,.14);border:1px solid rgba(174,182,194,.42);color:#cfd5dd;font-weight:800;">'
         +'🛰 실시간 관제센터 열기 (지도·원격제어)</button>'
         +'<div style="font-size:.7rem;color:#8a8f98;margin-top:8px;line-height:1.5;">'
         +'차량 실시간 위치·경로 추적, 원격 잠금/해제, 층·기기 진단</div></div>';
@@ -7462,6 +7478,10 @@
   }
   function apply(){
     if(!document.getElementById('dev-screen')) return;
+    /* ★ 진단용 버전 도장: 이 최신 파일이 실제로 로딩되면 관리자 콘솔 부제에 'BUILD 168'이 찍힘.
+       안 찍히면 = 앱이 아직 옛 파일 캐시 사용 중(코드 문제 아님·캐시 문제). */
+    try{ var _sub=document.querySelector('#dev-screen .dev-sub');
+      if(_sub && _sub.textContent.indexOf('BUILD 168')<0){ _sub.textContent='관리자 콘솔 · FLEET CONTROL · BUILD 168'; } }catch(e){}
     var canOps=can('ops'), canControl=can('control');
     var secs=document.querySelectorAll('#dev-screen .dev-body > .dev-section');
     for(var i=0;i<secs.length;i++){

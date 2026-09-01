@@ -285,6 +285,15 @@
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);padding:11px 20px;border-radius:11px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:50;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   @media (max-width:1200px){ .kpis{grid-template-columns:repeat(3,1fr);} }
+  /* ★ 가로회전(landscape) 모드 — 낮은 높이 화면 최적화 */
+  @media (orientation:landscape) and (max-height:560px){
+    .wrap{padding:10px;}
+    .kpis{grid-template-columns:repeat(6,1fr);gap:8px;}
+    .grid{grid-template-columns:1fr 320px;gap:10px;}
+  }
+  @media (orientation:portrait) and (max-width:820px){
+    .grid{grid-template-columns:1fr;}
+  }
   @media (max-width:720px){ .grid{grid-template-columns:1fr;} .kpis{grid-template-columns:repeat(2,1fr);} }
   #loginGate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:radial-gradient(1000px 600px at 50% -10%, var(--halo), transparent 60%), var(--bg);}
   .login-card{width:340px;max-width:90vw;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:30px 28px;box-shadow:0 24px 60px rgba(40,48,58,.18);}
@@ -319,6 +328,23 @@
   #em-noimg{color:var(--muted2);font-size:13px;}
   .efoot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border);}
 
+  /* ★ 운영관리 우측 패널: 실시간 관제(지도·3D나선·진단·로그·층보정·펌웨어) 제거 → '대여자 정보 + 원격제어'만 */
+  .card.live .lv-stats,.card.live .mapwrap,.card.live .chartwrap,.card.live .helix-stats,
+  .card.live .lv-alert,.card.live .lv-loc,.card.live .diag,.card.live .lv-log,
+  .card.live .cal-wrap,.card.live .fw-wrap{display:none!important;}
+  .lv-renter{border:1px solid var(--border);border-radius:12px;background:var(--panel2);padding:14px 15px;margin-bottom:13px;}
+  .lv-renter .rt{font-size:11px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;font-weight:700;}
+  .lv-renter .rrow{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .lv-renter .rrow:last-child{border-bottom:none;}
+  .lv-renter .rk{color:var(--muted);}
+  .lv-renter .rv{font-weight:700;color:var(--txt);text-align:right;}
+  .lv-renter a.rtel{color:var(--accent);font-weight:800;text-decoration:none;font-family:'Saira',sans-serif;letter-spacing:.02em;}
+  .lv-renter a.rtel:hover{text-decoration:underline;}
+  .lv-renter .rempty{color:var(--muted2);font-size:12.5px;text-align:center;padding:6px 0;}
+  .lv-renter .rbadge{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:20px;}
+  .lv-renter .rbadge.on{background:rgba(79,154,120,.16);color:#4f9a78;}
+  .lv-renter .rbadge.late{background:rgba(213,86,62,.16);color:#d5563e;}
+  .lv-renter .rbadge.soon{background:rgba(200,169,110,.16);color:#c8a96e;}
   /* ★ 카로 앱(모바일) 전용 최적화 — 가로 넘침 제거, 고정 380px 컬럼/6칸 KPI를 폰에 맞춤 */
   html,body{max-width:100%;overflow-x:hidden;}
   @media (max-width:640px){
@@ -353,6 +379,12 @@
     <div class="lerr" id="lg-err"></div>
   </div>
 </div>
+<script>
+  /* ★ 관제센터(admin-control.html) 안의 iframe으로 열렸을 땐, 부모가 이미 로그인·권한 확인을 마쳤다.
+     그러니 운영관리 자체 로그인 창은 띄우지 않는다(공유 세션을 조용히 기다림). 깜빡임 방지 위해 파싱 즉시 숨김. */
+  window.__CARO_INFRAME = (function(){ try{ return window.self !== window.top; }catch(e){ return true; } })();
+  if(window.__CARO_INFRAME){ var _lg=document.getElementById('loginGate'); if(_lg) _lg.style.display='none'; }
+</script>
 <div class="wrap">
   <!-- TOP BAR -->
   <div class="topbar">
@@ -370,7 +402,7 @@
         <span class="av">C</span>
         <span class="nm" id="adminNm">관리자<small id="adminEmail">—</small></span>
       </div>
-      <button class="logout-btn" id="logoutBtn">로그아웃</button>
+      <button class="logout-btn" id="logoutBtn">나가기</button>
     </div>
   </div>
   <!-- TABS -->
@@ -407,13 +439,15 @@
       <!-- live monitor -->
       <aside class="card live">
         <div class="card-hd">
-          <h3>실시간 관제</h3><span class="pill" id="livePill">● LIVE</span>
+          <h3>대여자 · 원격제어</h3><span class="pill" id="livePill">고객센터</span>
         </div>
         <div class="lv-body">
           <div class="lv-veh">
             <div class="nm" id="lvName">—<small id="lvPlate"></small></div>
             <span class="st" id="lvStatus"></span>
           </div>
+          <!-- ★ 대여자 정보 (선택 차량의 현재 대여자 이름·연락처·기간) -->
+          <div class="lv-renter" id="lvRenter"></div>
           <div class="lv-stats">
             <div class="stat"><div class="l">현재 층수</div><div class="v gold" id="lvFloor">—</div></div>
             <div class="stat"><div class="l">고도(입구 대비)</div><div class="v" id="lvAlt">—</div></div>
@@ -850,6 +884,32 @@
       : {line:'#18191c', base:'rgba(24,25,28,.30)', grid:'rgba(24,25,28,.06)', baseLbl:'rgba(24,25,28,.55)', lbl:'rgba(122,130,141,.7)', fill:'rgba(24,25,28,.12)', dot:'#18191c', glow:'rgba(24,25,28,.22)', empty:'rgba(122,130,141,.7)'};
   }
   window.caroRedrawChart=function(){ try{ resizeChart(); renderLive(); }catch(e){} };
+  /* ★ 선택 차량의 '현재 대여자' 카드 채우기 (대여중/반납지연 우선, 없으면 임박 예약확정) */
+  function renderRenter(v){
+    var el=document.getElementById('lvRenter'); if(!el) return;
+    if(!v){ el.innerHTML=''; return; }
+    var numbered=resvIsNumbered(), nm=(''+(v.name||'')).trim();
+    var m=resv.filter(function(r){ return numbered?resvHitsCarExact(r,v):(r.car&&nm&&(''+r.car).trim()===nm); });
+    var cur=m.filter(function(r){var s=liveStatus(r);return s==='대여중'||s==='반납지연';})
+             .sort(function(a,b){return (a.eMs||0)-(b.eMs||0);})[0]
+          || m.filter(function(r){return liveStatus(r)==='예약확정';})
+             .sort(function(a,b){return (a.sMs||0)-(b.sMs||0);})[0] || null;
+    if(!cur){ el.innerHTML='<div class="rt">대여자 정보</div><div class="rempty">현재 대여 중인 고객이 없습니다</div>'; return; }
+    var s=liveStatus(cur);
+    var badge = s==='반납지연'?'<span class="rbadge late">반납지연</span>'
+              : s==='대여중'?'<span class="rbadge on">대여중</span>'
+              : '<span class="rbadge soon">예약확정</span>';
+    var phone=(''+(cur.phone||'')).trim(), digits=phone.replace(/[^0-9]/g,'');
+    var telHtml = (phone && phone.indexOf('*')<0 && digits.length>=9)
+      ? '<a class="rtel" href="tel:'+digits+'">'+phone+'</a>'
+      : (phone ? '<span class="rv" style="color:var(--muted)">'+phone+' <small style="color:var(--muted2)">(가림)</small></span>'
+               : '<span style="color:var(--muted2)">미등록</span>');
+    el.innerHTML='<div class="rt">대여자 정보</div>'
+      +'<div class="rrow"><span class="rk">상태</span><span class="rv">'+badge+'</span></div>'
+      +'<div class="rrow"><span class="rk">대여자</span><span class="rv">'+(cur.user||'-')+'</span></div>'
+      +'<div class="rrow"><span class="rk">연락처</span><span class="rv">'+telHtml+'</span></div>'
+      +'<div class="rrow"><span class="rk">대여 기간</span><span class="rv" style="font-size:12px;font-weight:600">'+(cur.period||'-')+'</span></div>';
+  }
   function renderLive(){
     var v=FLEET.find(function(x){return x.id===selectedId;});
     if(!v){
@@ -857,13 +917,14 @@
       document.getElementById('lvStatus').className='st'; document.getElementById('lvStatus').innerHTML='';
       document.getElementById('lvFloor').textContent='—'; document.getElementById('lvAlt').textContent='—';
       document.getElementById('lvBat').textContent='—'; document.getElementById('lvMove').textContent='—';
-      document.getElementById('lvLoc').textContent='—'; drawChart(null); drawRotation(null); updateAlert(null); renderDiag(null); return;
+      document.getElementById('lvLoc').textContent='—'; drawChart(null); drawRotation(null); updateAlert(null); renderDiag(null); renderRenter(null); return;
     }
     var es=carEffectiveStatus(v);
     var hasAlt=(typeof v.alt==='number'), f=floorView(v), st=stCls(es);
     document.getElementById('lvName').innerHTML = v.name+'<small>'+(v.plate||'번호판 미등록')+' · '+v.grade+'</small>';
     document.getElementById('lvStatus').className='st '+st;
     document.getElementById('lvStatus').innerHTML='<i></i>'+es;
+    renderRenter(v);   /* ★ 대여자 정보 카드 갱신 */
     document.getElementById('lvFloor').textContent = (v.status==='점검'||!f)?'—':f.code;
     document.getElementById('lvAlt').textContent = hasAlt?((v.alt>=0?'+':'')+v.alt.toFixed(1)+'m'):'기기 미연결';
     document.getElementById('lvBat').textContent = batText(v.battery);
@@ -1520,6 +1581,8 @@
       resv.push({ no:doc.id, car:carName(d), carNo:carNoStr, fixed:fx,
         sMs:sMs, eMs:eMs,
         user:d.userName||d.name||(d.userEmail?(''+d.userEmail).split('@')[0]:(d.uid?(''+d.uid).slice(0,6)+'…':'-')),
+        phone:(d.userPhone||d.phone||d.tel||d.userTel||''),   /* ★ 대여자 전화번호(예약 문서에 저장된 값) */
+        email:(d.userEmail||d.email||''),
         period:(d.period||(s+(e?(' ~ '+e):'')))||'-',
         status:(fx||timeStatus(sMs,eMs)), sortMs:(sMs||toMs(d.createdAt)||0) }); });
     renderResv(); renderKPIs(); renderFleet(); renderLive();
@@ -1805,14 +1868,16 @@
           if(pm.ops||pm.cars||pm.pricing||pm.notices||pm.resv){
             hideGate(); document.getElementById('adminEmail').textContent=u.email+(d.name?(' · '+d.name):''); startOnce();
           } else {
-            FN.signOut(A); showGate('운영 관리 권한이 없습니다 — 최고관리자에게 권한을 요청하세요');
+            /* iframe(관제센터)에선 로그아웃 금지(공유 세션이라 부모까지 로그아웃됨). 부모가 이미 접근제어함. */
+            if(!window.__CARO_INFRAME){ FN.signOut(A); showGate('운영 관리 권한이 없습니다 — 최고관리자에게 권한을 요청하세요'); }
           }
-        }).catch(function(){ FN.signOut(A); showGate('권한 확인 실패 — 다시 시도하세요'); });
-      } else { showGate(''); }
+        }).catch(function(){ if(!window.__CARO_INFRAME){ FN.signOut(A); showGate('권한 확인 실패 — 다시 시도하세요'); } });
+      } else { if(!window.__CARO_INFRAME) showGate(''); }   /* iframe(관제센터)에선 로그인창 안 띄우고 공유 세션 복원을 기다림 */
     });
     document.getElementById('lg-btn').addEventListener('click', doLogin);
     document.getElementById('lg-pw').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-    document.getElementById('logoutBtn').addEventListener('click', function(){ FN.signOut(A); location.reload(); });
+    /* ★ FIX: 관리자 '나가기' — signOut 금지(고객 앱과 세션 공유라 로그아웃하면 앱 데이터까지 끊김). 대기화면으로 복귀만. */
+    document.getElementById('logoutBtn').addEventListener('click', function(){ location.href='index.html'; });
   }
   // ── init ──
   renderKPIs(); renderFleet(); resizeChart(); renderLive();
@@ -1836,5 +1901,6 @@
 <script src="admin-force-return.js?v=1"></script>
 <script src="admin-debt.js?v=2"></script>
 <script src="admin-pricing.js?v=9"></script>
+<script src="caro-icons.js?v=1"></script>
 </body>
 </html>

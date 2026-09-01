@@ -1309,31 +1309,34 @@ function handleLogin(){
     try{localStorage.removeItem('caro_auto_id');localStorage.removeItem('caro_auto_pw');}catch(e){}
   }
 
-  /* 개발자 로그인 */
-  if(id==='CAROMOBILITY'&&pw==='011842hkJ**'){
-      userInfo.id = 'CAROMOBILITY';
-      userInfo.name = 'CAROMOBILITY';
-
-      /* ⭐ Firebase 관리자 계정으로 자동 로그인 */
+  /* 개발자(최고관리자) 로그인
+     ★ 예전엔 비밀번호가 코드에 하드코딩돼서, 실제 Firebase 비번을 바꾸면
+        인증이 실패 → 관리자 모드는 뜨지만 Firestore가 안 붙던(=연동 안됨) 문제가 있었음.
+     ★ 이제 '입력한 비밀번호(pw)'를 그대로 Firebase 인증에 사용 → 지금 계정 비번으로 로그인됨.
+     ★ 인증이 '성공했을 때만' 관리자 모드로 진입(가짜 super·데이터 없음 상태 방지). */
+  if(id==='CAROMOBILITY'){
       if(fbReady()){
         var fn = window.FB_FN;
         fn.signInWithEmailAndPassword(
           window.FB_AUTH,
           'caro.mobility.official@gmail.com',
-          '011842hkJ**'
+          pw
         ).then(function(cred){
+          userInfo.id = 'CAROMOBILITY';
+          userInfo.name = 'CAROMOBILITY';
           userInfo.uid = cred.user.uid;
           userInfo.email = cred.user.email;
           console.log('✅ 관리자 Firebase Auth 활성화:', cred.user.email);
           showDevLoginTransition();
         }).catch(function(e){
           console.error('❌ 관리자 Firebase Auth 실패:', e.code, e.message);
-          if(typeof showToast === 'function'){
-            showToast('⚠️ Firebase 연결 실패: ' + e.code);
-          }
-          showDevLoginTransition();
+          if(err) err.textContent='비밀번호가 올바르지 않습니다';
+          else if(typeof showToast === 'function'){ showToast('비밀번호가 올바르지 않습니다'); }
         });
       } else {
+        /* Firebase 미연결(오프라인) — 예전처럼 로컬 관리자 진입만 허용 */
+        userInfo.id = 'CAROMOBILITY';
+        userInfo.name = 'CAROMOBILITY';
         showDevLoginTransition();
       }
       return;
@@ -1899,10 +1902,10 @@ function updateMapMarkers(){
     var label=available?'이용가능':(car.devDisabled?'예약불가':'대여중');
     var icon = L.divIcon({
             html: '<div style="display:flex;flex-direction:column;align-items:center;gap:1px;">' +
-              '<svg width="30" height="38" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
+              '<svg width="25" height="32" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
               '<div style="font-size:9px;font-weight:700;color:' + col + ';background:rgba(255,255,255,.85);padding:1px 3px;border-radius:14px;white-space:nowrap;">' + label + '</div>' +
             '</div>',
-            className: '', iconSize: [40,52], iconAnchor: [20,44]
+            className: '', iconSize: [34,44], iconAnchor: [17,37]
           });
     var marker=L.marker([car.lat,car.lng],{icon:icon}).addTo(caroMap)
       .bindPopup('<b>'+getCarName(car)+'</b><br>'+car.fuel+' · '+car.pricePerHour.toLocaleString()+'원/h<br><span style="color:'+col+';font-weight:700;">'+label+'</span>');
@@ -1957,10 +1960,10 @@ function updateCarSheetCount(){
       var label='CARO THE BLACK';
       var icon = L.divIcon({
               html: '<div style="display:flex;flex-direction:column;align-items:center;gap:1px;">' +
-                '<svg width="30" height="38" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
+                '<svg width="25" height="32" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
                 '<div style="font-size:9px;font-weight:700;color:' + col + ';background:rgba(255,255,255,.85);padding:1px 3px;border-radius:14px;white-space:nowrap;">' + label + '</div>' +
               '</div>',
-              className: '', iconSize: [40,52], iconAnchor: [20,44]
+              className: '', iconSize: [34,44], iconAnchor: [17,37]
             });
       var marker=L.marker([car.lat,car.lng],{icon:icon}).addTo(caroMap)
         .bindPopup('<b>⭐ '+car.name+'</b><br>'+car.fuel+' · '+car.pricePerHour.toLocaleString()+'원/h<br><span style="color:#c8a96e;font-weight:700;">CARO THE BLACK</span>');
@@ -2278,21 +2281,37 @@ function goToPayment(){
    15-1. 카드 입력 자동 포맷팅
 ───────────────────────────────────────────── */
 function fmtCardNum(el){
-  var v=el.value.replace(/\D/g,'').slice(0,16);
+  /* ★ FIX: AMEX(34/37 시작, 15자리, 4-6-5 형식) 지원 */
+  var v=el.value.replace(/\D/g,'');
+  var isAmex=/^3[47]/.test(v);
+  v=v.slice(0,isAmex?15:16);
   var out='';
-  for(var i=0;i<v.length;i++){
-    if(i>0&&i%4===0) out+=' ';
-    out+=v[i];
+  if(isAmex){
+    out=v.slice(0,4);
+    if(v.length>4) out+=' '+v.slice(4,10);
+    if(v.length>10) out+=' '+v.slice(10,15);
+  }else{
+    for(var i=0;i<v.length;i++){
+      if(i>0&&i%4===0) out+=' ';
+      out+=v[i];
+    }
   }
   el.value=out;
 }
+/* 카드번호 유효성: 일반 16자리 / AMEX 15자리 */
+function caroCardOk(numStr){
+  var d=String(numStr||'').replace(/\D/g,'');
+  return /^3[47]/.test(d) ? d.length===15 : d.length===16;
+}
+window.caroCardOk=caroCardOk;
 function fmtCardExp(el){
   var v=el.value.replace(/\D/g,'').slice(0,4);
   if(v.length>=3) el.value=v.slice(0,2)+' / '+v.slice(2);
   else el.value=v;
 }
 function fmtCardCvc(el){
-  el.value=el.value.replace(/\D/g,'').slice(0,3);
+  /* ★ FIX: AMEX는 CVC 4자리 — 4자리까지 허용 */
+  el.value=el.value.replace(/\D/g,'').slice(0,4);
 }
 
 function toggleCardInputs(){
@@ -2766,15 +2785,43 @@ function closeAltParkModal(e){
 }
 function closeAltParkModalDirect(){ closeModal('alt-park-modal'); }
 
+/* ★ 연료/충전 부족 반납 청구 정책 — 잔량 40% 이하일 때 보충 요금 청구 (금액은 조정 가능) */
+var CARO_FUEL_POLICY={ threshold:40, fee:10000 };  /* 잔량 40% 이하 반납 시 1만원 (쏘카 기준) */
 function doReturnCar(){
   if(homeCtrlTimer){clearInterval(homeCtrlTimer);homeCtrlTimer=null;}
   closeModal('home-ctrl-modal');
+  var fuelNotice='';
   if(ctrlResIdx>=0&&myReservations[ctrlResIdx]){
-    myReservations[ctrlResIdx].returned=true;
-    myReservations[ctrlResIdx].returnedAt=new Date();
+    var resR=myReservations[ctrlResIdx];
+    resR.returned=true;
+    resR.returnedAt=new Date();
+    /* ★ 반납 시점 연료/충전 잔량 확인 → 40% 이하면 청구 기록 */
+    try{
+      var carIdR=resR.car&&resR.car.id;
+      var pct=(carIdR!=null)?getFuelLevel(carIdR):null;
+      if(pct!=null){
+        resR.fuelAtReturn=pct;
+        if(pct<=CARO_FUEL_POLICY.threshold){
+          resR.fuelFeeDue=CARO_FUEL_POLICY.fee;
+          fuelNotice=' ⛽ 잔량 '+pct+'% — 연료/충전 보충 요금 '+CARO_FUEL_POLICY.fee.toLocaleString()+'원이 청구됩니다.';
+          /* 관제에서 볼 수 있게 청구 기록 저장 */
+          try{
+            if(window.FB_FN&&window.FB_DB&&window.FB_FN.setDoc){
+              var fid='fuel_'+resR.bookNo;
+              window.FB_FN.setDoc(window.FB_FN.doc(window.FB_DB,'fuel_claims',fid),{
+                bookNo:resR.bookNo, userId:userInfo.uid||userInfo.id||'',
+                carId:carIdR, carName:(resR.car&&resR.car.name)||'',
+                fuelPct:pct, fee:CARO_FUEL_POLICY.fee,
+                status:'due', createdAt:Date.now()
+              },{merge:true});
+            }
+          }catch(e){}
+        }
+      }
+    }catch(e){}
   }
   saveUserData();
-  showToast('반납이 완료되었습니다. 이용해 주셔서 감사합니다 🚗');
+  showToast('반납이 완료되었습니다. 이용해 주셔서 감사합니다 🚗'+fuelNotice);
   setTimeout(function(){
     renderCars(); updateMapMarkers();
     setTimeout(function(){ renderCars(); updateMapMarkers(); },10*60000);
@@ -4247,7 +4294,7 @@ function openResDetail(idx){
       if(r.returned) return '<div style="padding:6px 0;text-align:center;font-size:.78rem;color:var(--text-m);">반납 완료된 예약입니다.</div>';
       var now=new Date();
       var diffMin=(r.start.getTime()-now.getTime())/60000;
-      if(diffMin<0) return '<div style="padding:8px 0 2px;font-size:.76rem;color:var(--text-m);text-align:center;">대여 중 — 취소 불가</div>';
+      if(diffMin<0) return '<div style="padding:8px 0 2px;font-size:.76rem;color:var(--text-m);text-align:center;">대여 중에는 취소 대신 <b>반납</b> 버튼으로 조기 반납해 주세요</div>';
       var pol=getRefundPolicy(diffMin, r.total);
       if(pol.pct===-1) return '<div style="padding:8px 0 2px;font-size:.76rem;color:var(--error);text-align:center;">출발 10분 이내 취소 불가</div>';
       var btnColor=pol.pct===100?'rgba(29,122,58,.12);border:1px solid rgba(29,122,58,.3)':
@@ -4555,7 +4602,7 @@ function closeAddCard(e){
 }
 function saveCard(){
   var num=val('ac-num'), exp=val('ac-exp'), cvc=val('ac-cvc'), alias=val('ac-name');
-  if(!num||num.replace(/\s/g,'').length<16){ showToast('카드 번호를 올바르게 입력해 주세요.'); return; }
+  if(!num||!caroCardOk(num)){ showToast('카드 번호를 올바르게 입력해 주세요. (일반 16자리 / AMEX 15자리)'); return; }
   if(!exp){ showToast('유효기간을 입력해 주세요.'); return; }
   if(!cvc||cvc.length<3){ showToast('CVC를 입력해 주세요.'); return; }
   var last4=num.replace(/\s/g,'').slice(-4);
@@ -4902,6 +4949,9 @@ function loadUserData(uid){
   var key='caro_data_'+uid;
   try{
     var raw=localStorage.getItem(key);
+    /* ★ FIX: 저장은 아이디 키(caro_data_아이디)로 되는데 복원은 uid 키로 시도하던
+       키 불일치 해결 — 못 찾으면 아이디 키로도 찾아본다 */
+    if(!raw && userInfo && userInfo.id && userInfo.id!==uid) raw=localStorage.getItem('caro_data_'+userInfo.id);
     if(!raw) return;
     var d=JSON.parse(raw);
     if(d.myReservations) myReservations=d.myReservations.map(function(r){
@@ -5185,7 +5235,7 @@ function saveCardFromPI(){
   var exp=document.getElementById('pi-card-exp');
   var cvc=document.getElementById('pi-card-cvc');
   var alias=document.getElementById('pi-card-alias');
-  if(!num||num.value.replace(/\s/g,'').length<16){showToast('카드 번호를 올바르게 입력해 주세요.');return;}
+  if(!num||!caroCardOk(num.value)){showToast('카드 번호를 올바르게 입력해 주세요. (일반 16자리 / AMEX 15자리)');return;}
   if(!exp||!exp.value){showToast('유효기간을 입력해 주세요.');return;}
   if(!cvc||cvc.value.length<3){showToast('CVC를 입력해 주세요.');return;}
   var last4=num.value.replace(/\s/g,'').slice(-4);
@@ -5361,6 +5411,47 @@ function goToDoneHome(){
       if(hi) hi.textContent=aid;
     }
   }catch(e){}
+
+  /* ★★ FIX(데이터 소실): 새로고침/앱 재시작 시 Firebase 세션을 반드시 재확립하고,
+     서버(Firestore)에서 예약·카드·면허 데이터를 다시 불러온다.
+     ─ 기존 문제: uid가 빈 값으로 남아 서버 동기화 리스너가 영영 시작되지 않음
+       → 새로고침·기기변경 시 데이터가 "사라진 것처럼" 보였음. */
+  (function(){
+    var tries=0;
+    var iv=setInterval(function(){
+      tries++;
+      var fb=window.FB_AUTH, fn=window.FB_FN;
+      if(fb&&fn){
+        clearInterval(iv);
+        var applied=false;
+        var apply=function(u){
+          if(!u||applied) return; applied=true;
+          userInfo.uid=u.uid;
+          try{ if(userInfo.id) loadUserData(userInfo.id); }catch(e){}
+          try{ startReservationsListener(); }catch(e){}
+          try{ if(typeof syncAllReservationsToFirestore==='function') syncAllReservationsToFirestore(); }catch(e){}
+          try{ if(window.caroSyncPull) window.caroSyncPull(u.uid); }catch(e){}
+          try{ renderMyReservations(); renderCars(); }catch(e){}
+          console.log('✅ 세션 재확립 완료 — 서버 동기화 시작 (uid:'+u.uid.slice(0,6)+'…)');
+        };
+        if(fb.currentUser){ apply(fb.currentUser); return; }
+        try{ fn.onAuthStateChanged(fb,function(u){ if(u) apply(u); }); }catch(e){}
+        /* 3초 내 세션 복원이 안 되면 저장된 자동로그인 정보로 조용히 재인증 */
+        setTimeout(function(){
+          if(applied||fb.currentUser) return;
+          var aid2=null,apw=null;
+          try{ aid2=localStorage.getItem('caro_auto_id'); apw=localStorage.getItem('caro_auto_pw'); }catch(e){}
+          if(aid2&&apw&&typeof fn.signInWithEmailAndPassword==='function'){
+            var em=aid2.indexOf('@')>=0?aid2:(aid2+'@caro.app');
+            fn.signInWithEmailAndPassword(fb,em,apw)
+              .then(function(c){ apply(c.user); })
+              .catch(function(e){ console.warn('⚠️ 자동 재인증 실패:',e&&e.code); });
+          }
+        },3000);
+      }
+      if(tries>24) clearInterval(iv);
+    },500);
+  })();
 
   /* 2. 홈 화면으로 이동 */
     /* 2. 홈 화면으로 이동 */
@@ -8473,7 +8564,7 @@ window.devUploadAllCars=function(){
     if(addBtn){
       addBtn.addEventListener('click', () => {
         const nv = num.value.replace(/\s/g, '');
-        if(nv.length !== 16){ toast('카드 번호 16자리를 입력해주세요', false); return; }
+        if(!caroCardOk(nv)){ toast('카드 번호를 확인해주세요 (일반 16자리 / AMEX 15자리)', false); return; }
         if(exp.value.length !== 5){ toast('유효기간을 입력해주세요 (MM/YY)', false); return; }
         if(cvc.value.length !== 3){ toast('CVC 3자리를 입력해주세요', false); return; }
         const cards = STORE.get('cards', []);
@@ -8821,12 +8912,12 @@ window.devUploadAllCars=function(){
 
       <div class="apd-section">
         <div class="apd-section-title"><span class="apd-section-title-icon">ℹ️</span>사업자 정보</div>
-        <div class="apd-row"><span class="apd-row-label">상호</span><span class="apd-row-value">(주)카로 모빌리티</span></div>
+        <div class="apd-row"><span class="apd-row-label">상호</span><span class="apd-row-value">(주)카로모빌리티</span></div>
         <div class="apd-row"><span class="apd-row-label">대표자</span><span class="apd-row-value">허경준</span></div>
-        <div class="apd-row"><span class="apd-row-label">사업자등록번호</span><span class="apd-row-value">123-45-67890</span></div>
-        <div class="apd-row"><span class="apd-row-label">통신판매업신고</span><span class="apd-row-value">2026-인천 송도-0000</span></div>
-        <div class="apd-row"><span class="apd-row-label">주소</span><span class="apd-row-value">인천광역시 연수구 송도동</span></div>
-        <div class="apd-row"><span class="apd-row-label">고객센터</span><span class="apd-row-value">1588-0000</span></div>
+        <div class="apd-row"><span class="apd-row-label">사업자등록번호</span><span class="apd-row-value">851-88-03946</span></div>
+        <div class="apd-row"><span class="apd-row-label">통신판매업신고</span><span class="apd-row-value">신고 준비 중</span></div>
+        <div class="apd-row"><span class="apd-row-label">주소</span><span class="apd-row-value">인천광역시 연수구 센트럴로 313, 씨동 2304호 4-7 (송도동, 송도씨워크 인테라스한라)</span></div>
+        <div class="apd-row"><span class="apd-row-label">고객센터</span><span class="apd-row-value">info@caromobility.kr (전화 준비 중)</span></div>
       </div>
 
       <div class="apd-section">
@@ -9537,8 +9628,8 @@ window.devUploadAllCars=function(){
     }
 
     const num = numInput.value.replace(/\s/g, '');
-    if(num.length !== 16){
-      alert('카드 번호 16자리를 입력해주세요');
+    if(!caroCardOk(num)){
+      alert('카드 번호를 확인해주세요 (일반 16자리 / AMEX 15자리)');
       return;
     }
     if(!expInput.value || expInput.value.length < 5){
@@ -10062,7 +10153,7 @@ window.devUploadAllCars=function(){
         <h4>제6조 (개인정보 보호책임자)</h4>
         <ul>
           <li>책임자: CARO MOBILITY 개인정보보호책임자</li>
-          <li>연락처: privacy@caromobility.com / 1588-0000</li>
+          <li>연락처: privacy@caromobility.kr / 1588-0000</li>
         </ul>
 
         <p style="margin-top:16px;color:#888;font-size:.78rem;text-align:center;">본 방침은 2026년 5월 31일부터 시행합니다.</p>
@@ -10116,7 +10207,7 @@ window.devUploadAllCars=function(){
         <h4>제8조 (위치정보 관리책임자)</h4>
         <ul>
           <li>책임자: CARO MOBILITY 위치정보 관리책임자</li>
-          <li>연락처: location@caromobility.com / 1588-0000</li>
+          <li>연락처: location@caromobility.kr / 1588-0000</li>
         </ul>
 
         <p style="margin-top:16px;color:#888;font-size:.78rem;text-align:center;">본 약관은 2026년 5월 31일부터 시행합니다.</p>
@@ -10162,7 +10253,7 @@ window.devUploadAllCars=function(){
         <h4>제4조 (동의 철회)</h4>
         <ul>
           <li>회원은 언제든지 제3자 제공 동의를 철회할 수 있습니다.</li>
-          <li>철회 방법: 고객센터(1588-0000) 또는 privacy@caromobility.com</li>
+          <li>철회 방법: 고객센터(1588-0000) 또는 privacy@caromobility.kr</li>
           <li>철회 시 즉시 처리하며, 이미 제공된 정보는 제공처에 파기 요청</li>
         </ul>
 
@@ -10249,7 +10340,7 @@ window.devUploadAllCars=function(){
         <h4>제5조 (청소년 유해정보 신고)</h4>
         <ul>
           <li>고객센터: 1588-0000</li>
-          <li>이메일: youth@caromobility.com</li>
+          <li>이메일: youth@caromobility.kr</li>
           <li>방송통신심의위원회 (1377)</li>
           <li>청소년 사이버상담센터 (1388)</li>
         </ul>
@@ -10258,7 +10349,7 @@ window.devUploadAllCars=function(){
         <ul>
           <li>책임자: CARO MOBILITY 청소년보호 책임자</li>
           <li>소속: 고객지원팀</li>
-          <li>연락처: youth@caromobility.com / 1588-0000</li>
+          <li>연락처: youth@caromobility.kr / 1588-0000</li>
         </ul>
 
         <h4>제7조 (관련 법령)</h4>
@@ -10403,7 +10494,7 @@ window.devUploadAllCars=function(){
 
       <h4>제9조 (분쟁 처리)</h4>
       <ul>
-        <li>회사 분쟁 처리: 1588-0000 / claim@caromobility.com</li>
+        <li>회사 분쟁 처리: 1588-0000 / claim@caromobility.kr</li>
         <li>금융감독원 분쟁조정위원회 (1332)</li>
         <li>한국소비자원 분쟁조정 (1372)</li>
       </ul>
@@ -10713,10 +10804,10 @@ window.devUploadAllCars=function(){
       var label = available ? '이용가능' : (maint ? '점검중' : '대여중');
       var icon = L.divIcon({
               html: '<div style="display:flex;flex-direction:column;align-items:center;gap:1px;">' +
-                '<svg width="30" height="38" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
+                '<svg width="25" height="32" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="93" rx="12" ry="3" fill="#3a3e46" opacity="0.25"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#a2aab6" transform="translate(1,1)"/><path d="M40 88C40 88 62 58 62 38A22 22 0 0 0 18 38C18 58 40 88 40 88Z" fill="#f4f7fa" stroke="' + col + '" stroke-width="3"/><path d="M50 26A14 14 0 1 0 50 50" fill="none" stroke="#18191c" stroke-width="7" stroke-linecap="round"/></svg>' +
                 '<div style="font-size:9px;font-weight:700;color:' + col + ';background:rgba(255,255,255,.85);padding:1px 3px;border-radius:14px;white-space:nowrap;">' + label + '</div>' +
               '</div>',
-              className: '', iconSize: [40,52], iconAnchor: [20,44]
+              className: '', iconSize: [34,44], iconAnchor: [17,37]
             });
       var marker = L.marker([car.lat, car.lng], { icon: icon }).addTo(caroMap)
         .bindPopup('<b>' + getCarName(car) + '</b><br>' + car.fuel + ' · ' + car.pricePerHour.toLocaleString() + '원/h<br><span style="color:' + col + ';font-weight:700;">' + label + '</span>');
