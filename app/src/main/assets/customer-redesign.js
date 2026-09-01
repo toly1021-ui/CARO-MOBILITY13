@@ -1241,7 +1241,7 @@
    +'#caro-mrd-ov{z-index:960;}'
    +'.caro-mr-head{display:flex;align-items:center;gap:6px;padding:calc(10px + var(--sat,0px)) 10px 10px;background:#f0f3f7;border-bottom:1px solid var(--border-l);position:sticky;top:0;z-index:2;}'
    +'.caro-mr-back{width:40px;height:40px;border:none;background:none;font-size:1.7rem;line-height:1;color:#18191c;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;}'
-   +'.caro-mr-backbtm{position:fixed;left:16px;right:16px;bottom:calc(16px + var(--sab,0px));height:52px;border:0;background:var(--accent,#18191c);border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;color:#fff;cursor:pointer;z-index:6;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);}'
+   +'.caro-mr-backbtm{position:fixed;left:50%;transform:translateX(-50%);width:min(600px,calc(100vw - 32px));bottom:calc(16px + var(--sab,0px));height:52px;border:0;background:var(--accent,#18191c);border-radius:14px;font-family:inherit;font-weight:800;font-size:14px;color:#fff;cursor:pointer;z-index:6;box-shadow:0 8px 20px -8px rgba(24,25,28,.5);}'
    +'.caro-mr-title{font-size:1.15rem;font-weight:800;color:#18191c;letter-spacing:-.01em;}'
    +'.caro-mr-body{flex:1;overflow-y:auto;padding:14px 16px calc(88px + var(--sab,0px));}'
    +'.caro-mr-note{font-size:.8rem;color:var(--text-m);line-height:1.5;margin:2px 2px 14px;}'
@@ -7276,7 +7276,7 @@
     /* 2) 빈 화면 CTA */
    +'.caro-empty-cta{display:inline-flex;align-items:center;gap:7px;margin-top:18px;height:46px;padding:0 24px;border:0;cursor:pointer;'
      +'background:var(--accent,#18191c);color:#fff;border-radius:14px 14px 14px 6px;font-family:inherit;font-size:.86rem;font-weight:800;'
-     +'box-shadow:0 8px 20px -9px rgba(24,25,28,.5),inset 0 -2px 0 rgba(174,182,194,.45);}'
+     +'box-shadow:0 8px 20px -9px rgba(24,25,28,.5);}'
    +'.caro-empty-cta:active{transform:scale(.96);}'
     /* 3) 이용 준비 카드 */
    +'.hr-ready{margin-top:16px;background:var(--p1-card,#fff);border:1px solid var(--p1-line,#e8eaee);border-radius:20px 20px 20px 8px;'

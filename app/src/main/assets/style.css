@@ -4585,3 +4585,12 @@ select:focus{
 .apd-credit-amount small{ color:var(--p1-accent-d); }
 /* ★ FIX: 고객센터 도움말 목록 마지막 줄 하단 선 제거 */
 .csx-faq .it:last-child{border-bottom:0 !important;}
+
+/* ★ FIX: 하단 '← 뒤로' 고정 버튼 — 넓은 화면(PC)에서 화면 전체로 늘어나던 것을
+   콘텐츠 폭(최대 600px)에 맞춰 가운데 정렬. 모바일에서는 기존과 동일. */
+button[style*="position:fixed"][style*="left:16px"][style*="right:16px"]{
+  left:50% !important;
+  right:auto !important;
+  width:min(600px, calc(100vw - 32px)) !important;
+  transform:translateX(-50%) !important;
+}
