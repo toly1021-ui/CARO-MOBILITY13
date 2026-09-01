@@ -4586,26 +4586,19 @@ select:focus{
 /* ★ FIX: 고객센터 도움말 목록 마지막 줄 하단 선 제거 */
 .csx-faq .it:last-child{border-bottom:0 !important;}
 
-/* ★ FIX: 하단 '← 뒤로' 버튼 — 항상 화면 최하단에 고정(월 렌트와 동일),
-   콘텐츠 폭(최대 600px) 가운데 정렬. 스크롤해도 바닥에 딱 붙어 있음. */
-button[style*="position:fixed"][style*="left:16px"][style*="right:16px"]{
-  position:fixed !important;
-  left:50% !important;
-  right:auto !important;
-  width:min(600px, calc(100vw - 32px)) !important;
-  transform:translateX(-50%) !important;
-}
 
-/* ★ FIX: '뒤로' 글씨가 적힌 버튼 전부 — 해당 화면 최하단에 고정 (월 렌트 방식) */
+
+/* ★ FIX: '뒤로' 글씨가 적힌 버튼 전부 — 해당 화면 최하단에 고정.
+   폭·좌우 위치는 각 화면의 콘텐츠 폭에 맞춰 스크립트가 실시간 계산(대칭 보장). */
 .caro-back-dock{
   position:fixed !important;
-  left:50% !important;
   right:auto !important;
   transform:translateX(-50%) !important;
   bottom:calc(16px + var(--sab,0px)) !important;
-  width:min(600px, calc(100vw - 32px)) !important;
   margin:0 !important;
   z-index:900 !important;
+  left:50%;
+  width:min(600px, calc(100vw - 32px));
 }
 /* 테두리형 버튼은 밑 내용이 비치지 않게 불투명 배경 + 그림자 */
 .caro-back-dock.back-bottom-btn,

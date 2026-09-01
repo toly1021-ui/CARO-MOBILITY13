@@ -187,6 +187,21 @@ window.caroOpenExtraDriver=function(){
    해당 화면 최하단에 고정(caro-back-dock)한다. */
 (function(){
   var RE=/^(←\s*)?(뒤로(가기)?|back)$/i;
+  var docked=[];
+  /* 버튼 폭·위치를 해당 화면 콘텐츠 폭에 딱 맞춤 (좌우 대칭 보장) */
+  function fit(b){
+    var p=b._caroHost;
+    if(!p||!p.isConnected){ return; }
+    var cs=getComputedStyle(p);
+    var padL=parseFloat(cs.paddingLeft)||0, padR=parseFloat(cs.paddingRight)||0;
+    var w=p.clientWidth-padL-padR;
+    if(w<60) return;
+    if(w>640) w=640;
+    var r=p.getBoundingClientRect();
+    b.style.width=w+'px';
+    b.style.left=(r.left+padL+(p.clientWidth-padL-padR>640?((p.clientWidth-padL-padR)-640)/2:0)+w/2)+'px';
+  }
+  function fitAll(){ docked.forEach(fit); }
   function dock(){
     try{
       document.querySelectorAll('button').forEach(function(b){
@@ -194,16 +209,21 @@ window.caroOpenExtraDriver=function(){
         if(b.closest('#caro-mr-ov,#caro-mrd-ov')) return; /* 월렌트는 이미 하단 고정 */
         var t=(b.textContent||'').replace(/\s+/g,' ').trim();
         if(!RE.test(t)) return;
+        b._caroHost=b.parentElement;
         b.classList.add('caro-back-dock');
-        /* 버튼에 가려지는 내용이 없도록 화면에 여백 확보 */
+        docked.push(b);
+        fit(b);
+        /* 버튼에 가려지는 내용이 없도록 화면 하단 여백 확보 */
         var scr=b.closest('.screen');
-        if(scr && !scr.dataset.caroBackPad){ scr.dataset.caroBackPad='1'; scr.style.paddingBottom='92px'; }
+        if(scr && !scr.dataset.caroBackPad){ scr.dataset.caroBackPad='1'; scr.style.paddingBottom='80px'; }
       });
     }catch(e){}
+    fitAll();
   }
   dock();
   document.addEventListener('DOMContentLoaded',dock);
-  setInterval(dock,1500);
+  window.addEventListener('resize',fitAll);
+  setInterval(dock,1200);
 })();
 
 /* ═══ 4. 운전면허 진위확인 프레임 ═══
