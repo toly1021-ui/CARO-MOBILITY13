@@ -137,7 +137,7 @@ button:active{opacity:.82;}
 
 /* ── 화면 공통 ── */
 .screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;opacity:0;pointer-events:none;transform:translateY(14px);transition:opacity .38s ease,transform .38s ease;z-index:1;will-change:opacity,transform;}
-.screen.active{opacity:1;pointer-events:all;transform:translateY(0)}
+.screen.active{opacity:1;pointer-events:all;transform:none;will-change:auto;}
 .screen.exit{opacity:0;transform:translateY(-10px);pointer-events:none}
 /* 개발자 화면 — 메탈 배경 완전 덮기 */
 #dev-screen{background:#080c10;}
@@ -4586,14 +4586,22 @@ select:focus{
 /* ★ FIX: 고객센터 도움말 목록 마지막 줄 하단 선 제거 */
 .csx-faq .it:last-child{border-bottom:0 !important;}
 
-/* ★ FIX: 화면 하단 '← 뒤로' 버튼 — 월 렌트 화면처럼 화면 하단에 딱 붙어 고정되고,
-   콘텐츠 폭(최대 600px)에 맞춰 가운데 정렬. 스크롤 중에도 하단에 유지됨. */
-button[style*="position:fixed"][style*="left:16px"][style*="right:16px"]{
-  position:sticky !important;
-  left:auto !important;
-  right:auto !important;
-  display:block !important;
-  margin:18px auto 12px !important;
-  width:min(600px, calc(100% - 32px)) !important;
+
+
+/* ★ FIX: '뒤로' 글씨 버튼 전부 — 스크롤과 무관하게 항상 화면 맨 아래 고정.
+   좌우는 원래대로(양쪽 16px), 상하 간격만 최소화. */
+.caro-back-dock{
+  position:fixed !important;
+  left:16px !important;
+  right:16px !important;
+  width:auto !important;
   transform:none !important;
+  bottom:calc(12px + var(--sab,0px)) !important;
+  margin:0 !important;
+  z-index:900 !important;
+}
+.caro-back-dock.back-bottom-btn,
+.caro-back-dock.mpd-back-btn{
+  background:var(--silver-light,#f4f6f9) !important;
+  box-shadow:0 8px 20px -10px rgba(24,25,28,.25) !important;
 }
