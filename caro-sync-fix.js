@@ -219,5 +219,79 @@ window.caroVerifyLicense=function(o){
     .catch(function(){ return {ok:true, verified:false, pending:true, msg:'진위확인 서버에 연결하지 못했습니다. 형식 확인만 완료된 상태로 저장합니다.'}; });
 };
 
+/* ═══ 6. 뒤로 버튼 전체 통일 (B안 규격) ═══
+   프로그램의 모든 뒤로 버튼을 예약확인 화면(B안)과 동일한 모양·크기로 강제 통일.
+   대상: back-bottom-btn(로그인·회원가입·아이디찾기·이용안내·블랙라벨·예약·고객센터 등)
+        / mpn-back-btn·mpd-back-btn(마이페이지) / caro-mr-backbtm(월렌트)
+        / nh-ev-back(이벤트) / nh-wallet-back-btm(지갑) / payment-back-btn(결제) */
+(function(){
+  var SEL='.back-bottom-btn,.mpn-back-btn,.mpd-back-btn,.caro-mr-backbtm,.nh-ev-back,.nh-wallet-back-btm,.payment-back-btn';
+  /* 결제하기(res-submit-btn)와 완전히 동일한 규격:
+     width:100% · padding:16px · border-radius:var(--r) · font-size:1rem · font-weight:800 · height auto */
+  var B='position:relative!important;z-index:2!important;display:block!important;flex:none!important;'
+   +'width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;'
+   +'padding:16px!important;margin:12px 0 calc(20px + var(--sab,0px))!important;box-sizing:border-box!important;'
+   +'inset:auto!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;transform:none!important;'
+   +'background:var(--accent,#18191c)!important;color:#fff!important;border:0!important;border-radius:var(--r,16px)!important;'
+   +'font-family:inherit!important;font-weight:800!important;font-size:1rem!important;line-height:normal!important;'
+   +'text-align:center!important;letter-spacing:0!important;'
+   +'box-shadow:0 6px 18px -8px rgba(24,25,28,.42)!important;cursor:pointer!important;';
+  var css=SEL+'{'+B+'}'
+    /* ID 셀렉터(!important) 규칙보다 우선해야 하는 예외들 */
+   +'#login-screen .back-bottom-btn,#black-label-screen .back-bottom-btn,.bl-mode .back-bottom-btn,#event-screen .nh-ev-back,#nh-wallet-screen .nh-wallet-back-btm{'+B+'}'
+    /* 좌우 여백 없는 화면(예약확인·마이페이지 등)은 18px 인셋 부여 → 결제하기와 동일한 좌우 정렬 */
+   +'#my-reservation-screen>.back-bottom-btn,#mypage-screen .mpn-back-btn,#mypage-screen>.back-bottom-btn{width:calc(100% - 36px)!important;margin-left:18px!important;margin-right:18px!important;}'
+   +SEL.split(',').map(function(s){return s+':hover';}).join(',')+'{background:var(--accent,#18191c)!important;color:#fff!important;border:0!important;filter:brightness(1.1);}'
+    /* 옛 고정버튼용 하단 여백·바 정리 */
+   +'#event-screen .ev-body{padding-bottom:12px!important;}'
+   +'#nh-wallet-screen .nh-wallet-body{padding-bottom:12px!important;}'
+   +'.caro-mr-body{padding-bottom:14px!important;}'
+   +'.mpd-footer{background:none!important;border-top:0!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;padding:0!important;}';
+  function inject(){
+    var st=document.getElementById('caro-back-unify-css');
+    if(!st){ st=document.createElement('style'); st.id='caro-back-unify-css'; st.textContent=css; }
+    (document.head||document.documentElement).appendChild(st); /* 항상 마지막 스타일로 유지 → 최우선 적용 */
+  }
+  inject();
+  function normalize(){
+    try{
+      inject();
+      /* 월렌트 리스트/상세: 버튼을 스크롤 본문 맨 아래로 이동 (B안: 마지막 카드 바로 아래) */
+      ['caro-mr-ov','caro-mrd-ov'].forEach(function(id){
+        var ov=document.getElementById(id); if(!ov) return;
+        var btn=null;
+        for(var i=0;i<ov.children.length;i++){
+          var c=ov.children[i];
+          if(c.classList && c.classList.contains('caro-mr-backbtm')){ btn=c; break; }
+        }
+        var body=ov.querySelector('.caro-mr-body');
+        if(btn && body && btn.parentNode!==body) body.appendChild(btn);
+      });
+      /* 개별 인라인 스타일 제거(결제 뒤로 등) + 문구 '← 뒤로'로 통일 */
+      var list=document.querySelectorAll(SEL);
+      for(var i=0;i<list.length;i++){
+        var b=list[i];
+        if(b.getAttribute('style')) b.removeAttribute('style');
+        var t=b.textContent.trim();
+        if(/뒤로/.test(t)){ /* '취소' 등 다른 용도 버튼은 문구 유지 */
+          if(b.getAttribute('data-i18n')) b.removeAttribute('data-i18n');
+          if(t!=='← 뒤로') b.textContent='← 뒤로';
+        }
+      }
+    }catch(e){}
+  }
+  normalize();
+  setTimeout(normalize,800); setTimeout(normalize,2000); setTimeout(normalize,3500);
+  try{
+    var _t=null;
+    var mo=new MutationObserver(function(){
+      if(_t) return;
+      _t=setTimeout(function(){ _t=null; normalize(); },150);
+    });
+    mo.observe(document.body||document.documentElement,{childList:true,subtree:true});
+  }catch(e){}
+  console.log('🔙 뒤로 버튼 전체 통일(B안) 적용');
+})();
+
 console.log('🔧 CARO SYNC FIX v1 로드됨 — 데이터 영속화·뒤로가기·추가운전자·면허검증 활성');
 })();
