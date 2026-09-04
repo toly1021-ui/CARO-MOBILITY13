@@ -7488,7 +7488,7 @@
       var s=secs[i];
       if(s.id==='caro-ctrl-entry') continue;               // 내가 만든 관제 버튼은 별도 처리
       var t=((s.querySelector('.dev-section-title')||{}).textContent)||'';
-      if(/권한|버전/.test(t)) continue;                    // 버전·권한 섹션은 유지(직원관리는 내부에서 최고관리자만)
+      if(/권한|버전/.test(t)){ s.style.display="none"; continue; }                    // 버전·권한 섹션은 유지(직원관리는 내부에서 최고관리자만)
       s.style.display = canOps ? '' : 'none';               // 운영 섹션: ops 권한 있을 때만
     }
     ensureCtrlEntry(canControl);                            // 관제 버튼: control 권한 있을 때만
