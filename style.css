@@ -4589,6 +4589,8 @@ select:focus{
 /* ═══ CARO v4 UI 수정 v2 (2026-09) ═══ */
 /* ② 홈 상단 상태바 겹침 방지 (고정 여백·높은 우선순위) */
 #home-screen .home-header{ padding-top: 54px !important; }
+/* 새 홈 상단바(.nh-hd) 상태바 겹침 방지 — 실제 홈 상단바 */
+.nh-hd{ padding-top: max(env(safe-area-inset-top, 0px), 48px) !important; }
 /* ① 이벤트 뒤로 버튼: 월렌트처럼 좌우 넓게 (전체폭 - 32px) */
 #event-screen button.nh-ev-back{ position:fixed !important; left:16px !important; right:16px !important; width:calc(100% - 32px) !important; max-width:calc(100% - 32px) !important; margin:0 !important; box-sizing:border-box !important; }
 /* ④ 로딩화면 하단 2026 텍스트: 제스처바 위로 올림 */
