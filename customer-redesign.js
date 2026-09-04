@@ -7502,3 +7502,37 @@
     if(document.getElementById('dev-screen')) apply(); }, 900);
   console.log('[앱권한] ✅ 관리자 모드 관제/운영 분리 적용 (ops=운영섹션 / control=관제버튼)');
 })();
+
+/* ═══════════════════════════════════════════════════════════
+   [CARO v4] 안드로이드 하드웨어 뒤로가기 처리
+   · window.caroBack() 을 MainActivity가 호출:
+     - true  반환 → 웹에서 처리(화면 뒤로/오버레이 닫기)
+     - false 반환 → 앱 종료 대상(홈에서 두 번 누르면 종료)
+   ─────────────────────────────────────────────────────────── */
+(function(){ 'use strict';
+  window.caroBack = function(){
+    try{
+      // 1) 열린 모달 오버레이 닫기
+      var mod = document.querySelector('.modal-overlay.active, .modal-overlay.show, .modal-overlay.open');
+      if(mod){ var mc = mod.querySelector('.modal-close'); if(mc){ mc.click(); return true; } mod.classList.remove('active','show','open'); return true; }
+      // 2) 화면에 보이는 인앱 뒤로가기 버튼이 있으면 그걸로 처리 (지갑/월렌트/이벤트/알림 등)
+      var sel = ['.nh-wallet-back-btm','.caro-mr-backbtm','.nh-ev-back','.cnf-close','.caro-notif-close'];
+      for(var i=0;i<sel.length;i++){
+        var b = document.querySelector(sel[i]);
+        if(b && b.offsetParent!==null){ b.click(); return true; }
+      }
+      // 3) 현재 보이는 .screen 판별 — 홈이 아니면 홈으로
+      var active=null;
+      document.querySelectorAll('.screen').forEach(function(s){
+        try{ var cs=getComputedStyle(s); if(cs.display!=='none' && s.getBoundingClientRect().width>0 && s.getBoundingClientRect().height>0) active=s; }catch(e){}
+      });
+      if(active && active.id && active.id!=='home-screen' && active.id!=='main-screen'){
+        if(window.goTo) goTo('home-screen'); else if(window.go) go('home-screen');
+        return true;
+      }
+      // 4) 홈(또는 로그인) → 앱이 종료 처리하도록 false
+      return false;
+    }catch(e){ return false; }
+  };
+  console.log('[CARO v4] ✅ caroBack (하드웨어 뒤로가기 핸들러) 준비');
+})();
