@@ -4585,3 +4585,9 @@ select:focus{
 .apd-credit-amount small{ color:var(--p1-accent-d); }
 /* ★ FIX: 고객센터 도움말 목록 마지막 줄 하단 선 제거 */
 .csx-faq .it:last-child{border-bottom:0 !important;}
+
+/* ═══ CARO v4 UI 수정 (2026-09) ═══ */
+/* ② 상단 상태바 겹침: 홈 헤더에 안전영역 상단 여백 확보 */
+.home-header{ padding-top: max(calc(env(safe-area-inset-top,0px) + 14px), 44px) !important; }
+/* ① 이벤트 뒤로 버튼: 월렌트 버튼처럼 좌우 16px 여백 (꽉 참 방지) */
+#event-screen button.nh-ev-back{ left:16px !important; right:16px !important; width:auto !important; max-width:none !important; box-sizing:border-box !important; }
